@@ -1,12 +1,18 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const bcrypt = require('bcryptjs');
 const mysql = require('mysql2/promise');
 
 const app = express();
 app.use(cors()); // en producción, restringir a tu dominio real
 app.use(express.json());
+
+// Sirve las páginas del sitio (index.html, login.html, etc.) que están
+// en la carpeta de arriba de "backend". Así, una vez publicado, tu web
+// y tu API viven en la misma dirección.
+app.use(express.static(path.join(__dirname, '..')));
 
 // Pool de conexiones a MySQL (mejor que abrir una conexión por request)
 const pool = mysql.createPool({
