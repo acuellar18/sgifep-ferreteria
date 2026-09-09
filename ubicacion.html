@@ -5,93 +5,98 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ferretería El Constructor - Ubicación</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="landing.css">
 </head>
-<body class="landing">
+<body class="landing-modern">
 
-<header class="landing-header">
-    <div class="brand">
-        <div class="brand-badge">FC</div>
-        <div class="brand-name">
-            <span class="l1">FERRETERÍA</span>
-            <span class="l2">EL CONSTRUCTOR</span>
+<nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm py-3">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="index.html">
+            <img src="img/logo.png" alt="Ferretería El Constructor" class="brand-badge">
+            <span class="brand-text">
+                <span class="d-block">FERRETERÍA</span>
+                <span class="d-block fw-bold">EL CONSTRUCTOR</span>
+            </span>
+        </a>
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navMenu">
+            <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-4">
+                <li class="nav-item"><a class="nav-link" href="index.html">Inicio</a></li>
+                <li class="nav-item"><a class="nav-link" href="nosotros.html">Nosotros</a></li>
+                <li class="nav-item"><a class="nav-link" href="contacto.html">Contacto</a></li>
+                <li class="nav-item"><a class="nav-link active" href="ubicacion.html">Ubicación</a></li>
+                <li class="nav-item mt-2 mt-lg-0">
+                    <a href="login.html" class="btn btn-amber btn-sm px-3">Acceso al sistema</a>
+                </li>
+            </ul>
         </div>
     </div>
-    <nav class="landing-nav">
-        <a href="index.html">Inicio</a>
-        <a href="nosotros.html">Nosotros</a>
-        <a href="contacto.html">Contacto</a>
-        <a href="ubicacion.html" class="active">Ubicación</a>
-    </nav>
-    <a href="login.html" class="btn-acceso">Acceso al sistema <span>▾</span></a>
-</header>
+</nav>
 
-<section class="page-hero">
-    <h1>Ubicación</h1>
-    <p>Oficinas centrales</p>
-</section>
-
-<section class="mapa-section wrap">
-    <div class="mapa-frame">
-        <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3861.423405367688!2d-90.4632832!3d14.5750051!2m3!1f0!2f0!3f0!3m2!1i1024!2i710!4f13.1!3m3!1m2!1s0x8589a3f2b4e8b3b7%3A0x6b772df48332150!2sCarretera%20a%20El%20Salvador!5e0!3m2!1ses!2sgt!4v1680000000000!5m2!1ses!2sgt"
-            width="100%"
-            height="380"
-            style="border:0;"
-            allowfullscreen=""
-            loading="lazy">
-        </iframe>
-    </div>
-
-    <div class="info-row">
-        <div class="u-col">
-            <strong>PBX</strong>
-            <p>+(502) 7762-0000</p>
-        </div>
-        <div class="u-col">
-            <strong>Oficinas centrales</strong>
-            <p>Kilómetro 14.5 a El Salvador, Carretera a El Salvador, 01051</p>
-        </div>
-        <div class="u-col">
-            <strong>Correo electrónico</strong>
-            <p>info@FerreConstructor.org</p>
-        </div>
+<section class="page-hero-simple">
+    <div class="container">
+        <h1 class="display-6">Ubicación</h1>
+        <p>Oficinas centrales</p>
     </div>
 </section>
 
-<footer class="landing-footer">
-    <div class="wrap footer-grid">
-        <div>
-            <div class="brand">
-                <div class="brand-badge">FC</div>
-                <span class="brand-name">Ferretería El Constructor</span>
+<section class="py-5">
+    <div class="container py-3">
+        <div class="mapa-card mb-4">
+            <iframe
+                src="https://www.google.com/maps?q=Diagonal+1,+1-76+Zona+1,+San+Lucas+Tolim%C3%A1n,+Solol%C3%A1,+Guatemala&output=embed"
+                width="100%"
+                height="380"
+                style="border:0;"
+                allowfullscreen=""
+                loading="lazy">
+            </iframe>
+        </div>
+
+        <div class="row g-3 row-cols-1 row-cols-md-3">
+            <div class="col"><div class="info-tile"><strong>PBX</strong><p>+(502) 7762-0000</p></div></div>
+            <div class="col"><div class="info-tile"><strong>Oficinas centrales</strong><p>Kilómetro 14.5 a El Salvador, Carretera a El Salvador, 01051</p></div></div>
+            <div class="col"><div class="info-tile"><strong>Correo electrónico</strong><p>info@FerreConstructor.org</p></div></div>
+        </div>
+    </div>
+</section>
+
+<footer class="footer-navy pt-5 pb-4">
+    <div class="container">
+        <div class="row gy-4">
+            <div class="col-md-5">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <img src="img/logo.png" alt="Ferretería El Constructor" class="brand-badge">
+                    <span class="fw-bold text-white">Ferretería El Constructor</span>
+                </div>
+                <p class="small text-light-soft">Herramientas, materiales de construcción y asesoría experta para tu proyecto.</p>
             </div>
-            <p class="desc">Herramientas, materiales de construcción y asesoría experta para tu proyecto.</p>
+            <div class="col-6 col-md-3">
+                <h6 class="text-white mb-3">Contacto</h6>
+                <p class="small mb-1"><a href="tel:+50277620000">+(502) 7762-0000</a></p>
+                <p class="small"><a href="mailto:info@FerreConstructor.org">info@FerreConstructor.org</a></p>
+            </div>
+            <div class="col-6 col-md-4">
+                <h6 class="text-white mb-3">Sede central</h6>
+                <p class="small text-light-soft mb-1">Carretera a El Salvador, 01051</p>
+            </div>
         </div>
-        <div class="footer-col">
-            <h4>Contacto</h4>
-            <ul>
-                <li><a href="tel:+50277620000">+(502) 7762-0000</a></li>
-                <li><a href="mailto:info@FerreConstructor.org">info@FerreConstructor.org</a></li>
-            </ul>
-        </div>
-        <div class="footer-col">
-            <h4>Sede central</h4>
-            <ul>
-                <li><p>Carretera a El Salvador, 01051</p></li>
-            </ul>
-        </div>
-    </div>
-    <div class="wrap footer-bottom-row">
-        <span>© Ferretería El Constructor — 2026</span>
-        <div class="socials">
-            <a href="#" aria-label="Facebook">f</a>
-            <a href="#" aria-label="WhatsApp">☎</a>
-            <a href="#" aria-label="Instagram">◎</a>
+        <hr class="border-secondary my-4">
+        <div class="d-flex flex-wrap justify-content-between small text-light-soft">
+            <span>© Ferretería El Constructor — 2026</span>
+            <div class="d-flex gap-3">
+                <a href="#">Facebook</a>
+                <a href="#">WhatsApp</a>
+                <a href="#">Instagram</a>
+            </div>
         </div>
     </div>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

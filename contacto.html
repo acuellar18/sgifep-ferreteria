@@ -5,111 +5,131 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ferretería El Constructor - Contacto</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="landing.css">
 </head>
-<body class="landing">
+<body class="landing-modern">
 
-<header class="landing-header">
-    <div class="brand">
-        <div class="brand-badge">FC</div>
-        <div class="brand-name">
-            <span class="l1">FERRETERÍA</span>
-            <span class="l2">EL CONSTRUCTOR</span>
+<nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm py-3">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="index.html">
+            <img src="img/logo.png" alt="Ferretería El Constructor" class="brand-badge">
+            <span class="brand-text">
+                <span class="d-block">FERRETERÍA</span>
+                <span class="d-block fw-bold">EL CONSTRUCTOR</span>
+            </span>
+        </a>
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navMenu">
+            <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-4">
+                <li class="nav-item"><a class="nav-link" href="index.html">Inicio</a></li>
+                <li class="nav-item"><a class="nav-link" href="nosotros.html">Nosotros</a></li>
+                <li class="nav-item"><a class="nav-link active" href="contacto.html">Contacto</a></li>
+                <li class="nav-item"><a class="nav-link" href="ubicacion.html">Ubicación</a></li>
+                <li class="nav-item mt-2 mt-lg-0">
+                    <a href="login.html" class="btn btn-amber btn-sm px-3">Acceso al sistema</a>
+                </li>
+            </ul>
         </div>
     </div>
-    <nav class="landing-nav">
-        <a href="index.html">Inicio</a>
-        <a href="nosotros.html">Nosotros</a>
-        <a href="contacto.html" class="active">Contacto</a>
-        <a href="ubicacion.html">Ubicación</a>
-    </nav>
-    <a href="login.html" class="btn-acceso">Acceso al sistema <span>▾</span></a>
-</header>
+</nav>
 
-<section class="page-hero">
-    <h1>Contáctanos</h1>
-    <p>Escribinos y te respondemos a la brevedad.</p>
+<section class="page-hero-simple">
+    <div class="container">
+        <h1 class="display-6">Contáctanos</h1>
+        <p>Escribinos y te respondemos a la brevedad.</p>
+    </div>
 </section>
 
-<section class="contacto-section wrap">
-    <div class="contacto-grid">
-        <div class="contacto-info">
-            <h2>Información</h2>
-            <p>Carretera el Salvador</p>
-            <p>(+502) 7762-0000</p>
-            <p><a href="mailto:hola@ferreconstruc.com">hola@ferreconstruc.com</a></p>
-            <p class="hours">Lunes a viernes: 8:00am – 5:00pm<br>Sábado: 8:00am – 2:00pm</p>
-        </div>
-        <div class="contacto-form">
-            <h3>Envíanos un mensaje</h3>
-            <form id="contactForm">
-                <div class="field">
-                    <label>Nombre</label>
-                    <input type="text" placeholder="Nombre completo" required>
+<section class="py-5">
+    <div class="container py-3">
+        <div class="contacto-card">
+            <div class="row g-0">
+                <div class="col-lg-5">
+                    <div class="contacto-info-modern">
+                        <h2 class="h4 mb-4">Información</h2>
+                        <p>Carretera el Salvador</p>
+                        <p>(+502) 7762-0000</p>
+                        <p><a href="mailto:hola@ferreconstruc.com">hola@ferreconstruc.com</a></p>
+                        <p class="hours mb-0">Lunes a viernes: 8:00am – 5:00pm<br>Sábado: 8:00am – 2:00pm</p>
+                    </div>
                 </div>
-                <div class="field">
-                    <label>Correo electrónico</label>
-                    <input type="email" placeholder="Correo electrónico" required>
+                <div class="col-lg-7">
+                    <div class="contacto-form-modern">
+                        <h3 class="h5 mb-4" style="color:var(--navy)">Envíanos un mensaje</h3>
+                        <form id="contactForm">
+                            <div class="field-modern">
+                                <label>Nombre</label>
+                                <input type="text" placeholder="Nombre completo" required>
+                            </div>
+                            <div class="field-modern">
+                                <label>Correo electrónico</label>
+                                <input type="email" placeholder="Correo electrónico" required>
+                            </div>
+                            <div class="field-modern">
+                                <label>Asunto</label>
+                                <input type="text" placeholder="Deje su asunto aquí" required>
+                            </div>
+                            <div class="field-modern">
+                                <label>Mensaje</label>
+                                <textarea rows="4" placeholder="Deje su mensaje aquí" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-amber w-100">Enviar mensaje</button>
+                        </form>
+                    </div>
                 </div>
-                <div class="field">
-                    <label>Asunto</label>
-                    <input type="text" placeholder="Deje su asunto aquí" required>
-                </div>
-                <div class="field">
-                    <label>Mensaje</label>
-                    <textarea rows="4" placeholder="Deje su mensaje aquí" required></textarea>
-                </div>
-                <button type="submit" class="btn-rust" style="width:100%; border:none; cursor:pointer;">Enviar mensaje</button>
-            </form>
+            </div>
         </div>
     </div>
 </section>
 
 <div class="modal-overlay" id="successModal">
     <div class="modal-box">
-        <div class="check">✔</div>
+        <div class="check-amber">✔</div>
         <h2>¡Mensaje enviado!</h2>
         <p>Gracias por contactarnos. Te responderemos a la brevedad posible.</p>
-        <a href="index.html" class="btn-rust" style="display:block; margin-bottom:12px;">Volver al inicio</a>
-        <p class="link-secundario" onclick="closeModal()">Enviar otro mensaje</p>
+        <a href="index.html" class="btn btn-amber w-100 mb-3">Volver al inicio</a>
+        <p class="link-amber" onclick="closeModal()">Enviar otro mensaje</p>
     </div>
 </div>
 
-<footer class="landing-footer">
-    <div class="wrap footer-grid">
-        <div>
-            <div class="brand">
-                <div class="brand-badge">FC</div>
-                <span class="brand-name">Ferretería El Constructor</span>
+<footer class="footer-navy pt-5 pb-4">
+    <div class="container">
+        <div class="row gy-4">
+            <div class="col-md-5">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <img src="img/logo.png" alt="Ferretería El Constructor" class="brand-badge">
+                    <span class="fw-bold text-white">Ferretería El Constructor</span>
+                </div>
+                <p class="small text-light-soft">Herramientas, materiales de construcción y asesoría experta para tu proyecto.</p>
             </div>
-            <p class="desc">Herramientas, materiales de construcción y asesoría experta para tu proyecto.</p>
+            <div class="col-6 col-md-3">
+                <h6 class="text-white mb-3">Contacto</h6>
+                <p class="small mb-1"><a href="tel:+50277620000">+(502) 7762-0000</a></p>
+                <p class="small"><a href="mailto:hola@ferreconstruc.com">hola@ferreconstruc.com</a></p>
+            </div>
+            <div class="col-6 col-md-4">
+                <h6 class="text-white mb-3">Sede central</h6>
+                <p class="small text-light-soft mb-1">Carretera a El Salvador</p>
+                <a class="small" href="ubicacion.html">Ver en el mapa →</a>
+            </div>
         </div>
-        <div class="footer-col">
-            <h4>Contacto</h4>
-            <ul>
-                <li><a href="tel:+50277620000">+(502) 7762-0000</a></li>
-                <li><a href="mailto:hola@ferreconstruc.com">hola@ferreconstruc.com</a></li>
-            </ul>
-        </div>
-        <div class="footer-col">
-            <h4>Sede central</h4>
-            <ul>
-                <li><p>Carretera a El Salvador</p></li>
-                <li><a href="ubicacion.html">Ver en el mapa →</a></li>
-            </ul>
-        </div>
-    </div>
-    <div class="wrap footer-bottom-row">
-        <span>© Ferretería El Constructor — 2026</span>
-        <div class="socials">
-            <a href="#" aria-label="Facebook">f</a>
-            <a href="#" aria-label="WhatsApp">☎</a>
-            <a href="#" aria-label="Instagram">◎</a>
+        <hr class="border-secondary my-4">
+        <div class="d-flex flex-wrap justify-content-between small text-light-soft">
+            <span>© Ferretería El Constructor — 2026</span>
+            <div class="d-flex gap-3">
+                <a href="#">Facebook</a>
+                <a href="#">WhatsApp</a>
+                <a href="#">Instagram</a>
+            </div>
         </div>
     </div>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     document.getElementById('contactForm').addEventListener('submit', function(e) {
         e.preventDefault();
