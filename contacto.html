@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ferretería El Constructor - Contacto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="landing.css">
+</head>
+<body class="landing">
+
+<header class="landing-header">
+    <div class="brand">
+        <div class="brand-badge">FC</div>
+        <div class="brand-name">
+            <span class="l1">FERRETERÍA</span>
+            <span class="l2">EL CONSTRUCTOR</span>
+        </div>
+    </div>
+    <nav class="landing-nav">
+        <a href="index.html">Inicio</a>
+        <a href="nosotros.html">Nosotros</a>
+        <a href="contacto.html" class="active">Contacto</a>
+        <a href="ubicacion.html">Ubicación</a>
+    </nav>
+    <a href="login.html" class="btn-acceso">Acceso al sistema <span>▾</span></a>
+</header>
+
+<section class="page-hero">
+    <h1>Contáctanos</h1>
+    <p>Escribinos y te respondemos a la brevedad.</p>
+</section>
+
+<section class="contacto-section wrap">
+    <div class="contacto-grid">
+        <div class="contacto-info">
+            <h2>Información</h2>
+            <p>Carretera el Salvador</p>
+            <p>(+502) 7762-0000</p>
+            <p><a href="mailto:hola@ferreconstruc.com">hola@ferreconstruc.com</a></p>
+            <p class="hours">Lunes a viernes: 8:00am – 5:00pm<br>Sábado: 8:00am – 2:00pm</p>
+        </div>
+        <div class="contacto-form">
+            <h3>Envíanos un mensaje</h3>
+            <form id="contactForm">
+                <div class="field">
+                    <label>Nombre</label>
+                    <input type="text" placeholder="Nombre completo" required>
+                </div>
+                <div class="field">
+                    <label>Correo electrónico</label>
+                    <input type="email" placeholder="Correo electrónico" required>
+                </div>
+                <div class="field">
+                    <label>Asunto</label>
+                    <input type="text" placeholder="Deje su asunto aquí" required>
+                </div>
+                <div class="field">
+                    <label>Mensaje</label>
+                    <textarea rows="4" placeholder="Deje su mensaje aquí" required></textarea>
+                </div>
+                <button type="submit" class="btn-rust" style="width:100%; border:none; cursor:pointer;">Enviar mensaje</button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<div class="modal-overlay" id="successModal">
+    <div class="modal-box">
+        <div class="check">✔</div>
+        <h2>¡Mensaje enviado!</h2>
+        <p>Gracias por contactarnos. Te responderemos a la brevedad posible.</p>
+        <a href="index.html" class="btn-rust" style="display:block; margin-bottom:12px;">Volver al inicio</a>
+        <p class="link-secundario" onclick="closeModal()">Enviar otro mensaje</p>
+    </div>
+</div>
+
+<footer class="landing-footer">
+    <div class="wrap footer-grid">
+        <div>
+            <div class="brand">
+                <div class="brand-badge">FC</div>
+                <span class="brand-name">Ferretería El Constructor</span>
+            </div>
+            <p class="desc">Herramientas, materiales de construcción y asesoría experta para tu proyecto.</p>
+        </div>
+        <div class="footer-col">
+            <h4>Contacto</h4>
+            <ul>
+                <li><a href="tel:+50277620000">+(502) 7762-0000</a></li>
+                <li><a href="mailto:hola@ferreconstruc.com">hola@ferreconstruc.com</a></li>
+            </ul>
+        </div>
+        <div class="footer-col">
+            <h4>Sede central</h4>
+            <ul>
+                <li><p>Carretera a El Salvador</p></li>
+                <li><a href="ubicacion.html">Ver en el mapa →</a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="wrap footer-bottom-row">
+        <span>© Ferretería El Constructor — 2026</span>
+        <div class="socials">
+            <a href="#" aria-label="Facebook">f</a>
+            <a href="#" aria-label="WhatsApp">☎</a>
+            <a href="#" aria-label="Instagram">◎</a>
+        </div>
+    </div>
+</footer>
+
+<script>
+    document.getElementById('contactForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        document.getElementById('successModal').style.display = 'flex';
+    });
+    function closeModal() {
+        document.getElementById('successModal').style.display = 'none';
+        document.getElementById('contactForm').reset();
+    }
+</script>
+</body>
+</html>

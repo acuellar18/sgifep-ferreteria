@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Módulos del Sistema - SGIFEP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="landing.css">
+</head>
+<body class="landing">
+
+<header class="dashboard-header">
+    <div class="brand">
+        <div class="brand-badge">FC</div>
+        <span>SGIFEP - Sistema integral</span>
+    </div>
+    <div class="dashboard-user">
+        <span id="userInfo"></span>
+        <button onclick="logout()" class="btn-logout">Cerrar sesión</button>
+    </div>
+</header>
+
+<section class="modulos-section wrap">
+    <h2>Módulos del sistema</h2>
+    <p>Seleccioná el módulo al que deseás ingresar según tus permisos asignados.</p>
+    <div class="grid-modulos" id="modulosContainer"></div>
+</section>
+
+<script>
+    const user = JSON.parse(localStorage.getItem('session'));
+
+    if (!user) {
+        window.location.href = 'login.html';
+    } else {
+        const nombreMostrar = user.nombre || user.username || 'Usuario';
+        document.getElementById('userInfo').innerHTML = `Usuario: <strong>${nombreMostrar}</strong> <span class="badge">${user.rol}</span>`;
+
+        const modulos = [
+            { id: 'ventas', nombre: 'Ventas y Cotizaciones', icon: '🛒', roles: ['administrador', 'admin', 'ventas'] },
+            { id: 'bodega', nombre: 'Bodega e Inventario', icon: '📦', roles: ['administrador', 'admin', 'bodega'] },
+            { id: 'reparto', nombre: 'Reparto', icon: '🚚', roles: ['administrador', 'admin', 'reparto'] },
+            { id: 'caja', nombre: 'Caja', icon: '💵', roles: ['administrador', 'admin', 'caja'] },
+            { id: 'reportes', nombre: 'Reportes', icon: '📊', roles: ['administrador', 'admin', 'caja'] },
+            { id: 'usuarios', nombre: 'Gestión de Usuarios', icon: '⚙️', roles: ['administrador', 'admin'] }
+        ];
+
+        const container = document.getElementById('modulosContainer');
+        modulos.forEach(m => {
+            if (m.roles.includes(user.rol)) {
+                container.innerHTML += `
+                    <div class="card-modulo">
+                        <div class="icon">${m.icon}</div>
+                        <h4>${m.nombre}</h4>
+                    </div>
+                `;
+            }
+        });
+    }
+
+    function logout() {
+        localStorage.removeItem('session');
+        window.location.href = 'login.html';
+    }
+</script>
+</body>
+</html>
