@@ -17,7 +17,9 @@
         margin: 0;
         padding: 0;
         min-height: 100vh;
-        background-color: #2b2b2b; /* Fondo oscuro exterior */
+        /* Imagen de fondo completa con una capa oscura por encima */
+        background: linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)), 
+                    url('img/herramientas.jpg') center/cover no-repeat fixed;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -26,13 +28,13 @@
     /* Contenedor flotante tipo tarjeta */
     .login-container {
         width: 90%;
-        max-width: 950px;
+        max-width: 920px;
         background: #ffffff;
-        border-radius: 24px;
+        border-radius: 20px;
         overflow: hidden;
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
         display: flex;
-        min-height: 520px;
+        min-height: 500px;
     }
 
     /* Lado izquierdo: Imagen de herramientas */
@@ -40,22 +42,12 @@
         width: 48%;
         background: url('img/herramientas.jpg') center/cover no-repeat; 
         position: relative;
-        border-top-left-radius: 24px;
-        border-bottom-left-radius: 24px;
-    }
-
-    /* Fallback por si la imagen aún no existe */
-    .login-image-side::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.1);
     }
 
     /* Lado derecho: Formulario */
     .login-form-side {
         width: 52%;
-        padding: 40px 50px;
+        padding: 40px 45px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -64,18 +56,18 @@
     }
 
     .brand-logo {
-        max-width: 150px;
+        max-width: 140px;
         height: auto;
-        margin-bottom: 30px;
+        margin-bottom: 25px;
     }
 
     .login-form {
         width: 100%;
-        max-width: 320px;
+        max-width: 310px;
     }
 
     .field-group {
-        margin-bottom: 20px;
+        margin-bottom: 18px;
     }
 
     .field-group label {
@@ -83,29 +75,23 @@
         font-weight: 600;
         font-size: 0.95rem;
         color: #111111;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
 
-    /* Inputs ovalados (pill style) */
+    /* Inputs ovalados */
     .input-pill {
         width: 100%;
-        padding: 10px 20px;
+        padding: 10px 18px;
         border-radius: 25px;
-        border: 1.5px solid #4a4a4a;
+        border: 1.5px solid #555555;
         outline: none;
         font-size: 0.9rem;
-        color: #333;
-        transition: border-color 0.2s, box-shadow 0.2s;
-    }
-
-    .input-pill::placeholder {
-        color: #777777;
-        font-weight: 500;
+        color: #333333;
+        transition: border-color 0.2s;
     }
 
     .input-pill:focus {
         border-color: #d85d00;
-        box-shadow: 0 0 5px rgba(216, 93, 0, 0.3);
     }
 
     /* Botón naranja ovalado */
@@ -117,28 +103,24 @@
         border-radius: 25px;
         padding: 11px;
         font-weight: 600;
-        font-size: 1rem;
+        font-size: 0.95rem;
         cursor: pointer;
         margin-top: 10px;
         box-shadow: 0 4px 12px rgba(216, 93, 0, 0.3);
-        transition: background-color 0.2s, transform 0.1s;
+        transition: background-color 0.2s;
     }
 
     .btn-login-pill:hover {
         background-color: #c05200;
     }
 
-    .btn-login-pill:active {
-        transform: scale(0.98);
-    }
-
     .forgot-password {
         display: block;
         text-align: center;
-        margin-top: 18px;
-        color: #d93838;
+        margin-top: 16px;
+        color: #e53935;
         font-weight: 600;
-        font-size: 0.88rem;
+        font-size: 0.85rem;
         text-decoration: none;
     }
 
@@ -152,20 +134,19 @@
         font-weight: 500;
     }
 
-    /* Responsive para pantallas pequeñas */
     @media (max-width: 768px) {
         .login-container {
             flex-direction: column;
-            max-width: 420px;
+            max-width: 400px;
+            margin: 20px;
         }
         .login-image-side {
             width: 100%;
             height: 180px;
-            border-radius: 24px 24px 0 0;
         }
         .login-form-side {
             width: 100%;
-            padding: 30px 25px;
+            padding: 30px 20px;
         }
     }
 </style>
