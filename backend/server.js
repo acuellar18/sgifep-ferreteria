@@ -11,8 +11,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Sirve los archivos web (HTML, CSS, JS e imágenes) ubicados en la carpeta raíz (un nivel arriba de /backend)
-const staticPath = path.join(__dirname, '..');
+// Servir los archivos web desde la carpeta public (al mismo nivel que server.js)
+const staticPath = path.join(__dirname, 'public');
 app.use(express.static(staticPath));
 
 // Pool de conexiones a MySQL en Railway
@@ -26,7 +26,7 @@ const pool = mysql.createPool({
     connectionLimit: 10
 });
 
-// Ruta principal: Carga index.html cuando entras a la URL base ( / )
+// Ruta principal: Carga index.html desde backend/public
 app.get('/', (req, res) => {
     res.sendFile(path.join(staticPath, 'index.html'));
 });
@@ -90,7 +90,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// Inicio del servidor en el puerto asignado por Railway o 3000 por defecto
+// Inicio del servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Servidor SGIFEP corriendo en el puerto ${PORT}`);
