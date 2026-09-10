@@ -17,7 +17,7 @@
         margin: 0;
         padding: 0;
         min-height: 100vh;
-        /* Imagen de fondo completa con una capa oscura por encima */
+        /* Imagen de fondo completa con capa oscura */
         background: linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)), 
                     url('img/herramientas.jpg') center/cover no-repeat fixed;
         display: flex;
@@ -34,7 +34,8 @@
         overflow: hidden;
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
         display: flex;
-        min-height: 500px;
+        min-height: 520px;
+        position: relative;
     }
 
     /* Lado izquierdo: Imagen de herramientas */
@@ -47,12 +48,33 @@
     /* Lado derecho: Formulario */
     .login-form-side {
         width: 52%;
-        padding: 40px 45px;
+        padding: 50px 45px 40px 45px;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         background-color: #ffffff;
+        position: relative;
+    }
+
+    /* Enlace para volver a la landing page */
+    .back-link {
+        position: absolute;
+        top: 20px;
+        left: 25px;
+        color: #666666;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        transition: color 0.2s;
+    }
+
+    .back-link:hover {
+        color: #d85d00;
+        text-decoration: underline;
     }
 
     .brand-logo {
@@ -146,7 +168,7 @@
         }
         .login-form-side {
             width: 100%;
-            padding: 30px 20px;
+            padding: 50px 20px 30px 20px;
         }
     }
 </style>
@@ -159,6 +181,9 @@
 
     <!-- Formulario de inicio de sesión -->
     <div class="login-form-side">
+        <!-- Enlace de regreso a la Landing Page -->
+        <a href="index.html" class="back-link">← Volver a la página principal</a>
+
         <!-- Logo de SGIFEP -->
         <img src="img/logo.png" alt="SGIFEP Logo" class="brand-logo">
 
