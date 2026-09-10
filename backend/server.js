@@ -90,6 +90,46 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+// Endpoint para restablecer la contraseña
+app.post('/api/reset-password', async (req, res) => {
+    const { username, newPassword } = req.body;
+
+    if (!username || !newPassword) {
+        return res.status(400).json({ 
+            success: false, 
+            mensaje: 'El usuario y la nueva contraseña son requeridos' 
+        });
+    }
+
+    try {
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        const [result] = await pool.query(
+            'UPDATE usuarios SET password_hash = ? WHERE username = ?', 
+            [hashedPassword, username]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                mensaje: 'El usuario ingresado no existe' 
+            });
+        }
+
+        res.json({ 
+            success: true, 
+            mensaje: 'Contraseña actualizada correctamente' 
+        });
+
+    } catch (err) {
+        console.error('Error en /api/reset-password:', err.message);
+        res.status(500).json({ 
+            success: false, 
+            mensaje: 'Error interno del servidor' 
+        });
+    }
+});
+
 // Inicio del servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

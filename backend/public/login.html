@@ -17,7 +17,6 @@
         margin: 0;
         padding: 0;
         min-height: 100vh;
-        /* Imagen de fondo completa con capa oscura */
         background: linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)), 
                     url('img/herramientas.jpg') center/cover no-repeat fixed;
         display: flex;
@@ -25,7 +24,6 @@
         justify-content: center;
     }
 
-    /* Contenedor flotante tipo tarjeta */
     .login-container {
         width: 90%;
         max-width: 920px;
@@ -38,14 +36,12 @@
         position: relative;
     }
 
-    /* Lado izquierdo: Imagen de herramientas */
     .login-image-side {
         width: 48%;
         background: url('img/herramientas.jpg') center/cover no-repeat; 
         position: relative;
     }
 
-    /* Lado derecho: Formulario */
     .login-form-side {
         width: 52%;
         padding: 50px 45px 40px 45px;
@@ -57,7 +53,6 @@
         position: relative;
     }
 
-    /* Enlace para volver a la landing page */
     .back-link {
         position: absolute;
         top: 20px;
@@ -100,7 +95,6 @@
         margin-bottom: 6px;
     }
 
-    /* Inputs ovalados */
     .input-pill {
         width: 100%;
         padding: 10px 18px;
@@ -116,7 +110,6 @@
         border-color: #d85d00;
     }
 
-    /* Botón naranja ovalado */
     .btn-login-pill {
         width: 100%;
         background-color: #d85d00;
@@ -144,6 +137,7 @@
         font-weight: 600;
         font-size: 0.85rem;
         text-decoration: none;
+        cursor: pointer;
     }
 
     .forgot-password:hover {
@@ -154,6 +148,12 @@
         text-align: center;
         font-size: 0.85rem;
         font-weight: 500;
+    }
+
+    /* Estilos Modal */
+    .modal-content {
+        border-radius: 20px;
+        border: none;
     }
 
     @media (max-width: 768px) {
@@ -176,15 +176,11 @@
 <body>
 
 <div class="login-container">
-    <!-- Imagen lateral izquierda -->
     <div class="login-image-side"></div>
 
-    <!-- Formulario de inicio de sesión -->
     <div class="login-form-side">
-        <!-- Enlace de regreso a la Landing Page -->
         <a href="index.html" class="back-link">← Volver a la página principal</a>
 
-        <!-- Logo de SGIFEP -->
         <img src="img/logo.png" alt="SGIFEP Logo" class="brand-logo">
 
         <form class="login-form" onsubmit="hacerLogin(event)">
@@ -199,13 +195,49 @@
             </div>
 
             <button type="submit" class="btn-login-pill">Iniciar Sesión</button>
-            <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
+            
+            <!-- Disparador del Modal de Reestablecer -->
+            <a href="#" class="forgot-password" data-bs-toggle="modal" data-bs-target="#resetModal">¿Olvidaste tu contraseña?</a>
             <p id="error-msg" class="mt-3 mb-0"></p>
         </form>
     </div>
 </div>
 
+<!-- Modal Restablecer Contraseña -->
+<div class="modal fade" id="resetModal" tabindex="-1" aria-labelledby="resetModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content p-3">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold" id="resetModalLabel">Restablecer Contraseña</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form onsubmit="restablecerPassword(event)">
+        <div class="modal-body">
+            <p class="text-muted small mb-3">Ingresa tu usuario y la nueva contraseña para actualizar el acceso.</p>
+            <div class="field-group">
+                <label for="resetUsuario">Usuario</label>
+                <input type="text" id="resetUsuario" class="input-pill" placeholder="Ej: admin" required>
+            </div>
+            <div class="field-group">
+                <label for="resetPassword">Nueva Contraseña</label>
+                <input type="password" id="resetPassword" class="input-pill" placeholder="Mínimo 6 caracteres" required>
+            </div>
+            <div id="reset-msg" class="mt-2 small text-center"></div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn-login-pill w-auto px-4 mt-0">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
+    const API_BASE = (window.location.port === '5500') ? 'http://127.0.0.1:3000' : '';
+
     async function hacerLogin(event) {
         event.preventDefault();
 
@@ -215,8 +247,6 @@
 
         errorMsg.style.color = '#d85d00';
         errorMsg.innerText = '⏳ Cargando...';
-
-        const API_BASE = (window.location.port === '5500') ? 'http://127.0.0.1:3000' : '';
 
         try {
             const res = await fetch(`${API_BASE}/api/login`, {
@@ -247,6 +277,43 @@
         } catch (err) {
             errorMsg.style.color = '#c0392b';
             errorMsg.innerText = 'Error al conectar con el servidor';
+        }
+    }
+
+    async function restablecerPassword(event) {
+        event.preventDefault();
+        const resetMsg = document.getElementById('reset-msg');
+        const username = document.getElementById('resetUsuario').value.trim();
+        const newPassword = document.getElementById('resetPassword').value.trim();
+
+        resetMsg.style.color = '#d85d00';
+        resetMsg.innerText = '⏳ Actualizando contraseña...';
+
+        try {
+            const res = await fetch(`${API_BASE}/api/reset-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, newPassword })
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                resetMsg.style.color = '#2e7d32';
+                resetMsg.innerText = '✅ Contraseña actualizada con éxito. Ya puedes iniciar sesión.';
+                setTimeout(() => {
+                    const modalEl = document.getElementById('resetModal');
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                    resetMsg.innerText = '';
+                }, 2000);
+            } else {
+                resetMsg.style.color = '#c0392b';
+                resetMsg.innerText = data.mensaje || 'No se pudo actualizar la contraseña';
+            }
+        } catch (err) {
+            resetMsg.style.color = '#c0392b';
+            resetMsg.innerText = 'Error al conectar con el servidor';
         }
     }
 </script>
