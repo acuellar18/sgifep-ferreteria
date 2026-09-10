@@ -56,8 +56,12 @@
         errorMsg.style.color = '#d98f1e';
         errorMsg.innerText = '⏳ Enviando petición a Node.js...';
 
+        // Si estás probando en Live Server (puerto 5500), el backend vive en 127.0.0.1:3000.
+        // Si el sitio ya está publicado en internet, el backend vive en el mismo dominio.
+        const API_BASE = (window.location.port === '5500') ? 'http://127.0.0.1:3000' : '';
+
         try {
-            const res = await fetch('http://127.0.0.1:3000/api/login', {
+            const res = await fetch(`${API_BASE}/api/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: usuarioInput, password: passwordInput })

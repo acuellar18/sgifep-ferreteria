@@ -6,18 +6,19 @@ const bcrypt = require('bcryptjs');
 const mysql = require('mysql2/promise');
 
 const app = express();
-app.use(cors()); // en producción, restringir a tu dominio real
+
+// Middlewares
+app.use(cors());
 app.use(express.json());
 
-// Sirve las páginas del sitio (index.html, login.html, etc.) que están
-// en la carpeta de arriba de "backend". Así, una vez publicado, tu web
-// y tu API viven en la misma dirección.
-app.use(express.static(path.join(__dirname, '..')));
+// Sirve los archivos web (HTML, CSS, JS e imágenes) ubicados en la carpeta raíz (un nivel arriba de /backend)
+const staticPath = path.join(__dirname, '..');
+app.use(express.static(staticPath));
 
-// Pool de conexiones a MySQL (mejor que abrir una conexión por request)
+// Pool de conexiones a MySQL en Railway
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
+    port: Number(process.env.DB_PORT) || 3306,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
@@ -25,37 +26,53 @@ const pool = mysql.createPool({
     connectionLimit: 10
 });
 
+// Ruta principal: Carga index.html cuando entras a la URL base ( / )
+app.get('/', (req, res) => {
+    res.sendFile(path.join(staticPath, 'index.html'));
+});
+
+// Endpoint de autenticación para login.html
 app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
-        return res.status(400).json({ success: false, mensaje: 'Usuario y contraseña son requeridos' });
+        return res.status(400).json({ 
+            success: false, 
+            mensaje: 'Usuario y contraseña son requeridos' 
+        });
     }
 
     try {
-        // Consulta preparada: nunca concatenar el input directamente en el SQL
         const [rows] = await pool.query(
             'SELECT id, nombre, username, password_hash, rol, activo FROM usuarios WHERE username = ? LIMIT 1',
             [username]
         );
 
         if (rows.length === 0) {
-            return res.status(401).json({ success: false, mensaje: 'Usuario o contraseña incorrectos' });
+            return res.status(401).json({ 
+                success: false, 
+                mensaje: 'Usuario o contraseña incorrectos' 
+            });
         }
 
         const usuario = rows[0];
 
         if (!usuario.activo) {
-            return res.status(403).json({ success: false, mensaje: 'Este usuario está deshabilitado' });
+            return res.status(403).json({ 
+                success: false, 
+                mensaje: 'Este usuario está deshabilitado' 
+            });
         }
 
         const passwordValida = await bcrypt.compare(password, usuario.password_hash);
 
         if (!passwordValida) {
-            return res.status(401).json({ success: false, mensaje: 'Usuario o contraseña incorrectos' });
+            return res.status(401).json({ 
+                success: false, 
+                mensaje: 'Usuario o contraseña incorrectos' 
+            });
         }
 
-        // Coincide con lo que espera login.html: data.usuario.nombre y data.usuario.rol
         res.json({
             success: true,
             usuario: {
@@ -66,11 +83,15 @@ app.post('/api/login', async (req, res) => {
 
     } catch (err) {
         console.error('Error en /api/login:', err.message);
-        res.status(500).json({ success: false, mensaje: 'Error interno del servidor' });
+        res.status(500).json({ 
+            success: false, 
+            mensaje: 'Error interno del servidor' 
+        });
     }
 });
 
+// Inicio del servidor en el puerto asignado por Railway o 3000 por defecto
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Servidor SGIFEP corriendo en http://127.0.0.1:${PORT}`);
+    console.log(`Servidor SGIFEP corriendo en el puerto ${PORT}`);
 });
