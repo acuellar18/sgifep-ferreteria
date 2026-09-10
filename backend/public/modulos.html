@@ -6,31 +6,227 @@
 <title>Módulos del Sistema - SGIFEP</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="landing.css">
-</head>
-<body class="landing-modern">
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: 'Inter', sans-serif;
+        color: #1a1a1a;
+        background-color: #fafafa;
+        background-image:
+            linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
+            linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
+            linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+        background-size: 60px 60px;
+        background-position: 0 0, 0 30px, 30px -30px, -30px 0px;
+        min-height: 100vh;
+    }
 
-<header class="dashboard-modern-header">
-    <div class="container d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div class="d-flex align-items-center gap-2">
-            <img src="img/logo.png" alt="Ferretería El Constructor" class="brand-badge">
-            <span class="fw-bold">SGIFEP - Sistema integral</span>
-        </div>
-        <div class="d-flex align-items-center gap-3">
-            <span id="userInfo" class="small"></span>
-            <button onclick="logout()" class="btn btn-outline-light btn-sm">Cerrar sesión</button>
-        </div>
+    /* ===== HEADER ===== */
+    .modulos-header {
+        display: flex;
+        align-items: stretch;
+        background: #141414;
+        min-height: 92px;
+        border-bottom: 4px solid #f2701d;
+    }
+
+    .logo-box {
+        width: 130px;
+        background: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .logo-box img { max-width: 78px; max-height: 78px; object-fit: contain; }
+
+    .menu-toggle {
+        background: none;
+        border: none;
+        color: #ffffff;
+        font-size: 1.7rem;
+        padding: 0 22px;
+        cursor: pointer;
+        line-height: 1;
+    }
+
+    .header-title {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        line-height: 1.15;
+    }
+
+    .title-orange {
+        color: #f2701d;
+        font-family: 'Poppins', sans-serif;
+        font-weight: 800;
+        font-size: 1.9rem;
+        letter-spacing: 0.5px;
+    }
+
+    .subtitle-white {
+        color: #ffffff;
+        font-size: 0.82rem;
+        font-weight: 500;
+        letter-spacing: 2px;
+    }
+
+    .user-chip {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 30px;
+        color: #ffffff;
+    }
+
+    .avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: #d9d9d9;
+        color: #555;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    .user-chip .rol-badge {
+        background: #f7a567;
+        color: #141414;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 2px 10px;
+        border-radius: 10px;
+        margin-left: 6px;
+    }
+
+    .logout-link {
+        color: #cccccc;
+        font-size: 0.8rem;
+        text-decoration: none;
+        margin-left: 14px;
+        border-left: 1px solid #444;
+        padding-left: 14px;
+        cursor: pointer;
+        background: none;
+        border-top: none;
+        border-bottom: none;
+        border-right: none;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .logout-link:hover { color: #ffffff; }
+
+    /* ===== CONTENIDO ===== */
+    .modulos-main {
+        padding: 60px 30px 80px;
+        text-align: center;
+    }
+
+    .bienvenida {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 800;
+        font-size: 2.8rem;
+        color: #111111;
+        margin-bottom: 48px;
+    }
+
+    .modulos-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 26px;
+        max-width: 1120px;
+        margin: 0 auto;
+        text-align: left;
+    }
+
+    .card-modulo {
+        background: #ffffff;
+        border-radius: 18px;
+        padding: 28px 26px;
+        display: flex;
+        align-items: flex-start;
+        gap: 18px;
+        box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .card-modulo:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 16px 34px rgba(0,0,0,0.12);
+    }
+
+    .icon-circle {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        border-radius: 50%;
+        background: #f7a567;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.7rem;
+    }
+
+    .card-modulo h4 {
+        font-family: 'Poppins', sans-serif;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #111111;
+        margin-bottom: 6px;
+        line-height: 1.2;
+    }
+
+    .card-modulo p {
+        font-size: 0.86rem;
+        color: #555555;
+        line-height: 1.4;
+    }
+
+    @media (max-width: 900px) {
+        .modulos-grid { grid-template-columns: repeat(2, 1fr); }
+        .bienvenida { font-size: 2.2rem; }
+    }
+
+    @media (max-width: 600px) {
+        .modulos-grid { grid-template-columns: 1fr; }
+        .header-title { display: none; }
+        .modulos-header { min-height: 76px; }
+        .logo-box { width: 90px; }
+        .logo-box img { max-width: 54px; max-height: 54px; }
+        .user-chip { padding: 0 16px; }
+        .bienvenida { font-size: 1.8rem; }
+        .modulos-main { padding: 40px 18px 60px; }
+    }
+</style>
+</head>
+<body>
+
+<header class="modulos-header">
+    <div class="logo-box">
+        <img src="img/logo.png" alt="Ferretería El Constructor">
+    </div>
+    <button class="menu-toggle" aria-label="Abrir menú">☰</button>
+    <div class="header-title">
+        <span class="title-orange">MÓDULOS</span>
+        <span class="subtitle-white">PANEL DE ACCESO</span>
+    </div>
+    <div class="user-chip">
+        <span class="avatar">👤</span>
+        <span id="userInfo">Usuario</span>
+        <button onclick="logout()" class="logout-link">Cerrar sesión</button>
     </div>
 </header>
 
-<section class="py-5">
-    <div class="container py-3">
-        <h2 class="fw-bold" style="color:var(--navy)">Módulos del sistema</h2>
-        <p class="text-muted mb-4">Seleccioná el módulo al que deseás ingresar según tus permisos asignados.</p>
-        <div class="row g-3 row-cols-1 row-cols-sm-2 row-cols-lg-3" id="modulosContainer"></div>
-    </div>
-</section>
+<main class="modulos-main">
+    <h1 class="bienvenida" id="bienvenidaTitulo">Bienvenido (a)</h1>
+    <div class="modulos-grid" id="modulosContainer"></div>
+</main>
 
 <script>
     const user = JSON.parse(localStorage.getItem('session'));
@@ -39,25 +235,27 @@
         window.location.href = 'login.html';
     } else {
         const nombreMostrar = user.nombre || user.username || 'Usuario';
-        document.getElementById('userInfo').innerHTML = `Usuario: <strong>${nombreMostrar}</strong> <span class="badge badge-rol ms-1">${user.rol}</span>`;
+        document.getElementById('userInfo').innerHTML = `${nombreMostrar} <span class="rol-badge">${user.rol}</span>`;
+        document.getElementById('bienvenidaTitulo').textContent = `Bienvenido, ${nombreMostrar}`;
 
         const modulos = [
-            { id: 'ventas', nombre: 'Ventas y Cotizaciones', icon: '🛒', roles: ['administrador', 'admin', 'ventas'] },
-            { id: 'bodega', nombre: 'Bodega e Inventario', icon: '📦', roles: ['administrador', 'admin', 'bodega'] },
-            { id: 'reparto', nombre: 'Reparto', icon: '🚚', roles: ['administrador', 'admin', 'reparto'] },
-            { id: 'caja', nombre: 'Caja', icon: '💵', roles: ['administrador', 'admin', 'caja'] },
-            { id: 'reportes', nombre: 'Reportes', icon: '📊', roles: ['administrador', 'admin', 'caja'] },
-            { id: 'usuarios', nombre: 'Gestión de Usuarios', icon: '⚙️', roles: ['administrador', 'admin'] }
+            { id: 'compras', nombre: 'Compras y Abastecimiento', icon: '🛒', desc: 'Gestione sus compras y proveedores.', roles: ['administrador', 'admin', 'compras'] },
+            { id: 'inventario', nombre: 'Control de Inventario', icon: '📦', desc: 'Administre su inventario de productos.', roles: ['administrador', 'admin', 'bodega'] },
+            { id: 'facturacion', nombre: 'Facturación y Cobro', icon: '🧾', desc: 'Facture y registre sus cobros.', roles: ['administrador', 'admin', 'caja'] },
+            { id: 'despacho', nombre: 'Despacho de Productos', icon: '📤', desc: 'Despache productos a sus clientes.', roles: ['administrador', 'admin', 'reparto'] },
+            { id: 'reportes', nombre: 'Reportes', icon: '📊', desc: 'Consulte reportes y estadísticas.', roles: ['administrador', 'admin', 'caja'] },
+            { id: 'usuarios', nombre: 'Usuarios', icon: '⚙️', desc: 'Gestione los usuarios.', roles: ['administrador', 'admin'] }
         ];
 
         const container = document.getElementById('modulosContainer');
         modulos.forEach(m => {
             if (m.roles.includes(user.rol)) {
                 container.innerHTML += `
-                    <div class="col">
-                        <div class="card-modulo-modern">
-                            <div class="icon">${m.icon}</div>
+                    <div class="card-modulo">
+                        <div class="icon-circle">${m.icon}</div>
+                        <div>
                             <h4>${m.nombre}</h4>
+                            <p>${m.desc}</p>
                         </div>
                     </div>
                 `;
