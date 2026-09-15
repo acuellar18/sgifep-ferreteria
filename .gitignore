@@ -1,0 +1,15 @@
+# Dependencias (se regeneran con npm install)
+node_modules/
+
+# Variables de entorno con credenciales - NUNCA subir esto
+.env
+
+# Build de producción del frontend (Vite)
+dist/
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

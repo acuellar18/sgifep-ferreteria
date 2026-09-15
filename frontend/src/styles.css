@@ -1,0 +1,499 @@
+:root {
+  --color-primario: #1f6feb;
+  --color-primario-oscuro: #1a56c4;
+  --color-fondo: #f4f6f9;
+  --color-superficie: #ffffff;
+  --color-texto: #24292f;
+  --color-texto-suave: #6b7280;
+  --color-borde: #d0d7de;
+  --color-ok: #1a7f37;
+  --color-ok-fondo: #dafbe1;
+  --color-peligro: #cf222e;
+  --color-peligro-fondo: #fff1f0;
+  --color-sidebar: #1f2328;
+  --color-sidebar-texto: #c9d1d9;
+  --radio: 8px;
+  --sombra: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--color-fondo);
+  color: var(--color-texto);
+}
+
+/* ---------- Layout ---------- */
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 230px;
+  flex-shrink: 0;
+  background: var(--color-sidebar);
+  color: var(--color-sidebar-texto);
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+
+.sidebar-logo {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 1px;
+  margin-bottom: 24px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.link-nav {
+  display: block;
+  padding: 10px 12px;
+  border-radius: var(--radio);
+  color: var(--color-sidebar-texto);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.link-nav:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.link-activo {
+  background: var(--color-primario);
+  color: #ffffff;
+}
+
+.link-volver {
+  font-size: 13px;
+}
+
+.contenido {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.topbar {
+  background: var(--color-superficie);
+  border-bottom: 1px solid var(--color-borde);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.topbar-titulo {
+  margin: 0;
+  font-size: 18px;
+}
+
+.topbar-usuario {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.main {
+  padding: 24px;
+  flex: 1;
+}
+
+/* ---------- Encabezados de página ---------- */
+
+.encabezado-pagina {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.encabezado-pagina h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+/* ---------- Controles y botones ---------- */
+
+.control {
+  padding: 8px 10px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  font-size: 14px;
+  background: var(--color-superficie);
+  color: var(--color-texto);
+}
+
+.control:focus {
+  outline: 2px solid var(--color-primario);
+  outline-offset: 0;
+}
+
+.btn {
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radio);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primario {
+  background: var(--color-primario);
+  color: #ffffff;
+}
+
+.btn-primario:hover:not(:disabled) {
+  background: var(--color-primario-oscuro);
+}
+
+.btn-secundario {
+  background: var(--color-superficie);
+  border-color: var(--color-borde);
+  color: var(--color-texto);
+}
+
+.btn-secundario:hover {
+  background: var(--color-fondo);
+}
+
+.btn-danger {
+  background: var(--color-peligro);
+  color: #ffffff;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #a40e26;
+}
+
+.btn-opcion {
+  padding: 4px 10px;
+  font-size: 13px;
+  background: transparent;
+  border-color: var(--color-borde);
+  color: var(--color-texto);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-opcion:hover:not(:disabled) {
+  border-color: var(--color-primario);
+  color: var(--color-primario);
+}
+
+/* ---------- Barra de filtros ---------- */
+
+.filterbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.filterbar .control:first-child {
+  flex: 1 1 260px;
+}
+
+.filterbar .control {
+  flex: 0 1 170px;
+}
+
+/* ---------- Tablas ---------- */
+
+.tabla-wrapper {
+  overflow-x: auto;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tabla th,
+.tabla td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-borde);
+  vertical-align: middle;
+}
+
+.tabla th {
+  background: #f6f8fa;
+  font-weight: 600;
+  color: var(--color-texto-suave);
+  white-space: nowrap;
+}
+
+.tabla tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.acciones-fila {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Chips / badges ---------- */
+
+.chip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #eff1f3;
+  color: var(--color-texto);
+  border: 1px solid var(--color-borde);
+}
+
+.chip-ok {
+  background: var(--color-ok-fondo);
+  color: var(--color-ok);
+  border-color: transparent;
+}
+
+.chip-peligro {
+  background: var(--color-peligro-fondo);
+  color: var(--color-peligro);
+  border-color: transparent;
+}
+
+.chip-transparente {
+  background: transparent;
+  color: var(--color-texto-suave);
+}
+
+.roles-chips {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Alertas y estados ---------- */
+
+.alerta {
+  padding: 10px 14px;
+  border-radius: var(--radio);
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.alerta-error {
+  background: var(--color-peligro-fondo);
+  color: var(--color-peligro);
+  border: 1px solid #ffc9c9;
+}
+
+.estado {
+  color: var(--color-texto-suave);
+  padding: 16px 0;
+}
+
+/* ---------- Tarjetas de reporte ---------- */
+
+.tarjetas {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.tarjeta {
+  flex: 1 1 180px;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: var(--sombra);
+}
+
+.tarjeta-valor {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.tarjeta-etiqueta {
+  color: var(--color-texto-suave);
+  font-size: 13px;
+}
+
+.tarjeta-ok .tarjeta-valor {
+  color: var(--color-ok);
+}
+
+.tarjeta-peligro .tarjeta-valor {
+  color: var(--color-peligro);
+}
+
+.reporte-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 24px;
+}
+
+.reporte-grid h3 {
+  margin-top: 0;
+  font-size: 16px;
+}
+
+/* ---------- Modal ---------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.modal {
+  background: var(--color-superficie);
+  border-radius: var(--radio);
+  width: 100%;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+  animation: aparecer 0.15s ease-out;
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.modal-cerrar {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-texto-suave);
+}
+
+.modal-cerrar:hover {
+  color: var(--color-texto);
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.confirmar-mensaje {
+  margin: 0 0 8px;
+}
+
+/* ---------- Formularios ---------- */
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.campo > span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-texto);
+}
+
+.campo-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+textarea.control {
+  resize: vertical;
+}
+
+.roles-check {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  padding: 10px;
+  background: var(--color-fondo);
+}
+
+.check-rol {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
