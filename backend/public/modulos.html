@@ -147,7 +147,11 @@
         gap: 18px;
         box-shadow: 0 12px 28px rgba(0,0,0,0.08);
         transition: transform 0.15s ease, box-shadow 0.15s ease;
+        text-decoration: none;
+        color: inherit;
     }
+
+    a.card-modulo { cursor: pointer; }
 
     .card-modulo:hover {
         transform: translateY(-4px);
@@ -181,6 +185,15 @@
         line-height: 1.4;
     }
 
+    .acceder {
+        display: inline-block;
+        margin-top: 10px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #f2701d;
+        letter-spacing: 0.3px;
+    }
+
     @media (max-width: 900px) {
         .modulos-grid { grid-template-columns: repeat(2, 1fr); }
         .bienvenida { font-size: 2.2rem; }
@@ -202,7 +215,7 @@
 
 <header class="modulos-header">
     <div class="logo-box">
-        <img src="img/logo.png" alt="Ferretería El Constructor">
+        <img src="/img/logo.png" alt="Ferretería El Puente">
     </div>
     <button class="menu-toggle" aria-label="Abrir menú">☰</button>
     <div class="header-title">
@@ -237,21 +250,34 @@
             { id: 'facturacion', nombre: 'Facturación y Cobro', icon: '🧾', desc: 'Facture y registre sus cobros.', roles: ['administrador', 'admin', 'caja'] },
             { id: 'despacho', nombre: 'Despacho de Productos', icon: '📤', desc: 'Despache productos a sus clientes.', roles: ['administrador', 'admin', 'reparto'] },
             { id: 'reportes', nombre: 'Reportes', icon: '📊', desc: 'Consulte reportes y estadísticas.', roles: ['administrador', 'admin', 'caja'] },
-            { id: 'usuarios', nombre: 'Usuarios', icon: '⚙️', desc: 'Gestione los usuarios.', roles: ['administrador', 'admin'] }
+            { id: 'usuarios', nombre: 'Usuarios', icon: '⚙️', desc: 'Gestione los usuarios.', roles: ['administrador', 'admin', 'superadmin'], url: '/usuarios/' }
         ];
 
         const container = document.getElementById('modulosContainer');
         modulos.forEach(m => {
             if (m.roles.includes(user.rol)) {
-                container.innerHTML += `
-                    <div class="card-modulo">
-                        <div class="icon-circle">${m.icon}</div>
-                        <div>
-                            <h4>${m.nombre}</h4>
-                            <p>${m.desc}</p>
+                if (m.url) {
+                    container.innerHTML += `
+                        <a class="card-modulo" href="${m.url}">
+                            <div class="icon-circle">${m.icon}</div>
+                            <div>
+                                <h4>${m.nombre}</h4>
+                                <p>${m.desc}</p>
+                                <span class="acceder">Ingresar al módulo →</span>
+                            </div>
+                        </a>
+                    `;
+                } else {
+                    container.innerHTML += `
+                        <div class="card-modulo">
+                            <div class="icon-circle">${m.icon}</div>
+                            <div>
+                                <h4>${m.nombre}</h4>
+                                <p>${m.desc}</p>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
             }
         });
     }
