@@ -12,8 +12,6 @@ function leerSesion() {
   }
 }
 
-// Menú desplegable: las opciones "Módulos Principales" y "Usuarios" se
-// comportan como acordeones (expanden/colapsan) con sus subopciones.
 const SUBITEM_USUARIOS = [
   { to: '/', etiqueta: 'Listado de Usuarios' },
   { to: '/reporte', etiqueta: 'Reporte de Usuarios' },
@@ -21,20 +19,6 @@ const SUBITEM_USUARIOS = [
   { to: '/departamentos', etiqueta: 'Gestión de Departamentos' }
 ];
 
-// Módulos del sistema. Solo "Usuarios" está compilado dentro de esta SPA;
-// el resto son placeholders (sin enlaces) para no provocar errores 404.
-const MODULOS_SISTEMA = [
-  { nombre: 'Compras y Abastecimiento', icono: '🛒' },
-  { nombre: 'Control de Inventario', icono: '📦' },
-  { nombre: 'Facturación y Cobro', icono: '🧾' },
-  { nombre: 'Despacho de Productos', icono: '🚚' },
-  { nombre: 'Reportes', icono: '📊' }
-];
-
-// Layout único: encabezado superior negro/naranja (igual que el panel de
-// acceso modulos.html) + menú lateral desplegable (drawer). El contenido de
-// cada opción se carga en la misma pantalla mediante el Outlet (SPA), sin
-// abandonar la interfaz. NO hay barra lateral oscura fija.
 export default function Layout() {
   const [sesion] = useState(leerSesion);
   const [menuAbierto, setMenuAbierto] = useState(false);
@@ -42,14 +26,11 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Reutiliza la sesión que crea login.html: exige sesión Y token JWT.
-  // (el token lo reenvía api.js para proteger todas las peticiones).
   if (!sesion || !sesion.token) {
     window.location.href = '/login.html';
     return null;
   }
 
-  // Cierre del menú con la tecla Escape.
   useEffect(() => {
     const manejarTecla = (e) => {
       if (e.key === 'Escape') setMenuAbierto(false);
@@ -70,7 +51,7 @@ export default function Layout() {
 
   return (
     <div className="layout">
-      {/* Encabezado superior unificado (línea gráfica del panel de control). */}
+      {/* Encabezado superior unificado */}
       <header className="app-header">
         <div className="header-logo-box">
           <img src={logoImg} alt="Ferretería El Puente" className="header-logo" />
@@ -79,16 +60,15 @@ export default function Layout() {
           type="button"
           className="menu-toggle"
           onClick={() => setMenuAbierto((abierto) => !abierto)}
-          aria-label="Abrir o cerrar menú"
+          aria-label="Alternar menú"
           aria-expanded={menuAbierto}
         >
-          {menuAbierto ? '✕' : '☰'}
+          ☰
         </button>
         <div className="header-titulos">
           <span className="header-titulo-naranja">MÓDULOS</span>
           <span className="header-subtitulo-blanco">PANEL DE ACCESO</span>
         </div>
-        <a href="/usuarios/modulos.html" className="volver-panel">← Panel de Módulos</a>
         <div className="header-usuario">
           <span className="avatar">👤</span>
           <div className="header-usuario-info">
@@ -103,27 +83,14 @@ export default function Layout() {
         </div>
       </header>
 
-      {/* Cuerpo: menú lateral (drawer) + contenido en maquetación Flexbox.
-          Al abrir/cerrar el menú, el contenido se desplaza y reajusta su
-          ancho automáticamente; nunca queda tapado por ventanas flotantes. */}
+      {/* Menú lateral (drawer) + Contenido */}
       <div className="app-body">
         <aside className={`drawer${menuAbierto ? ' drawer-abierto' : ''}`}>
           <div className="drawer-cabecera">
             <span className="drawer-logo">SGIFEP</span>
-            <button
-              type="button"
-              className="drawer-cerrar"
-              onClick={() => setMenuAbierto(false)}
-              aria-label="Cerrar menú"
-            >
-              ×
-            </button>
           </div>
           <nav className="drawer-nav">
-            {/* Enlace simple al panel de módulos (modulos.html ya desplegado en
-                backend/public). SIN acordeón ni submenús: evita depender de
-                variables de estado que provoquen errores de renderizado. */}
-            <a href="/modulos.html" className="drawer-item drawer-volver-modulos" title="Volver al panel de módulos">
+            <a href="/usuarios/modulos.html" className="drawer-item drawer-volver-modulos" title="Volver al panel de módulos">
               ← Módulos Principales
             </a>
             <button
@@ -133,7 +100,7 @@ export default function Layout() {
               onClick={() => setUsuariosExpandido((valor) => !valor)}
             >
               <span>👥 Usuarios</span>
-              <span className={`drawer-flecha${usuariosExpandido ? ' abierto' : ''}`}>▸</span>
+              <span className={`drawer-flecha${usuariosExpandido ? ' abierto' : ''}`}>▾</span>
             </button>
             {usuariosExpandido && (
               <div className="drawer-subitems">
@@ -155,7 +122,7 @@ export default function Layout() {
           </div>
         </aside>
 
-        {/* Contenido del módulo (se carga en la misma pantalla, bajo el encabezado). */}
+        {/* Contenido del módulo */}
         <div className="contenido">
           <main className="main">
             <Outlet />
