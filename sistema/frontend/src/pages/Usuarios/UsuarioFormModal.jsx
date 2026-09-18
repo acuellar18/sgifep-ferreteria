@@ -101,10 +101,11 @@ export default function UsuarioFormModal({ abierto, usuario, onCerrar, onGuardad
     try {
       if (esAlta) {
         await api.post('/usuarios', payload);
+        onGuardado('Usuario creado correctamente');
       } else {
         await api.put(`/usuarios/${usuario.id}`, payload);
+        onGuardado('Usuario actualizado correctamente');
       }
-      onGuardado();
     } catch (err) {
       setError(err.message);
     } finally {

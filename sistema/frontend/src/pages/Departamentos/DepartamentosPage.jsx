@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
-import api from '../../services/api';
+import api, { leerSesion } from '../../services/api';
 import Modal from '../../components/Modal';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import ThOrdenable from '../../components/ThOrdenable';
+import { useNotificacion } from '../../components/Toast';
 
 const FORM_VACIO = { nombre: '', descripcion: '', activo: true };
 
@@ -15,11 +17,24 @@ export default function DepartamentosPage() {
   const [guardando, setGuardando] = useState(false);
   const [confirmando, setConfirmando] = useState(null);
 
+  // Solo administradores pueden realizar operaciones de creación, edición y eliminación
+  const sesion = leerSesion();
+  const esAdmin = sesion?.superadmin || sesion?.roles?.includes('administrador');
+  // Orden de la tabla: sortBy vacío = orden por defecto del backend
+  // (alfabético). Mismo patrón reusable que Usuarios (ThOrdenable).
+  const [orden, setOrden] = useState({ sortBy: '', sortDir: 'asc' });
+  const notificar = useNotificacion();
+
   async function cargarDepartamentos() {
     setCargando(true);
     setError('');
     try {
-      const res = await api.get('/departamentos');
+      const params = {};
+      if (orden.sortBy) {
+        params.sortBy = orden.sortBy;
+        params.sortDir = orden.sortDir;
+      }
+      const res = await api.get('/departamentos', { params });
       setDepartamentos(res.data);
     } catch (err) {
       setError(err.message);
@@ -28,9 +43,15 @@ export default function DepartamentosPage() {
     }
   }
 
+  // Se recarga al cambiar el orden (sortBy/sortDir), igual que UsuariosPage.
   useEffect(() => {
     cargarDepartamentos();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orden]);
+
+  function cambiarOrden(sortBy, sortDir) {
+    setOrden({ sortBy, sortDir });
+  }
 
   function abrirAlta() {
     setEditando(null);
@@ -64,6 +85,7 @@ export default function DepartamentosPage() {
         await api.post('/departamentos', payload);
       }
       setModalAbierto(false);
+      notificar.exito(editando ? 'Departamento actualizado correctamente' : 'Departamento creado correctamente');
       await cargarDepartamentos();
     } catch (err) {
       setError(err.message);
@@ -79,13 +101,16 @@ export default function DepartamentosPage() {
     try {
       if (target.accion === 'estado') {
         await api.patch(`/departamentos/${target.id}/estado`, { activo: target.activo ? 0 : 1 });
+        notificar.exito(target.activo ? 'Departamento inactivado' : 'Departamento activado');
       } else if (target.accion === 'eliminar') {
         await api.delete(`/departamentos/${target.id}`);
+        notificar.exito('Departamento eliminado correctamente');
       }
       setConfirmando(null);
       await cargarDepartamentos();
     } catch (err) {
       setError(err.message);
+      notificar.error(err.message);
       setConfirmando(null);
     }
   }
@@ -94,7 +119,11 @@ export default function DepartamentosPage() {
     <section>
       <div className="encabezado-pagina">
         <h2>Mantenimiento de departamentos</h2>
-        <button type="button" className="btn btn-primario" onClick={abrirAlta}>+ Agregar departamento</button>
+        {esAdmin && (
+          <button type="button" className="btn btn-primario" onClick={abrirAlta}>
+            + Agregar departamento
+          </button>
+        )}
       </div>
 
       {error && <div className="alerta alerta-error">{error}</div>}
@@ -108,9 +137,9 @@ export default function DepartamentosPage() {
           <table className="tabla">
             <thead>
               <tr>
-                <th>Nombre</th>
+                <ThOrdenable columna="nombre" ordenActual={orden} onOrdenar={cambiarOrden}>Nombre</ThOrdenable>
                 <th>Descripción</th>
-                <th>Usuarios asignados</th>
+                <ThOrdenable columna="numero_usuarios" ordenActual={orden} onOrdenar={cambiarOrden}>Usuarios asignados</ThOrdenable>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>

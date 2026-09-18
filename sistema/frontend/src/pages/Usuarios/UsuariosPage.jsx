@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import api from '../../services/api';
+import { useNavigate, useLocation } from 'react-router-dom';
+import api, { leerSesion } from '../../services/api';
 import FilterBar from '../../components/FilterBar';
 import ConfirmDialog from '../../components/ConfirmDialog';
-import Modal from '../../components/Modal';
+import Paginacion from '../../components/Paginacion';
+import ThOrdenable from '../../components/ThOrdenable';
+import { useNotificacion } from '../../components/Toast';
 import UsuarioFormModal from './UsuarioFormModal';
 import exportarCSV from '../../utils/csv';
 
@@ -15,24 +18,40 @@ const FILTROS_INICIALES = {
   endDate: ''
 };
 
+const PAGE_SIZE = 10;
+
 export default function UsuariosPage() {
+  const navigate = useNavigate();
+  const notificar = useNotificacion();
+
   const [usuarios, setUsuarios] = useState([]);
   const [departamentos, setDepartamentos] = useState([]);
   const [roles, setRoles] = useState([]);
   const [filtros, setFiltros] = useState(FILTROS_INICIALES);
+  const [pagina, setPagina] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [orden, setOrden] = useState({ sortBy: 'creado_en', sortDir: 'desc' });
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [modalAbierto, setModalAbierto] = useState(false);
   const [editando, setEditando] = useState(null);
   const [confirmando, setConfirmando] = useState(null);
-  const [reporteAbierto, setReporteAbierto] = useState(false);
   const temporizadorBusqueda = useRef(null);
 
-  const cargarUsuarios = useCallback(async (filtrosActuales) => {
+  // Solo administradores o superadmin ven las acciones de escritura
+  // (editar, inactivar/activar, eliminar y alta). Esto evita que un
+  // usuario con rol como "bodega" vea botones que el backend rechaza
+  // con 403, generando el "error en manejo de roles".
+  const sesion = leerSesion();
+  const esAdmin = sesion?.superadmin || sesion?.roles?.includes('administrador');
+
+  const totalPaginas = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const cargarUsuarios = useCallback(async (filtrosActuales, paginaActual, ordenActual) => {
     setCargando(true);
     setError('');
     try {
-      const params = {};
+      const params = { page: paginaActual, pageSize: PAGE_SIZE, ...ordenActual };
       for (const [clave, valor] of Object.entries(filtrosActuales)) {
         if (valor !== '' && valor !== 'todos' && valor !== null && valor !== undefined) {
           params[clave] = valor;
@@ -40,8 +59,19 @@ export default function UsuariosPage() {
       }
       const res = await api.get('/usuarios', { params });
       setUsuarios(res.data);
+      const nuevoTotal = res.total ?? res.data.length;
+      setTotal(nuevoTotal);
+
+      // Si la página actual quedó fuera de rango (p. ej. al eliminar el último
+      // registro de la última página), se vuelve a la última página válida; el
+      // efecto de [pagina] dispara la recarga con el valor corregido.
+      const ultimaPagina = Math.max(1, Math.ceil(nuevoTotal / PAGE_SIZE));
+      if (paginaActual > ultimaPagina) {
+        setPagina(ultimaPagina);
+      }
     } catch (err) {
       setUsuarios([]);
+      setTotal(0);
       setError(err.message);
     } finally {
       setCargando(false);
@@ -59,40 +89,51 @@ export default function UsuariosPage() {
 
   useEffect(() => {
     cargarOpciones().catch((e) => setError(e.message));
-    cargarUsuarios(FILTROS_INICIALES);
-  }, [cargarOpciones, cargarUsuarios]);
+  }, [cargarOpciones]);
+
+  // Cualquier cambio de página u orden recarga el listado con los filtros
+  // ya aplicados (no dispara aplicarFiltros: solo cambia page/sortBy/sortDir).
+  // También se recarga al volver a esta ruta (location.pathname cambia)
+  // para evitar que la lista quede estancada.
+  const location = useLocation();
+  useEffect(() => {
+    cargarUsuarios(filtros, pagina, orden);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, pagina, orden]);
 
   // Búsqueda en tiempo real: al escribir se consulta solo tras una pausa de
-  // 400 ms (debounce) para no disparar peticiones por cada tecla.
+  // 400 ms (debounce) para no disparar peticiones por cada tecla. Al buscar,
+  // siempre se vuelve a la página 1 (una búsqueda nueva invalida la posición
+  // de paginación anterior).
   function cambiarFiltros(nuevos) {
     const cambiaTexto = nuevos.q !== filtros.q;
     setFiltros(nuevos);
     if (cambiaTexto) {
       clearTimeout(temporizadorBusqueda.current);
-      temporizadorBusqueda.current = setTimeout(() => cargarUsuarios(nuevos), 400);
+      temporizadorBusqueda.current = setTimeout(() => {
+        setPagina(1);
+        cargarUsuarios(nuevos, 1, orden);
+      }, 400);
     }
   }
 
   useEffect(() => () => clearTimeout(temporizadorBusqueda.current), []);
 
-  // Habilita la impresión solo del modal del reporte (ver CSS @media print).
-  useEffect(() => {
-    if (reporteAbierto) {
-      document.body.classList.add('imprimo-modal');
-    } else {
-      document.body.classList.remove('imprimo-modal');
-    }
-  }, [reporteAbierto]);
-
   function aplicarFiltros(e) {
     e.preventDefault();
     clearTimeout(temporizadorBusqueda.current);
-    cargarUsuarios(filtros);
+    setPagina(1);
+    cargarUsuarios(filtros, 1, orden);
   }
 
   function limpiarFiltros() {
     setFiltros(FILTROS_INICIALES);
-    cargarUsuarios(FILTROS_INICIALES);
+    setPagina(1);
+    cargarUsuarios(FILTROS_INICIALES, 1, orden);
+  }
+
+  function cambiarOrden(sortBy, sortDir) {
+    setOrden({ sortBy, sortDir });
   }
 
   function abrirAlta() {
@@ -112,21 +153,25 @@ export default function UsuariosPage() {
     try {
       if (target.accion === 'estado') {
         await api.patch(`/usuarios/${target.id}/estado`, { activo: target.activo ? 0 : 1 });
+        notificar.exito(target.activo ? 'Usuario inactivado' : 'Usuario activado');
       } else if (target.accion === 'eliminar') {
         await api.delete(`/usuarios/${target.id}`);
+        notificar.exito('Usuario eliminado correctamente');
       }
       setConfirmando(null);
-      await cargarUsuarios(filtros);
+      await cargarUsuarios(filtros, pagina, orden);
     } catch (err) {
       setError(err.message);
+      notificar.error(err.message);
       setConfirmando(null);
     }
   }
 
-  async function alGuardar() {
+  async function alGuardar(mensaje) {
     setModalAbierto(false);
     setEditando(null);
-    await cargarUsuarios(filtros);
+    notificar.exito(mensaje || 'Usuario guardado correctamente');
+    await cargarUsuarios(filtros, pagina, orden);
   }
 
   function formatearFecha(fecha) {
@@ -135,7 +180,7 @@ export default function UsuariosPage() {
     return d.toLocaleDateString('es-GT');
   }
 
-  // Exporta el listado actual (ya filtrado) a CSV con cabeceras legibles.
+  // Exporta el listado actual (la página visible, ya filtrada) a CSV.
   function exportarCsv() {
     const filas = usuarios.map((usuario) => ({
       Codigo: usuario.codigo || '',
@@ -149,12 +194,26 @@ export default function UsuariosPage() {
     exportarCSV(filas, `usuarios_${new Date().toISOString().slice(0, 10)}.csv`);
   }
 
+  // Lleva al reporte unificado (/usuarios/reporte) con los MISMOS filtros que
+  // se están viendo aquí, para que el reporte y el listado nunca se
+  // desincronicen (antes había dos "reportes" separados e inconsistentes).
+  function irAlReporte() {
+    const params = new URLSearchParams();
+    for (const [clave, valor] of Object.entries(filtros)) {
+      if (valor !== '' && valor !== 'todos' && valor !== null && valor !== undefined) {
+        params.set(clave, valor);
+      }
+    }
+    const query = params.toString();
+    navigate(query ? `/reporte?${query}` : '/reporte');
+  }
+
   return (
     <section>
       <div className="encabezado-pagina">
         <h2>Listado de usuarios</h2>
         <div className="acciones-encabezado">
-          <button type="button" className="btn btn-secundario" onClick={() => setReporteAbierto(true)}>
+          <button type="button" className="btn btn-secundario" onClick={irAlReporte}>
             Reporte de Usuarios
           </button>
           {usuarios.length > 0 && (
@@ -162,7 +221,9 @@ export default function UsuariosPage() {
               Exportar CSV
             </button>
           )}
-          <button type="button" className="btn btn-primario" onClick={abrirAlta}>+ Agregar usuario nuevo</button>
+          {esAdmin && (
+            <button type="button" className="btn btn-primario" onClick={abrirAlta}>+ Agregar usuario nuevo</button>
+          )}
         </div>
       </div>
 
@@ -182,116 +243,19 @@ export default function UsuariosPage() {
       ) : usuarios.length === 0 ? (
         <p className="estado">No se encontraron usuarios con los filtros aplicados.</p>
       ) : (
-        <div className="tabla-wrapper">
-          <table className="tabla">
-            <thead>
-              <tr>
-                <th>Código</th>
-                <th>Nombre completo</th>
-                <th>Usuario</th>
-                <th>Departamento</th>
-                <th>Roles</th>
-                <th>Estado</th>
-                <th>Creado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {usuarios.map((usuario) => (
-                <tr key={usuario.id}>
-                  <td>{usuario.codigo || '—'}</td>
-                  <td>{`${usuario.nombre} ${usuario.apellido || ''}`.trim()}</td>
-                  <td>{usuario.username}</td>
-                  <td>{usuario.departamento_nombre || '—'}</td>
-                  <td>
-                    <div className="roles-chips">
-                      {usuario.roles.length === 0 ? (
-                        <span className="chip chip-transparente">sin rol</span>
-                      ) : (
-                        usuario.roles.map((rol) => (
-                          <span key={rol.id} className="chip">{rol.nombre}</span>
-                        ))
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    <span className={`chip ${usuario.activo ? 'chip-ok' : 'chip-peligro'}`}>
-                      {usuario.activo ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </td>
-                  <td>{formatearFecha(usuario.creado_en)}</td>
-                  <td>
-                    <div className="acciones-fila">
-                      <button type="button" className="btn btn-opcion" onClick={() => abrirEdicion(usuario)}>
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-opcion"
-                        onClick={() => setConfirmando({ accion: 'estado', ...usuario })}
-                      >
-                        {usuario.activo ? 'Inactivar' : 'Activar'}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-opcion btn-danger"
-                        onClick={() => setConfirmando({ accion: 'eliminar', ...usuario })}
-                      >
-                        Eliminar
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <UsuarioFormModal
-        abierto={modalAbierto}
-        usuario={editando}
-        onCerrar={() => {
-          setModalAbierto(false);
-          setEditando(null);
-        }}
-        onGuardado={alGuardar}
-        departamentos={departamentos}
-        roles={roles}
-      />
-
-      <Modal
-        abierto={reporteAbierto}
-        titulo="Reporte de usuarios (filtros aplicados)"
-        onCerrar={() => setReporteAbierto(false)}
-        ancho="900px"
-      >
-        <div className="acciones-encabezado">
-          <button type="button" className="btn btn-secundario" onClick={() => window.print()}>
-            Imprimir
-          </button>
-          <button type="button" className="btn btn-primario" onClick={exportarCsv}>
-            Exportar CSV
-          </button>
-        </div>
-        <p className="reporte-detalle">
-          Usuarios encontrados: <strong>{usuarios.length}</strong>. Puede imprimir esta vista o
-          exportarla a CSV con los filtros ya aplicados.
-        </p>
-        {usuarios.length === 0 ? (
-          <p className="estado">No hay usuarios que coincidan con los filtros aplicados.</p>
-        ) : (
+        <>
           <div className="tabla-wrapper">
             <table className="tabla">
               <thead>
                 <tr>
-                  <th>Código</th>
-                  <th>Nombre completo</th>
-                  <th>Usuario</th>
-                  <th>Departamento</th>
+                  <ThOrdenable columna="codigo" ordenActual={orden} onOrdenar={cambiarOrden}>Código</ThOrdenable>
+                  <ThOrdenable columna="nombre" ordenActual={orden} onOrdenar={cambiarOrden}>Nombre completo</ThOrdenable>
+                  <ThOrdenable columna="username" ordenActual={orden} onOrdenar={cambiarOrden}>Usuario</ThOrdenable>
+                  <ThOrdenable columna="departamento_nombre" ordenActual={orden} onOrdenar={cambiarOrden}>Departamento</ThOrdenable>
                   <th>Roles</th>
                   <th>Estado</th>
-                  <th>Creado</th>
+                  <ThOrdenable columna="creado_en" ordenActual={orden} onOrdenar={cambiarOrden}>Creado</ThOrdenable>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -318,13 +282,50 @@ export default function UsuariosPage() {
                       </span>
                     </td>
                     <td>{formatearFecha(usuario.creado_en)}</td>
+                    <td>
+                      {esAdmin && (
+                        <div className="acciones-fila">
+                          <button type="button" className="btn btn-opcion" onClick={() => abrirEdicion(usuario)}>
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-opcion"
+                            onClick={() => setConfirmando({ accion: 'estado', ...usuario })}
+                          >
+                            {usuario.activo ? 'Inactivar' : 'Activar'}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-opcion btn-danger"
+                            onClick={() => setConfirmando({ accion: 'eliminar', ...usuario })}
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        )}
-      </Modal>
+
+          <Paginacion pagina={pagina} totalPaginas={totalPaginas} total={total} onCambiar={setPagina} />
+        </>
+      )}
+
+      <UsuarioFormModal
+        abierto={modalAbierto}
+        usuario={editando}
+        onCerrar={() => {
+          setModalAbierto(false);
+          setEditando(null);
+        }}
+        onGuardado={alGuardar}
+        departamentos={departamentos}
+        roles={roles}
+      />
 
       <ConfirmDialog
         abierto={Boolean(confirmando)}

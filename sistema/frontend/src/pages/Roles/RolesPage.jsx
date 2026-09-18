@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import api from '../../services/api';
 import Modal from '../../components/Modal';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import ThOrdenable from '../../components/ThOrdenable';
+import { useNotificacion } from '../../components/Toast';
 
 const FORM_VACIO = { nombre: '', descripcion: '', acceso_total: false, activo: true };
 
@@ -14,12 +16,22 @@ export default function RolesPage() {
   const [form, setForm] = useState(FORM_VACIO);
   const [guardando, setGuardando] = useState(false);
   const [confirmando, setConfirmando] = useState(null);
+  // Orden de la tabla: sortBy vacío = orden por defecto del backend
+  // (superadmin/Acceso total primero). El patrón es el mismo que en Usuarios
+  // (ThOrdenable), listo para cuando el catálogo crezca.
+  const [orden, setOrden] = useState({ sortBy: '', sortDir: 'asc' });
+  const notificar = useNotificacion();
 
   async function cargarRoles() {
     setCargando(true);
     setError('');
     try {
-      const res = await api.get('/roles');
+      const params = {};
+      if (orden.sortBy) {
+        params.sortBy = orden.sortBy;
+        params.sortDir = orden.sortDir;
+      }
+      const res = await api.get('/roles', { params });
       setRoles(res.data);
     } catch (err) {
       setError(err.message);
@@ -28,9 +40,15 @@ export default function RolesPage() {
     }
   }
 
+  // Se recarga al cambiar el orden (sortBy/sortDir), igual que UsuariosPage.
   useEffect(() => {
     cargarRoles();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orden]);
+
+  function cambiarOrden(sortBy, sortDir) {
+    setOrden({ sortBy, sortDir });
+  }
 
   function abrirAlta() {
     setEditando(null);
@@ -66,6 +84,7 @@ export default function RolesPage() {
         await api.post('/roles', payload);
       }
       setModalAbierto(false);
+      notificar.exito(editando ? 'Rol actualizado correctamente' : 'Rol creado correctamente');
       await cargarRoles();
     } catch (err) {
       setError(err.message);
@@ -81,13 +100,16 @@ export default function RolesPage() {
     try {
       if (target.accion === 'estado') {
         await api.patch(`/roles/${target.id}/estado`, { activo: target.activo ? 0 : 1 });
+        notificar.exito(target.activo ? 'Rol inactivado' : 'Rol activado');
       } else if (target.accion === 'eliminar') {
         await api.delete(`/roles/${target.id}`);
+        notificar.exito('Rol eliminado correctamente');
       }
       setConfirmando(null);
       await cargarRoles();
     } catch (err) {
       setError(err.message);
+      notificar.error(err.message);
       setConfirmando(null);
     }
   }
@@ -110,10 +132,10 @@ export default function RolesPage() {
           <table className="tabla">
             <thead>
               <tr>
-                <th>Nombre</th>
+                <ThOrdenable columna="nombre" ordenActual={orden} onOrdenar={cambiarOrden}>Nombre</ThOrdenable>
                 <th>Descripción</th>
                 <th>Acceso total</th>
-                <th>Usuarios asignados</th>
+                <ThOrdenable columna="numero_usuarios" ordenActual={orden} onOrdenar={cambiarOrden}>Usuarios asignados</ThOrdenable>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>

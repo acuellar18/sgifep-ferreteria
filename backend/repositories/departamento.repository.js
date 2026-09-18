@@ -1,12 +1,28 @@
 const pool = require('../db');
 
+// Whitelist de columnas ordenables desde la tabla de departamentos (misma
+// protección que roles y usuarios: nunca se interpola el sortBy crudo del
+// cliente, solo la expresión SQL fija de esta tabla).
+const COLUMNAS_ORDENABLES = {
+  nombre: 'd.nombre',
+  creado_en: 'd.creado_en',
+  numero_usuarios: 'numero_usuarios'
+};
+
 // Repository Pattern: única capa que toca SQL de departamentos.
 class DepartamentoRepository {
-  async listar({ estado = 'todos' } = {}) {
+  // `listar` acepta sortBy/sortDir opcionales (whitelist) para que la tabla
+  // use la misma cabecera ordenable que Usuarios; sin sortBy orden alfabético.
+  async listar({ estado = 'todos', sortBy, sortDir } = {}) {
     const where = [];
     const params = [];
     if (estado === 'activo') where.push('d.activo = 1');
     else if (estado === 'inactivo') where.push('d.activo = 0');
+
+    const columnaOrden = COLUMNAS_ORDENABLES[sortBy];
+    const ordenSql = columnaOrden
+      ? `${columnaOrden} ${String(sortDir).toLowerCase() === 'asc' ? 'ASC' : 'DESC'}`
+      : 'd.nombre ASC';
 
     const sql = `
       SELECT d.id, d.nombre, d.descripcion, d.activo, d.creado_en,
@@ -15,7 +31,7 @@ class DepartamentoRepository {
       LEFT JOIN usuarios u ON u.departamento_id = d.id
       ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
       GROUP BY d.id
-      ORDER BY d.nombre ASC`;
+      ORDER BY ${ordenSql}`;
     const [rows] = await pool.query(sql, params);
     return rows;
   }

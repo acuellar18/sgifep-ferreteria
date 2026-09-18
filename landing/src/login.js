@@ -3,7 +3,7 @@
 // mismo origen (/login.html, servido por Express).
 const URL_LOGIN =
   import.meta.env.VITE_SISTEMA_LOGIN_URL ||
-  (import.meta.env.DEV ? 'http://localhost:5174/login.html' : '/login.html');
+  (import.meta.env.DEV ? 'http://localhost:5174/usuarios/login.html' : '/login.html');
 
 document.querySelectorAll('a[data-login-url]').forEach((enlace) => {
   enlace.setAttribute('href', URL_LOGIN);

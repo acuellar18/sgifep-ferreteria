@@ -68,7 +68,8 @@ No test, lint, or typecheck tooling exists.
 - `/api/login` only bcrypt-verifies the password and returns `{usuario: {nombre, rol}}`. There is no session/token: access control is client-side. No backend endpoint is actually protected.
 - **JWT security (current):** `/api/login` and `/api/reset-password` are the only endpoints without token. All other `/api/*` routes require `Authorization: Bearer <token>`; handling is centralized in `middlewares/auth.middleware.js`. A 401 clears the stored session and redirects to `/login.html`; a 403 means the authenticated user lacks the `administrador`/`superadmin` role, not that the token is invalid.
 - API responses use Spanish `mensaje` fields; error shapes differ (400/401/403/404/409/500).
-- In dev (5174) the "Volver a la página principal" link in `login.html` lands on `/usuarios/index.html` (the React app); in production it hits the landing at `/index.html`. Known dev-only quirk.
+- "Volver a la página principal" en `login.html` apunta siempre a la landing: en dev (5174) a `http://localhost:5173/index.html`, en producción a `/index.html` (lo resuelve un script inline en el propio HTML).
+- En dev (5174), `sistema/frontend/vite.config.js` reescribe `/login.html`, `/modulos.html` e `/img/*` hacia `/usuarios/*` mediante un **plugin** de Vite (`name: 'reescribir-rutas-sistema'`). `configureServer` NO es una opción de `server`; si se anida ahí, Vite la ignora y las rutas raíz dan 404.
 - `backend/server.js` returns a plain-text notice if `landing/dist` is missing; build the landing before starting Express for production.
 
 ## Conventions
@@ -81,7 +82,8 @@ No test, lint, or typecheck tooling exists.
 - `/api/login` only bcrypt-verifies the password and returns `{usuario: {nombre, rol}}`. There is no session/token: access control is client-side. No backend endpoint is actually protected.
 - **JWT security (current):** `/api/login` and `/api/reset-password` are the only endpoints without token. All other `/api/*` routes require `Authorization: Bearer <token>`; handling is centralized in `middlewares/auth.middleware.js`. A 401 clears the stored session and redirects to `/login.html`; a 403 means the authenticated user lacks the `administrador`/`superadmin` role, not that the token is invalid.
 - API responses use Spanish `mensaje` fields; error shapes differ (400/401/403/404/409/500).
-- In dev (5174) the "Volver a la página principal" link in `login.html` lands on `/usuarios/index.html` (the React app); in production it hits the landing at `/index.html`. Known dev-only quirk.
+- "Volver a la página principal" en `login.html` apunta siempre a la landing: en dev (5174) a `http://localhost:5173/index.html`, en producción a `/index.html` (lo resuelve un script inline en el propio HTML).
+- En dev (5174), `sistema/frontend/vite.config.js` reescribe `/login.html`, `/modulos.html` e `/img/*` hacia `/usuarios/*` mediante un **plugin** de Vite (`name: 'reescribir-rutas-sistema'`). `configureServer` NO es una opción de `server`; si se anida ahí, Vite la ignora y las rutas raíz dan 404.
 - `backend/server.js` returns a plain-text notice if `landing/dist` is missing; build the landing before starting Express for production.
 
 ## Conventions

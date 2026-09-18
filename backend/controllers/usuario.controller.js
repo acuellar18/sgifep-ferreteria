@@ -5,12 +5,12 @@ const usuarioService = require('../services/usuario.service');
 // responde JSON con el contrato { success, data|mensaje }.
 module.exports = {
   listar: manejarAsync(async (req, res) => {
-    const data = await usuarioService.listar(req.query);
-    res.json({ success: true, data });
+    const { data, total, page, pageSize } = await usuarioService.listar(req.query);
+    res.json({ success: true, data, total, page, pageSize });
   }),
 
-  reporte: manejarAsync(async (_req, res) => {
-    const data = await usuarioService.reporte();
+  reporte: manejarAsync(async (req, res) => {
+    const data = await usuarioService.reporte(req.query);
     res.json({ success: true, data });
   }),
 

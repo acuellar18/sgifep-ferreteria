@@ -6,7 +6,11 @@ const rolDto = require('../dtos/rol.dto');
 // Capa de negocio de ROLES: valida con DTO, aplica reglas y delega el SQL.
 class RolService {
   async listar(filtros = {}) {
-    const filas = await rolRepository.listar({ estado: filtros.estado });
+    const filas = await rolRepository.listar({
+      estado: filtros.estado,
+      sortBy: filtros.sortBy,
+      sortDir: filtros.sortDir
+    });
     return rolDto.serializarLista(filas);
   }
 

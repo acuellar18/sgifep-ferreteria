@@ -5,7 +5,11 @@ const departamentoDto = require('../dtos/departamento.dto');
 // Capa de negocio de DEPARTAMENTOS: valida con DTO y delega el SQL.
 class DepartamentoService {
   async listar(filtros = {}) {
-    const filas = await departamentoRepository.listar({ estado: filtros.estado });
+    const filas = await departamentoRepository.listar({
+      estado: filtros.estado,
+      sortBy: filtros.sortBy,
+      sortDir: filtros.sortDir
+    });
     return departamentoDto.serializarLista(filas);
   }
 

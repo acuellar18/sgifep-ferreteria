@@ -1,5 +1,16 @@
 const pool = require('../db');
 
+// Whitelist de columnas ordenables desde la tabla de roles. Solo se interpola
+// la expresión SQL fija a la que apunta la llave, nunca el valor crudo que
+// mande el cliente (misma protección que en los usuarios: evita inyección
+// SQL vía ORDER BY). El alias 'numero_usuarios' es válido en MySQL porque
+// MySQL permite ordenar por alias de una expresión del GROUP BY.
+const COLUMNAS_ORDENABLES = {
+  nombre: 'r.nombre',
+  creado_en: 'r.creado_en',
+  numero_usuarios: 'numero_usuarios'
+};
+
 // -----------------------------------------------
 // DETECCIÓN DE ESQUEMA (defensiva)
 // -----------------------------------------------
@@ -48,16 +59,23 @@ async function esquemaConRolesMultiples() {
 // Repository Pattern: única capa que toca SQL de roles. Recibe y devuelve
 // filas simples; la lógica de negocio vive en los servicios.
 class RolRepository {
-  async listar({ estado = 'todos' } = {}) {
+  // `listar` acepta sortBy/sortDir opcionales (whitelist) para que la tabla
+  // de roles use el mismo componente de cabecera ordenable que Usuarios. Sin
+  // sortBy se conserva el orden por defecto (superadmin/acceso total primero).
+  async listar({ estado = 'todos', sortBy, sortDir } = {}) {
     if (!(await esquemaConRolesMultiples())) return [];
     const conSuperadmin = await esquemaConSuperadmin();
 
     const seleccion = conSuperadmin
       ? 'r.id, r.nombre, r.descripcion, r.superadmin, r.acceso_total, r.activo, r.creado_en'
       : 'r.id, r.nombre, r.descripcion, r.acceso_total, r.activo, r.creado_en';
-    const orden = conSuperadmin
+    const ordenPorDefecto = conSuperadmin
       ? 'r.superadmin DESC, r.nombre ASC'
       : 'r.acceso_total DESC, r.nombre ASC';
+    const columnaOrden = COLUMNAS_ORDENABLES[sortBy];
+    const ordenSql = columnaOrden
+      ? `${columnaOrden} ${String(sortDir).toLowerCase() === 'asc' ? 'ASC' : 'DESC'}`
+      : ordenPorDefecto;
 
     const where = [];
     const params = [];
@@ -70,7 +88,7 @@ class RolRepository {
       LEFT JOIN usuario_roles ur ON ur.rol_id = r.id
       ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
       GROUP BY r.id
-      ORDER BY ${orden}`;
+      ORDER BY ${ordenSql}`;
     const [rows] = await pool.query(sql, params);
     return rows;
   }

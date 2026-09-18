@@ -10,15 +10,19 @@ const usuarioDto = require('../dtos/usuario.dto');
 // y transacciones atómicas. No conoce HTTP: lanza HttpError para el controlador.
 class UsuarioService {
   async listar(filtros = {}) {
-    const filas = await usuarioRepository.listar({
+    const { rows, total, page, pageSize } = await usuarioRepository.listar({
       q: filtros.q,
       estado: filtros.estado,
       startDate: filtros.startDate || filtros.fechaInicio,
       endDate: filtros.endDate || filtros.fechaFin,
       departamento: filtros.departamento,
-      rol: filtros.rol
+      rol: filtros.rol,
+      page: filtros.page,
+      pageSize: filtros.pageSize,
+      sortBy: filtros.sortBy,
+      sortDir: filtros.sortDir
     });
-    return usuarioDto.serializarLista(filas);
+    return { data: usuarioDto.serializarLista(rows), total, page, pageSize };
   }
 
   async detalle(id) {
@@ -135,31 +139,23 @@ class UsuarioService {
     if (affected === 0) throw new HttpError(404, 'Usuario no encontrado');
   }
 
-  async reporte() {
-    const [totales, porDepartamento, porRol] = await Promise.all([
-      usuarioRepository.contarTotales(),
-      usuarioRepository.contarActivosPorDepartamento(),
-      usuarioRepository.contarActivosPorRol()
-    ]);
+  // Reporte inteligente: admite los mismos filtros que el listado (q, estado,
+  // departamento, rol, startDate/endDate) para que el reporte y la tabla de
+  // usuarios siempre respondan a un único criterio de búsqueda.
+  async reporte(filtros = {}) {
+    const reporte = await usuarioRepository.reporte({
+      q: filtros.q,
+      estado: filtros.estado,
+      startDate: filtros.startDate || filtros.fechaInicio,
+      endDate: filtros.endDate || filtros.fechaFin,
+      departamento: filtros.departamento,
+      rol: filtros.rol
+    });
 
     return {
-      totales: {
-        total: Number(totales.total) || 0,
-        activos: Number(totales.activos) || 0,
-        inactivos: Number(totales.inactivos) || 0
-      },
-      porDepartamento: porDepartamento.map((d) => ({
-        id: d.id,
-        nombre: d.nombre,
-        total_activos: Number(d.total_activos) || 0
-      })),
-      porRol: porRol.map((r) => ({
-        id: r.id,
-        nombre: r.nombre,
-        superadmin: Boolean(r.acceso_total),
-        acceso_total: Boolean(r.acceso_total),
-        total_activos: Number(r.total_activos) || 0
-      }))
+      totales: reporte.totales,
+      porDepartamento: reporte.porDepartamento,
+      porRol: reporte.porRol.map((r) => ({ ...r, superadmin: r.acceso_total }))
     };
   }
 

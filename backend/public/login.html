@@ -202,9 +202,9 @@
     <div class="login-image-side"></div>
 
     <div class="login-form-side">
-        <a href="index.html" class="back-link">← Volver a la página principal</a>
+        <a href="/index.html" id="back-link" class="back-link">← Volver a la página principal</a>
 
-        <img src="/img/logo.png" alt="SGIFEP Logo" class="brand-logo">
+        <img src="img/logo.png" alt="SGIFEP Logo" class="brand-logo">
 
         <form class="login-form" onsubmit="hacerLogin(event)">
             <div class="field-group">
@@ -264,6 +264,17 @@
 
 <script>
     const API_BASE = (window.location.port === '5500') ? 'http://127.0.0.1:3000' : '';
+
+    // "Volver a la página principal" siempre regresa a la landing: en dev (5174)
+    // la landing vive en el 5173; en producción se sirve en la raíz (/).
+    (function () {
+        const back = document.getElementById('back-link');
+        if (back) {
+            back.href = (window.location.port === '5174')
+                ? 'http://localhost:5173/index.html'
+                : '/index.html';
+        }
+    })();
 
     // Función para mostrar / ocultar contraseña
     function togglePassword(inputId, iconId) {

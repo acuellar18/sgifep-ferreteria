@@ -954,3 +954,166 @@ textarea.control {
     width: 245px;
   }
 }
+/* ============================================================
+   PAGINACIÓN (reutilizable en todos los módulos)
+   ============================================================ */
+
+.paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.paginacion-info {
+  color: var(--color-texto-suave);
+  font-size: 13px;
+}
+
+.paginacion-controles {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.paginacion-controles .btn-opcion {
+  min-width: 36px;
+  text-align: center;
+  padding: 6px 10px;
+}
+
+.paginacion-activa {
+  background: var(--color-primario);
+  color: #fff;
+  border-color: var(--color-primario);
+}
+
+.paginacion-puntos {
+  color: var(--color-texto-suave);
+  padding: 0 4px;
+}
+
+/* ============================================================
+   ENCABEZADOS DE TABLA ORDENABLES
+   ============================================================ */
+
+.th-ordenable {
+  padding: 0 !important;
+}
+
+.th-ordenable-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.th-ordenable-btn:hover {
+  color: var(--color-primario);
+}
+
+.th-ordenable-flecha {
+  font-size: 11px;
+  color: var(--color-texto-suave);
+}
+
+.th-ordenable-flecha-activa {
+  color: var(--color-primario);
+}
+
+/* ============================================================
+   FILAS CLICABLES (drill-down en reportes)
+   ============================================================ */
+
+.fila-clicable {
+  cursor: pointer;
+}
+
+.fila-clicable:hover td {
+  background: var(--color-primario-suave);
+}
+
+.reporte-nota {
+  color: var(--color-texto-suave);
+  font-size: 13px;
+  margin: -8px 0 12px;
+}
+
+/* ============================================================
+   NOTIFICACIONES (toast) — reutilizable en todos los módulos
+   ============================================================ */
+
+.toast-contenedor {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 360px;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radio);
+  box-shadow: var(--sombra-media);
+  font-size: 14px;
+  font-weight: 500;
+  animation: toast-entrada 0.2s ease-out;
+}
+
+@keyframes toast-entrada {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.toast-exito {
+  background: var(--color-ok-fondo);
+  color: #14532d;
+  border: 1px solid #bbf7d0;
+}
+
+.toast-error {
+  background: var(--color-peligro-fondo);
+  color: var(--color-peligro);
+  border: 1px solid #fecaca;
+}
+
+.toast span {
+  flex: 1;
+}
+
+.toast-cerrar {
+  background: none;
+  border: none;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.7;
+}
+
+.toast-cerrar:hover {
+  opacity: 1;
+}

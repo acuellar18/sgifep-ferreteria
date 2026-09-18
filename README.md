@@ -135,6 +135,14 @@ el catch-all para rutas internas de React como `/usuarios/reporte`).
   escrituras (`POST`/`PUT`/`PATCH`/`DELETE`) además exigen rol `administrador`
   o `superadmin` (verificado en el backend, no solo en el cliente). Los tokens
   expiran a las 8 h.
+- **Sin auto-registro:** SGIFEP es un sistema interno (empleados de la
+  ferretería), no un producto de cara al público. Por eso NO existe endpoint
+  público de registro de cuentas: solo un administrador da de alta usuarios
+  desde el módulo de Usuarios (`POST /api/usuarios`, protegido por
+  `requerirRoles([ROL_ADMINISTRADOR])`). Es una **decisión de diseño, no un
+  pendiente**: abrir el registro rompería el control de acceso por rol y
+  departamento que es la base del sistema. Ver la nota en
+  `backend/routes/auth.routes.js`.
 - El listado de usuarios soporta filtros `q`, `estado`, `departamento`, `rol` y
   rango de fechas (`startDate`/`endDate`); la búsqueda por texto es en tiempo
   real (debounce) y el listado/reporte se pueden **exportar a CSV** e
