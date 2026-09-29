@@ -1,0 +1,5 @@
+/* Este archivo ya no se usa.
+   Los estilos del menú lateral unificado están en:
+     src/components/modulos-menu.css
+   (importado por src/components/Layout.jsx con './modulos-menu.css').
+   Se puede borrar este archivo. */

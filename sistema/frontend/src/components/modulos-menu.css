@@ -1,0 +1,24 @@
+/* ============================================================
+   SGIFEP · Menú lateral unificado de módulos (módulo de Usuarios)
+   Reglas nuevas del drawer cuando la lista pasa a ser el catálogo
+   completo de módulos con acordeón. No modifica ningún estilo
+   existente de styles.css: solo añade el resaltado en naranja del
+   módulo activo y el formato de enlace de los submódulos nuevos.
+
+   El mismo catálogo y el mismo comportamiento viven también en
+   public/assets-modulos/sistema-modulos.css + .js, que son los que
+   usan las páginas HTML de Compras, Inventario, Facturación,
+   Despacho y Reportes.
+   ============================================================ */
+
+.drawer-item.modulo-activo {
+  color: var(--color-primario);
+}
+
+/* Los submódulos de Compras, Inventario, Facturación, Despacho y Reportes
+   son páginas HTML propias, no rutas del router: se muestran igual que los
+   de Usuarios, solo que como enlaces. */
+.drawer-subitem-enlace {
+  display: block;
+  text-decoration: none;
+}
