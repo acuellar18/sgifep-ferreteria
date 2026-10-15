@@ -327,12 +327,12 @@
                 <a href="/usuarios/departamentos">Gestión de Departamentos</a>
             </div>
 
-            <a href="compras/index.html" class="nav-fila" data-nav-toggle="compras"><span>🛒</span> <span>Compras <span class="nav-flecha">▾</span></span></a>
+            <a href="/usuarios/compras" class="nav-fila" data-nav-toggle="compras"><span>🛒</span> <span>Compras <span class="nav-flecha">▾</span></span></a>
             <div class="nav-subitems" data-nav-subitems="compras" hidden style="margin:4px 0 10px 18px; padding-left:12px; border-left:1px solid #e0deda;">
-                <a href="compras/index.html">Listado de Compras</a>
-                <a href="compras/proveedores.html">Proveedores</a>
-                <a href="compras/ordenes-compra.html">Órdenes de Compra</a>
-                <a href="compras/reporte.html">Reporte de Compras</a>
+                <a href="/usuarios/compras">Listado de Compras</a>
+                <a href="/usuarios/compras/proveedores">Proveedores</a>
+                <a href="/usuarios/compras/ordenes">Órdenes de Compra</a>
+                <a href="/usuarios/compras/reporte">Reporte de Compras</a>
             </div>
 
             <a href="inventario/index.html" class="nav-fila" data-nav-toggle="inventario"><span>📦</span> <span>Inventario <span class="nav-flecha">▾</span></span></a>
@@ -434,7 +434,7 @@
         // resuelve el índice de carpeta con base '/usuarios/' y esa URL terminaba
         // en la SPA de Usuarios. Funciona igual en dev (5174) y en producción (3000).
         const modulos = [
-            { id: 'compras', nombre: 'Compras y Abastecimiento', icon: '🛒', desc: 'Gestione sus compras y proveedores.', roles: ['administrador', 'admin', 'compras'], url: 'compras/index.html' },
+            { id: 'compras', nombre: 'Compras y Abastecimiento', icon: '🛒', desc: 'Gestione sus compras y proveedores.', roles: ['administrador', 'admin', 'compras'], url: '/usuarios/compras' },
             { id: 'inventario', nombre: 'Control de Inventario', icon: '📦', desc: 'Administre su inventario de productos.', roles: ['administrador', 'admin', 'bodega'], url: 'inventario/index.html' },
             { id: 'facturacion', nombre: 'Facturación y Cobro', icon: '🧾', desc: 'Facture y registre sus cobros.', roles: ['administrador', 'admin', 'caja'], url: 'facturacion/index.html' },
             { id: 'despacho', nombre: 'Despacho de Productos', icon: '📤', desc: 'Despache productos a sus clientes.', roles: ['administrador', 'admin', 'reparto'], url: 'despacho/index.html' },

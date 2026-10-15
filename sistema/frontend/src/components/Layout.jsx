@@ -39,10 +39,10 @@ const MODULOS_SISTEMA = [
     icono: '🛒',
     titulo: 'Compras',
     subitems: [
-      { archivo: 'index.html', etiqueta: 'Listado de Compras' },
-      { archivo: 'proveedores.html', etiqueta: 'Proveedores' },
-      { archivo: 'ordenes-compra.html', etiqueta: 'Órdenes de Compra' },
-      { archivo: 'reporte.html', etiqueta: 'Reporte de Compras' }
+      { to: '/compras', etiqueta: 'Listado de Compras' },
+      { to: '/compras/proveedores', etiqueta: 'Proveedores' },
+      { to: '/compras/ordenes', etiqueta: 'Órdenes de Compra' },
+      { to: '/compras/reporte', etiqueta: 'Reporte de Compras' }
     ]
   },
   {

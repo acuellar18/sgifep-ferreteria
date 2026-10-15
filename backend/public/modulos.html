@@ -318,13 +318,88 @@
         </div>
         <nav class="sidebar-nav">
             <a href="modulos.html" class="active-link"><span>🏠</span> Módulos Principales</a>
-            <a href="/usuarios/"><span>👥</span> Usuarios</a>
-            <a href="/compras/"><span>🛒</span> Compras</a>
-            <a href="/inventario/"><span>📦</span> Inventario</a>
-            <a href="/facturacion/"><span>🧾</span> Facturación</a>
-            <a href="/despacho/"><span>📤</span> Despacho</a>
-            <a href="/reportes/"><span>📊</span> Reportes</a>
+
+            <a href="/usuarios/" class="nav-fila" data-nav-toggle="usuarios"><span>👥</span> <span>Usuarios <span class="nav-flecha">▾</span></span></a>
+            <div class="nav-subitems" data-nav-subitems="usuarios" hidden style="margin:4px 0 10px 18px; padding-left:12px; border-left:1px solid #e0deda;">
+                <a href="/usuarios/">Listado de Usuarios</a>
+                <a href="/usuarios/reporte">Reporte de Usuarios</a>
+                <a href="/usuarios/roles">Gestión de Roles</a>
+                <a href="/usuarios/departamentos">Gestión de Departamentos</a>
+            </div>
+
+            <a href="compras/index.html" class="nav-fila" data-nav-toggle="compras"><span>🛒</span> <span>Compras <span class="nav-flecha">▾</span></span></a>
+            <div class="nav-subitems" data-nav-subitems="compras" hidden style="margin:4px 0 10px 18px; padding-left:12px; border-left:1px solid #e0deda;">
+                <a href="compras/index.html">Listado de Compras</a>
+                <a href="compras/proveedores.html">Proveedores</a>
+                <a href="compras/ordenes-compra.html">Órdenes de Compra</a>
+                <a href="compras/reporte.html">Reporte de Compras</a>
+            </div>
+
+            <a href="inventario/index.html" class="nav-fila" data-nav-toggle="inventario"><span>📦</span> <span>Inventario <span class="nav-flecha">▾</span></span></a>
+            <div class="nav-subitems" data-nav-subitems="inventario" hidden style="margin:4px 0 10px 18px; padding-left:12px; border-left:1px solid #e0deda;">
+                <a href="inventario/index.html">Listado de Productos</a>
+                <a href="inventario/categorias.html">Categorías</a>
+                <a href="inventario/movimientos.html">Movimientos de Inventario</a>
+                <a href="inventario/reporte.html">Reporte de Inventario</a>
+            </div>
+
+            <a href="facturacion/index.html" class="nav-fila" data-nav-toggle="facturacion"><span>🧾</span> <span>Facturación <span class="nav-flecha">▾</span></span></a>
+            <div class="nav-subitems" data-nav-subitems="facturacion" hidden style="margin:4px 0 10px 18px; padding-left:12px; border-left:1px solid #e0deda;">
+                <a href="facturacion/index.html">Listado de Facturas</a>
+                <a href="facturacion/clientes.html">Clientes</a>
+                <a href="facturacion/cobros.html">Cobros</a>
+                <a href="facturacion/reporte.html">Reporte de Facturación</a>
+            </div>
+
+            <a href="despacho/index.html" class="nav-fila" data-nav-toggle="despacho"><span>📤</span> <span>Despacho <span class="nav-flecha">▾</span></span></a>
+            <div class="nav-subitems" data-nav-subitems="despacho" hidden style="margin:4px 0 10px 18px; padding-left:12px; border-left:1px solid #e0deda;">
+                <a href="despacho/index.html">Listado de Despachos</a>
+                <a href="despacho/rutas-entregas.html">Rutas y Entregas</a>
+                <a href="despacho/reporte.html">Reporte de Despachos</a>
+            </div>
+
+            <a href="reportes/index.html" class="nav-fila" data-nav-toggle="reportes"><span>📊</span> <span>Reportes <span class="nav-flecha">▾</span></span></a>
+            <div class="nav-subitems" data-nav-subitems="reportes" hidden style="margin:4px 0 10px 18px; padding-left:12px; border-left:1px solid #e0deda;">
+                <a href="reportes/index.html">Reporte General</a>
+                <a href="reportes/ventas.html">Reporte de Ventas</a>
+                <a href="reportes/compras.html">Reporte de Compras</a>
+                <a href="reportes/inventario.html">Reporte de Inventario</a>
+            </div>
         </nav>
+
+        <!-- Acordeón del menú lateral: la flecha (▾) despliega los submódulos del
+             módulo y el resto del ítem lleva a la primera página de ese módulo.
+             Va incrustado aquí, dentro del <aside>, para que el menú se vea
+             aunque falte algún archivo externo. -->
+        <script>
+            (function () {
+                Array.prototype.forEach.call(document.querySelectorAll('[data-nav-toggle]'), function (fila) {
+                    fila.addEventListener('click', function (evento) {
+                        // Solo la flecha despliega; el resto del ítem navega.
+                        if (!evento.target.closest('.nav-flecha')) return;
+                        evento.preventDefault();
+
+                        var id = fila.getAttribute('data-nav-toggle');
+                        var bloque = document.querySelector('[data-nav-subitems="' + id + '"]');
+                        if (!bloque) return;
+
+                        var abrir = bloque.hasAttribute('hidden');
+
+                        // Un solo módulo desplegado a la vez.
+                        Array.prototype.forEach.call(document.querySelectorAll('[data-nav-subitems]'), function (otro) {
+                            otro.setAttribute('hidden', '');
+                            var otraFlecha = otro.previousElementSibling.querySelector('.nav-flecha');
+                            if (otraFlecha) otraFlecha.style.transform = '';
+                        });
+
+                        if (abrir) {
+                            bloque.removeAttribute('hidden');
+                            fila.querySelector('.nav-flecha').style.transform = 'rotate(90deg)';
+                        }
+                    });
+                });
+            })();
+        </script>
     </aside>
 
     <main class="modulos-main">
@@ -354,12 +429,16 @@
         document.getElementById('userInfo').innerHTML = `${nombreMostrar} <span class="rol-badge">${user.rol}</span>`;
         document.getElementById('bienvenidaTitulo').textContent = `Bienvenido, ${nombreMostrar}`;
 
+        // Cada módulo lleva a su primera página. Rutas relativas y siempre con
+        // el archivo explícito (nada de "compras/"), porque Vite en desarrollo no
+        // resuelve el índice de carpeta con base '/usuarios/' y esa URL terminaba
+        // en la SPA de Usuarios. Funciona igual en dev (5174) y en producción (3000).
         const modulos = [
-            { id: 'compras', nombre: 'Compras y Abastecimiento', icon: '🛒', desc: 'Gestione sus compras y proveedores.', roles: ['administrador', 'admin', 'compras'] },
-            { id: 'inventario', nombre: 'Control de Inventario', icon: '📦', desc: 'Administre su inventario de productos.', roles: ['administrador', 'admin', 'bodega'] },
-            { id: 'facturacion', nombre: 'Facturación y Cobro', icon: '🧾', desc: 'Facture y registre sus cobros.', roles: ['administrador', 'admin', 'caja'] },
-            { id: 'despacho', nombre: 'Despacho de Productos', icon: '📤', desc: 'Despache productos a sus clientes.', roles: ['administrador', 'admin', 'reparto'] },
-            { id: 'reportes', nombre: 'Reportes', icon: '📊', desc: 'Consulte reportes y estadísticas.', roles: ['administrador', 'admin', 'caja'] },
+            { id: 'compras', nombre: 'Compras y Abastecimiento', icon: '🛒', desc: 'Gestione sus compras y proveedores.', roles: ['administrador', 'admin', 'compras'], url: 'compras/index.html' },
+            { id: 'inventario', nombre: 'Control de Inventario', icon: '📦', desc: 'Administre su inventario de productos.', roles: ['administrador', 'admin', 'bodega'], url: 'inventario/index.html' },
+            { id: 'facturacion', nombre: 'Facturación y Cobro', icon: '🧾', desc: 'Facture y registre sus cobros.', roles: ['administrador', 'admin', 'caja'], url: 'facturacion/index.html' },
+            { id: 'despacho', nombre: 'Despacho de Productos', icon: '📤', desc: 'Despache productos a sus clientes.', roles: ['administrador', 'admin', 'reparto'], url: 'despacho/index.html' },
+            { id: 'reportes', nombre: 'Reportes', icon: '📊', desc: 'Consulte reportes y estadísticas.', roles: ['administrador', 'admin', 'caja'], url: 'reportes/index.html' },
             { id: 'usuarios', nombre: 'Usuarios', icon: '⚙️', desc: 'Gestione los usuarios.', roles: ['administrador', 'admin', 'superadmin'], url: '/usuarios/' }
         ];
 

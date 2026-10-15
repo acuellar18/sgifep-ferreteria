@@ -59,30 +59,31 @@
         {
           id: 'listado',
           etiqueta: 'Listado de Compras',
+          url: RAIZ_USUARIOS + 'compras',
           titulo: 'Listado de Compras',
           descripcion: 'Compras realizadas a los proveedores de la ferretería.',
           columnas: ['Código', 'Proveedor', 'Fecha', 'Total', 'Estado']
         },
         {
           id: 'proveedores',
-          archivo: 'proveedores.html',
           etiqueta: 'Proveedores',
+          url: RAIZ_USUARIOS + 'compras/proveedores',
           titulo: 'Proveedores',
           descripcion: 'Catálogo de proveedores de la ferretería.',
           columnas: ['Código', 'Razón social', 'Contacto', 'Teléfono', 'Estado']
         },
         {
           id: 'ordenes-compra',
-          archivo: 'ordenes-compra.html',
           etiqueta: 'Órdenes de Compra',
+          url: RAIZ_USUARIOS + 'compras/ordenes',
           titulo: 'Órdenes de Compra',
           descripcion: 'Órdenes de compra emitidas a los proveedores.',
           columnas: ['Código', 'Proveedor', 'Fecha de emisión', 'Fecha de entrega', 'Estado']
         },
         {
           id: 'reporte',
-          archivo: 'reporte.html',
           etiqueta: 'Reporte de Compras',
+          url: RAIZ_USUARIOS + 'compras/reporte',
           titulo: 'Reporte de Compras',
           descripcion: 'Resumen de compras por período y proveedor.',
           vista: 'reporte',

@@ -32,5 +32,7 @@ deployFile(resolve(dist, 'index.html'), resolve(backendPublic, 'usuarios', 'inde
 deployFile(resolve(dist, 'login.html'), resolve(backendPublic, 'login.html'));
 deployFile(resolve(dist, 'modulos.html'), resolve(backendPublic, 'modulos.html'));
 deployDir(resolve(dist, 'img'), resolve(backendPublic, 'img'));
+// Copiar assets-modulos (menú lateral compartido para módulos HTML)
+deployDir(resolve(root, 'public', 'assets-modulos'), resolve(backendPublic, 'assets-modulos'));
 
 console.log('Despliegue completado en backend/public.');

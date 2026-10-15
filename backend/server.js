@@ -36,6 +36,11 @@ app.use('/api', require('./routes/auth.routes')); // /api/login, /api/reset-pass
 app.use('/api/usuarios', require('./routes/usuarios.routes'));
 app.use('/api/roles', require('./routes/roles.routes'));
 app.use('/api/departamentos', require('./routes/departamentos.routes'));
+app.use('/api/productos', require('./routes/productos.routes'));
+app.use('/api/proveedores', require('./routes/proveedores.routes'));
+app.use('/api/compras', require('./routes/compras.routes'));
+app.use('/api/ordenes-compra', require('./routes/ordenes-compra.routes'));
+app.use('/api/reportes-compras', require('./routes/reporte-compras.routes'));
 
 // ---------- SPA / catch-all ----------
 
