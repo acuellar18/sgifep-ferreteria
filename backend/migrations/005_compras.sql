@@ -121,24 +121,9 @@ CREATE INDEX IF NOT EXISTS idx_detalle_compra_producto ON detalle_compra(product
 -- ============================================
 -- PAGOS A PROVEEDORES
 -- ============================================
-CREATE TABLE IF NOT EXISTS pagos_proveedor (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    compra_id INT NOT NULL,
-    fecha DATE NOT NULL DEFAULT (CURRENT_DATE),
-    monto DECIMAL(14,2) NOT NULL,
-    metodo ENUM('efectivo','transferencia','cheque','otro') NOT NULL DEFAULT 'efectivo',
-    referencia VARCHAR(100) DEFAULT NULL,      -- n° cheque, n° transferencia, etc.
-    notas VARCHAR(255) DEFAULT NULL,
-    usuario_id INT NOT NULL,                   -- quien registró el pago
-    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_pagos_compra FOREIGN KEY (compra_id)
-        REFERENCES compras(id) ON DELETE RESTRICT,
-    CONSTRAINT fk_pagos_usuario FOREIGN KEY (usuario_id)
-        REFERENCES usuarios(id) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE INDEX IF NOT EXISTS idx_pagos_compra ON pagos_proveedor(compra_id);
-CREATE INDEX IF NOT EXISTS idx_pagos_fecha ON pagos_proveedor(fecha);
+-- La tabla de pagos se crea (o renombra desde pagos_proveedor) en
+-- 006_compras_esquema.sql, para soportar instalaciones nuevas y bases legacy
+-- sin conflictos de nombres de constraints al reejecutar migraciones.
 
 -- ============================================
 -- DETALLE DE ORDEN DE COMPRA

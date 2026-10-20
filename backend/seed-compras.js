@@ -1,9 +1,17 @@
 // Seed de datos de prueba para módulo Compras
 // Uso: node seed-compras.js (en backend/)
+//
+// Requiere haber ejecutado las migraciones 006 y 007. Para reiniciar desde cero
+// usar: npm run reiniciar-compras
 
 require('dotenv').config();
-const bcrypt = require('bcryptjs');
 const pool = require('./db');
+const {
+  COMPRAS_SEED,
+  redondear2,
+  calcularCompra,
+  resolverDetallesCompra
+} = require('./scripts/lib/compras-seed-data');
 
 const PROVEEDORES = [
   {
@@ -59,12 +67,10 @@ const PROVEEDORES = [
 ];
 
 const PRODUCTOS = [
-  // Cemento y Concreto
   { codigo: 'CEM-001', nombre: 'Cemento Gris 42.5kg', descripcion: 'Cemento Portland tipo IP', categoria: 'Cemento y Concreto', unidad: 'UNI', stock_min: 50, costo: 75.50, precio: 95.00 },
   { codigo: 'CEM-002', nombre: 'Cemento Blanco 40kg', descripcion: 'Cemento blanco estructural', categoria: 'Cemento y Concreto', unidad: 'UNI', stock_min: 20, costo: 95.00, precio: 120.00 },
   { codigo: 'CON-001', nombre: 'Concreto Premezclado 2500psi m3', descripcion: 'Concreto listo para vaciar', categoria: 'Cemento y Concreto', unidad: 'MTS', stock_min: 5, costo: 850.00, precio: 1100.00 },
 
-  // Tubería y Conexiones
   { codigo: 'TUB-001', nombre: 'Tubería PVC 1/2" x 6m', descripcion: 'Tubería PVC sanitaria', categoria: 'Tubería y Conexiones', unidad: 'UNI', stock_min: 100, costo: 18.50, precio: 28.00 },
   { codigo: 'TUB-002', nombre: 'Tubería PVC 3/4" x 6m', descripcion: 'Tubería PVC sanitaria', categoria: 'Tubería y Conexiones', unidad: 'UNI', stock_min: 80, costo: 25.00, precio: 38.00 },
   { codigo: 'TUB-003', nombre: 'Tubería PVC 1" x 6m', descripcion: 'Tubería PVC sanitaria', categoria: 'Tubería y Conexiones', unidad: 'UNI', stock_min: 60, costo: 38.00, precio: 55.00 },
@@ -72,25 +78,21 @@ const PRODUCTOS = [
   { codigo: 'CON-003', nombre: 'Tee PVC 1/2"', descripcion: 'Conexión PVC Tee', categoria: 'Tubería y Conexiones', unidad: 'UNI', stock_min: 150, costo: 4.20, precio: 7.00 },
   { codigo: 'CON-004', nombre: 'Unión PVC 1/2"', descripcion: 'Conexión PVC unión', categoria: 'Tubería y Conexiones', unidad: 'UNI', stock_min: 100, costo: 5.80, precio: 9.00 },
 
-  // Pinturas y Recubrimientos
   { codigo: 'PIN-001', nombre: 'Pintura Vinílica Blanca 19L', descripcion: 'Pintura interior/exterior lavable', categoria: 'Pinturas y Recubrimientos', unidad: 'CJA', stock_min: 30, costo: 285.00, precio: 380.00 },
   { codigo: 'PIN-002', nombre: 'Pintura Esmalte Sintético 1L', descripcion: 'Esmalte para metal y madera', categoria: 'Pinturas y Recubrimientos', unidad: 'UNI', stock_min: 50, costo: 45.00, precio: 65.00 },
   { codigo: 'PIN-003', nombre: 'Impermeabilizante Acrílico 19L', descripcion: 'Para techos y muros', categoria: 'Pinturas y Recubrimientos', unidad: 'CJA', stock_min: 20, costo: 320.00, precio: 420.00 },
   { codigo: 'PIN-004', nombre: 'Sellador Silicona 300ml', descripcion: 'Sellador multipropósito', categoria: 'Pinturas y Recubrimientos', unidad: 'UNI', stock_min: 100, costo: 22.00, precio: 35.00 },
 
-  // Herramientas Manuales
   { codigo: 'HER-001', nombre: 'Martillo Carpintero 16oz', descripcion: 'Martillo con mango de fibra', categoria: 'Herramientas Manuales', unidad: 'UNI', stock_min: 30, costo: 55.00, precio: 85.00 },
   { codigo: 'HER-002', nombre: 'Juego Llaves Combinadas 8-19mm', descripcion: '12 piezas, acero cromo vanadio', categoria: 'Herramientas Manuales', unidad: 'CJA', stock_min: 15, costo: 180.00, precio: 280.00 },
   { codigo: 'HER-003', nombre: 'Alicate Universal 8"', descripcion: 'Alicate de corte y presión', categoria: 'Herramientas Manuales', unidad: 'UNI', stock_min: 40, costo: 48.00, precio: 75.00 },
   { codigo: 'HER-004', nombre: 'Destornillador Phillips #2 x 6"', descripcion: 'Punta magnética, mango ergonómico', categoria: 'Herramientas Manuales', unidad: 'UNI', stock_min: 60, costo: 18.00, precio: 30.00 },
   { codigo: 'HER-005', nombre: 'Cinta Métrica 5m', descripcion: 'Cinta métrica con freno', categoria: 'Herramientas Manuales', unidad: 'UNI', stock_min: 50, costo: 25.00, precio: 42.00 },
 
-  // Herramientas Eléctricas
   { codigo: 'HEL-001', nombre: 'Taladro Percutor 1/2" 650W', descripcion: 'Taladro industrial 2 velocidades', categoria: 'Herramientas Eléctricas', unidad: 'UNI', stock_min: 10, costo: 380.00, precio: 550.00 },
   { codigo: 'HEL-002', nombre: 'Amoladora Angular 4.5"', descripcion: 'Amoladora 750W con disco', categoria: 'Herramientas Eléctricas', unidad: 'UNI', stock_min: 15, costo: 290.00, precio: 420.00 },
   { codigo: 'HEL-003', nombre: 'Sierra Circular 7.25"', descripcion: 'Sierra 1400W con guía láser', categoria: 'Herramientas Eléctricas', unidad: 'UNI', stock_min: 8, costo: 450.00, precio: 650.00 },
 
-  // Material Eléctrico
   { codigo: 'ELE-001', nombre: 'Cable THHN 12 AWG Negro 100m', descripcion: 'Cable cobre aislado THHN', categoria: 'Material Eléctrico', unidad: 'ROL', stock_min: 20, costo: 420.00, precio: 580.00 },
   { codigo: 'ELE-002', nombre: 'Cable THHN 14 AWG Blanco 100m', descripcion: 'Cable cobre aislado THHN', categoria: 'Material Eléctrico', unidad: 'ROL', stock_min: 20, costo: 280.00, precio: 380.00 },
   { codigo: 'ELE-003', nombre: 'Interruptor Sencillo 15A', descripcion: 'Interruptor residencial blanco', categoria: 'Material Eléctrico', unidad: 'UNI', stock_min: 100, costo: 8.50, precio: 15.00 },
@@ -99,233 +101,337 @@ const PRODUCTOS = [
   { codigo: 'ELE-006', nombre: 'Tablero Carga 12 Circuitos', descripcion: 'Tablero principal residencial', categoria: 'Material Eléctrico', unidad: 'UNI', stock_min: 10, costo: 320.00, precio: 480.00 }
 ];
 
+const ASOCIACIONES = [
+  { proveedor: 'Cementos Progreso S.A.', productos: ['CEM-001', 'CEM-002', 'CON-001'] },
+  { proveedor: 'Tuberías y Conexiones del Sur', productos: ['TUB-001', 'TUB-002', 'TUB-003', 'CON-002', 'CON-003', 'CON-004'] },
+  { proveedor: 'Pinturas El Color S.A.', productos: ['PIN-001', 'PIN-002', 'PIN-003', 'PIN-004'] },
+  { proveedor: 'Herramientas Industriales S.A.', productos: ['HER-001', 'HER-002', 'HER-003', 'HER-004', 'HER-005', 'HEL-001', 'HEL-002', 'HEL-003'] },
+  { proveedor: 'Electricidad y Cables del Norte', productos: ['ELE-001', 'ELE-002', 'ELE-003', 'ELE-004', 'ELE-005', 'ELE-006'] }
+];
+
+const ORDENES_SEED = [
+  {
+    numero: 'OC-2025-000001',
+    proveedor_nit: '1234567-8',
+    fecha: '2025-02-15',
+    fecha_esperada: '2025-02-28',
+    estado: 'enviada',
+    notas: 'Orden de cemento',
+    detalles: [
+      { codigo: 'CEM-001', cantidad: 30, costo_unitario: 75.50 },
+      { codigo: 'CEM-002', cantidad: 20, costo_unitario: 95.00 }
+    ]
+  },
+  {
+    numero: 'OC-2025-000002',
+    proveedor_nit: '2345678-9',
+    fecha: '2025-02-20',
+    fecha_esperada: '2025-03-05',
+    estado: 'borrador',
+    notas: 'Orden de tuberías pendiente de confirmar',
+    detalles: [
+      { codigo: 'TUB-001', cantidad: 50, costo_unitario: 18.50 },
+      { codigo: 'TUB-002', cantidad: 30, costo_unitario: 25.00 }
+    ]
+  }
+];
+
+async function insertarProveedores(conn) {
+  console.log('\n1. Insertando proveedores...');
+  for (const p of PROVEEDORES) {
+    const [result] = await conn.query(
+      `INSERT INTO proveedores
+        (nombre, nit, contacto_nombre, telefono, correo, direccion, dias_credito, notas, activo)
+       SELECT ?, ?, ?, ?, ?, ?, ?, ?, 1 FROM DUAL
+       WHERE NOT EXISTS (SELECT 1 FROM proveedores WHERE nit = ?)`,
+      [p.nombre, p.nit, p.contacto_nombre, p.telefono, p.correo, p.direccion, p.dias_credito, p.notas, p.nit]
+    );
+    if (result.affectedRows > 0) console.log(`  + ${p.nombre}`);
+  }
+}
+
+async function insertarProductos(conn) {
+  const [categorias] = await conn.query('SELECT id, nombre FROM categorias');
+  const catMap = new Map(categorias.map((c) => [c.nombre, c.id]));
+
+  console.log('\n2. Insertando productos...');
+  for (const p of PRODUCTOS) {
+    const categoriaId = catMap.get(p.categoria);
+    if (!categoriaId) {
+      throw new Error(`Categoría no encontrada: ${p.categoria}`);
+    }
+
+    const [existentes] = await conn.query(
+      'SELECT id FROM productos WHERE codigo = ? LIMIT 1',
+      [p.codigo]
+    );
+    if (existentes.length) continue;
+
+    await conn.query(
+      `INSERT INTO productos
+        (codigo, nombre, descripcion, categoria_id, unidad_medida, stock_minimo,
+         costo_ultimo, costo_promedio, precio_venta, activo, stock_actual)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0)`,
+      [p.codigo, p.nombre, p.descripcion, categoriaId, p.unidad, p.stock_min, p.costo, p.costo, p.precio]
+    );
+    console.log(`  + ${p.nombre} (${p.codigo})`);
+  }
+}
+
+async function asociarProductosProveedor(conn) {
+  console.log('\n3. Asociando productos con proveedores...');
+  const [proveedores] = await conn.query('SELECT id, nombre FROM proveedores');
+  const provMap = new Map(proveedores.map((p) => [p.nombre, p.id]));
+  const [productos] = await conn.query('SELECT id, codigo FROM productos');
+  const prodMap = new Map(productos.map((p) => [p.codigo, p.id]));
+
+  for (const asociacion of ASOCIACIONES) {
+    const proveedorId = provMap.get(asociacion.proveedor);
+    if (!proveedorId) continue;
+
+    for (const codigo of asociacion.productos) {
+      const productoId = prodMap.get(codigo);
+      const producto = PRODUCTOS.find((p) => p.codigo === codigo);
+      if (!productoId || !producto) continue;
+
+      await conn.query(
+        `INSERT INTO producto_proveedor (producto_id, proveedor_id, costo_ultimo, es_preferido)
+         VALUES (?, ?, ?, 1)
+         ON DUPLICATE KEY UPDATE costo_ultimo = VALUES(costo_ultimo), es_preferido = 1`,
+        [productoId, proveedorId, producto.costo]
+      );
+    }
+  }
+}
+
+async function crearCompraSeed(conn, definicion, usuarioId) {
+  const [proveedores] = await conn.query(
+    'SELECT id, dias_credito FROM proveedores WHERE nit = ? LIMIT 1',
+    [definicion.proveedor_nit]
+  );
+  if (!proveedores.length) {
+    throw new Error(`Proveedor no encontrado para el seed: ${definicion.proveedor_nit}`);
+  }
+
+  const [existentes] = await conn.query(
+    'SELECT id FROM compras WHERE numero = ? LIMIT 1',
+    [definicion.numero]
+  );
+  if (existentes.length) {
+    return { numero: definicion.numero, omitida: true };
+  }
+
+  const proveedor = proveedores[0];
+  const detalles = await resolverDetallesCompra(conn, definicion);
+  const calculo = calcularCompra(definicion, detalles, proveedor.dias_credito);
+
+  const [result] = await conn.query(
+    `INSERT INTO compras
+      (numero, proveedor_id, fecha, numero_factura, condicion, fecha_vencimiento,
+       subtotal, iva, total, monto_pagado, saldo_pendiente, estado_pago, estado,
+       usuario_id, notas)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'recibida', ?, ?)`,
+    [
+      definicion.numero,
+      proveedor.id,
+      definicion.fecha,
+      definicion.numero_factura,
+      definicion.condicion,
+      calculo.fecha_vencimiento,
+      calculo.subtotal,
+      calculo.iva,
+      calculo.total,
+      calculo.monto_pagado,
+      calculo.saldo_pendiente,
+      calculo.estado_pago,
+      usuarioId,
+      definicion.notas
+    ]
+  );
+  const compraId = result.insertId;
+
+  for (const d of detalles) {
+    const subtotal = redondear2(Number(d.cantidad) * Number(d.costo_unitario));
+    await conn.query(
+      `INSERT INTO detalle_compra (compra_id, producto_id, cantidad, costo_unitario, subtotal)
+       VALUES (?, ?, ?, ?, ?)`,
+      [compraId, d.producto_id, d.cantidad, d.costo_unitario, subtotal]
+    );
+
+    await conn.query(
+      `INSERT INTO movimientos_inventario
+        (producto_id, tipo, origen, referencia_tipo, referencia_id, cantidad,
+         costo_unitario, notas, usuario_id)
+       VALUES (?, 'entrada', 'compra', 'compras', ?, ?, ?, ?, ?)`,
+      [
+        d.producto_id,
+        compraId,
+        d.cantidad,
+        d.costo_unitario,
+        `Entrada por compra ${definicion.numero}`,
+        usuarioId
+      ]
+    );
+  }
+
+  for (const pago of calculo.pagos) {
+    await conn.query(
+      `INSERT INTO pagos_compra
+        (compra_id, fecha, monto, metodo, referencia, notas, usuario_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        compraId,
+        pago.fecha,
+        pago.monto,
+        pago.metodo,
+        pago.referencia,
+        pago.notas,
+        usuarioId
+      ]
+    );
+  }
+
+  return {
+    numero: definicion.numero,
+    compraId,
+    creada: true,
+    total: calculo.total,
+    lineas: detalles.length,
+    pagos: calculo.pagos.length
+  };
+}
+
+async function crearOrdenesSeed(conn, usuarioId) {
+  console.log('\n5. Creando órdenes de compra de prueba...');
+
+  for (const definicion of ORDENES_SEED) {
+    const [existentes] = await conn.query(
+      'SELECT id FROM ordenes_compra WHERE numero = ? LIMIT 1',
+      [definicion.numero]
+    );
+    if (existentes.length) {
+      console.log(`  = Orden ${definicion.numero} ya existe`);
+      continue;
+    }
+
+    const [proveedores] = await conn.query(
+      'SELECT id FROM proveedores WHERE nit = ? LIMIT 1',
+      [definicion.proveedor_nit]
+    );
+    if (!proveedores.length) {
+      throw new Error(`Proveedor no encontrado para la orden: ${definicion.proveedor_nit}`);
+    }
+
+    const [result] = await conn.query(
+      `INSERT INTO ordenes_compra
+        (numero, proveedor_id, fecha, fecha_esperada, estado, notas,
+         subtotal_estimado, iva_estimado, total_estimado, usuario_id)
+       VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, ?)`,
+      [
+        definicion.numero,
+        proveedores[0].id,
+        definicion.fecha,
+        definicion.fecha_esperada,
+        definicion.estado,
+        definicion.notas,
+        usuarioId
+      ]
+    );
+
+    for (const linea of definicion.detalles) {
+      const detalles = await resolverDetallesCompra(conn, { detalles: [linea] });
+      await conn.query(
+        `INSERT INTO detalle_orden_compra
+          (orden_id, producto_id, cantidad_solicitada, cantidad_recibida, costo_estimado)
+         VALUES (?, ?, ?, 0, ?)`,
+        [result.insertId, detalles[0].producto_id, linea.cantidad, linea.costo_unitario]
+      );
+    }
+
+    const [orden] = await conn.query(
+      'SELECT numero, subtotal_estimado, iva_estimado, total_estimado FROM ordenes_compra WHERE id = ?',
+      [result.insertId]
+    );
+    console.log(
+      `  + Orden ${orden[0].numero} (${definicion.estado}, ` +
+      `Q${Number(orden[0].total_estimado).toFixed(2)})`
+    );
+  }
+}
+
+async function actualizarSecuencias(conn) {
+  await conn.query(
+    `INSERT INTO secuencias (nombre, anio, valor)
+     SELECT 'compras', CAST(SUBSTRING(numero, 3, 4) AS UNSIGNED),
+            MAX(CAST(SUBSTRING(numero, 8) AS UNSIGNED))
+     FROM compras
+     WHERE numero REGEXP '^C-[0-9]{4}-[0-9]+$'
+     GROUP BY CAST(SUBSTRING(numero, 3, 4) AS UNSIGNED)
+     ON DUPLICATE KEY UPDATE valor = GREATEST(secuencias.valor, VALUES(valor))`
+  );
+
+  await conn.query(
+    `INSERT INTO secuencias (nombre, anio, valor)
+     SELECT 'ordenes_compra', CAST(SUBSTRING(numero, 4, 4) AS UNSIGNED),
+            MAX(CAST(SUBSTRING(numero, 9) AS UNSIGNED))
+     FROM ordenes_compra
+     WHERE numero REGEXP '^OC-[0-9]{4}-[0-9]+$'
+     GROUP BY CAST(SUBSTRING(numero, 4, 4) AS UNSIGNED)
+     ON DUPLICATE KEY UPDATE valor = GREATEST(secuencias.valor, VALUES(valor))`
+  );
+}
+
 async function runSeedCompras() {
+  const connection = await pool.getConnection();
   try {
     console.log('=== SEED MÓDULO COMPRAS ===');
-    console.log('Conectado a MySQL correctamente.');
 
-    // 1. Insertar proveedores
-    console.log('\n1. Insertando proveedores...');
-    for (const p of PROVEEDORES) {
-      await pool.query(
-        `INSERT INTO proveedores (nombre, nit, contacto_nombre, telefono, correo, direccion, dias_credito, notas, activo)
-         SELECT ?, ?, ?, ?, ?, ?, ?, ?, 1 FROM DUAL
-         WHERE NOT EXISTS (SELECT 1 FROM proveedores WHERE nit = ?)`,
-        [p.nombre, p.nit, p.contacto_nombre, p.telefono, p.correo, p.direccion, p.dias_credito, p.notas, p.nit]
-      );
-      console.log(`  + ${p.nombre}`);
+    const [usuarios] = await connection.query(
+      "SELECT id FROM usuarios WHERE username = 'admin' LIMIT 1"
+    );
+    if (!usuarios.length) {
+      throw new Error("No existe el usuario 'admin'. Ejecute primero: npm run seed");
     }
+    const usuarioId = usuarios[0].id;
 
-    // 2. Obtener IDs de categorías
-    const [categorias] = await pool.query('SELECT id, nombre FROM categorias');
-    const catMap = new Map(categorias.map(c => [c.nombre, c.id]));
+    await connection.query('SET @usuario_id = ?', [usuarioId]);
+    await connection.query('SET @sgifep_reset = 0');
+    await connection.beginTransaction();
 
-    // 3. Obtener IDs de proveedores
-    const [proveedores] = await pool.query('SELECT id, nombre FROM proveedores');
-    const provMap = new Map(proveedores.map(p => [p.nombre, p.id]));
+    await insertarProveedores(connection);
+    await insertarProductos(connection);
+    await asociarProductosProveedor(connection);
 
-    // 4. Insertar productos
-    console.log('\n2. Insertando productos...');
-    for (const p of PRODUCTOS) {
-      const catId = catMap.get(p.categoria);
-      if (!catId) {
-        console.log(`  ! Categoría no encontrada: ${p.categoria} para ${p.nombre}`);
-        continue;
-      }
-      const [result] = await pool.query(
-        `INSERT INTO productos (codigo, nombre, descripcion, categoria_id, unidad_medida, stock_minimo, costo_ultimo, costo_promedio, precio_venta, activo, stock_actual)
-         SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0 FROM DUAL
-         WHERE NOT EXISTS (SELECT 1 FROM productos WHERE codigo = ?)`,
-        [p.codigo, p.nombre, p.descripcion, catId, p.unidad, p.stock_min, p.costo, p.costo, p.precio, p.codigo]
-      );
-      if (result.affectedRows > 0) {
-        console.log(`  + ${p.nombre} (${p.codigo})`);
-      }
-    }
-
-    // 5. Asociar productos con proveedores (producto_proveedor)
-    console.log('\n3. Asociando productos con proveedores...');
-    const asociaciones = [
-      // Cementos Progreso -> Cemento y Concreto
-      { proveedor: 'Cementos Progreso S.A.', productos: ['CEM-001', 'CEM-002', 'CON-001'] },
-      // Tuberías del Sur -> Tubería y Conexiones
-      { proveedor: 'Tuberías y Conexiones del Sur', productos: ['TUB-001', 'TUB-002', 'TUB-003', 'CON-002', 'CON-003', 'CON-004'] },
-      // Pinturas El Color -> Pinturas
-      { proveedor: 'Pinturas El Color S.A.', productos: ['PIN-001', 'PIN-002', 'PIN-003', 'PIN-004'] },
-      // Herramientas Industriales -> Herramientas
-      { proveedor: 'Herramientas Industriales S.A.', productos: ['HER-001', 'HER-002', 'HER-003', 'HER-004', 'HER-005', 'HEL-001', 'HEL-002', 'HEL-003'] },
-      // Electricidad del Norte -> Material Eléctrico
-      { proveedor: 'Electricidad y Cables del Norte', productos: ['ELE-001', 'ELE-002', 'ELE-003', 'ELE-004', 'ELE-005', 'ELE-006'] }
-    ];
-
-    for (const a of asociaciones) {
-      const provId = provMap.get(a.proveedor);
-      if (!provId) continue;
-      for (const prodCod of a.productos) {
-        const [prod] = await pool.query('SELECT id FROM productos WHERE codigo = ?', [prodCod]);
-        if (prod.length > 0) {
-          const p = prod[0];
-          const [pp] = await pool.query('SELECT 1 FROM producto_proveedor WHERE producto_id = ? AND proveedor_id = ?', [p.id, provId]);
-          if (pp.length === 0) {
-            const prodInfo = PRODUCTOS.find(x => x.codigo === prodCod);
-            await pool.query(
-              `INSERT INTO producto_proveedor (producto_id, proveedor_id, costo_ultimo, es_preferido) VALUES (?, ?, ?, 1)`,
-              [p.id, provId, prodInfo?.costo || 0]
-            );
-            console.log(`  + ${prodCod} -> ${a.proveedor}`);
-          }
-        }
-      }
-    }
-
-    // 6. Crear algunas compras de prueba
     console.log('\n4. Creando compras de prueba...');
-    const [usuario] = await pool.query("SELECT id FROM usuarios WHERE username = 'admin' LIMIT 1");
-    const usuarioId = usuario[0]?.id || 1;
-
-    // Obtener algunos productos para compras
-    const [prods] = await pool.query('SELECT id, codigo, nombre, costo_ultimo FROM productos WHERE codigo IN (?,?,?,?,?,?) LIMIT 6', ['CEM-001', 'TUB-001', 'PIN-001', 'HER-001', 'ELE-001', 'ELE-003']);
-    const [provs] = await pool.query('SELECT id, nombre, dias_credito FROM proveedores LIMIT 3');
-
-    if (prods.length >= 3 && provs.length >= 2) {
-      const prov1 = provs[0]; // Cementos Progreso
-      const prov2 = provs[1]; // Tuberías del Sur
-      const prov3 = provs[2]; // Pinturas El Color
-
-      // Compra 1: Contado - Cementos Progreso
-      const fecha1 = '2025-01-15';
-      const numero1 = 'C-2025-000001';
-      const subtotal1 = (50 * 75.50) + (20 * 45.00);
-      const iva1 = Math.round(subtotal1 * 0.12 * 100) / 100;
-      const total1 = Math.round((subtotal1 + iva1) * 100) / 100;
-
-      await pool.query(
-        `INSERT INTO compras (numero, proveedor_id, fecha, numero_factura, condicion, fecha_vencimiento, subtotal, iva, total, monto_pagado, saldo_pendiente, estado_pago, estado, usuario_id, notas)
-         SELECT ?, ?, ?, 'FAC-001', 'contado', ?, ?, ?, ?, ?, ?, 'pagada', 'recibida', ?, 'Compra contado cemento'
-         FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM compras WHERE numero = ?)`,
-        [numero1, prov1.id, fecha1, fecha1, subtotal1, iva1, total1, total1, 0, usuarioId, numero1]
-      );
-
-      const [compra1] = await pool.query('SELECT id FROM compras WHERE numero = ?', [numero1]);
-      if (compra1.length > 0) {
-        const c1 = compra1[0].id;
-        await pool.query(`INSERT INTO detalle_compra (compra_id, producto_id, cantidad, costo_unitario, subtotal) VALUES (?,?,?,?,?)`, [c1, prods[0].id, 50, 75.50, 50*75.50]);
-        await pool.query(`INSERT INTO detalle_compra (compra_id, producto_id, cantidad, costo_unitario, subtotal) VALUES (?,?,?,?,?)`, [c1, prods[3].id, 20, 45.00, 20*45.00]);
-        await pool.query(`INSERT INTO pagos_proveedor (compra_id, fecha, monto, metodo, referencia, notas, usuario_id) VALUES (?,?,?,?,?,?,?)`, [c1, fecha1, total1, 'efectivo', 'CONT-001', 'Pago contado', usuarioId]);
-        // Actualizar stock
-        await pool.query(`UPDATE productos SET stock_actual = stock_actual + 50, costo_ultimo = 75.50, costo_promedio = 75.50 WHERE id = ?`, [prods[0].id]);
-        await pool.query(`UPDATE productos SET stock_actual = stock_actual + 20, costo_ultimo = 45.00, costo_promedio = 45.00 WHERE id = ?`, [prods[3].id]);
-        console.log(`  + Compra ${numero1} (Contado)`);
-      }
-
-      // Compra 2: Crédito - Tuberías del Sur
-      const fecha2 = '2025-01-20';
-      const venc2 = new Date(fecha2);
-      venc2.setDate(venc2.getDate() + prov2.dias_credito);
-      const venc2Str = venc2.toISOString().split('T')[0];
-      const numero2 = 'C-2025-000002';
-      const subtotal2 = (100 * 18.50) + (50 * 25.00) + (30 * 38.00);
-      const iva2 = Math.round(subtotal2 * 0.12 * 100) / 100;
-      const total2 = Math.round((subtotal2 + iva2) * 100) / 100;
-
-      await pool.query(
-        `INSERT INTO compras (numero, proveedor_id, fecha, numero_factura, condicion, fecha_vencimiento, subtotal, iva, total, monto_pagado, saldo_pendiente, estado_pago, estado, usuario_id, notas)
-         SELECT ?, ?, ?, 'FAC-002', 'credito', ?, ?, ?, ?, 0, ?, 'pendiente', 'recibida', ?, 'Compra crédito tuberías'
-         FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM compras WHERE numero = ?)`,
-        [numero2, prov2.id, fecha2, venc2Str, subtotal2, iva2, total2, total2, usuarioId, numero2]
-      );
-
-      const [compra2] = await pool.query('SELECT id FROM compras WHERE numero = ?', [numero2]);
-      if (compra2.length > 0) {
-        const c2 = compra2[0].id;
-        await pool.query(`INSERT INTO detalle_compra (compra_id, producto_id, cantidad, costo_unitario, subtotal) VALUES (?,?,?,?,?)`, [c2, prods[1].id, 100, 18.50, 100*18.50]);
-        // TUB-002 y TUB-003 necesitan IDs
-        const [tub2] = await pool.query('SELECT id FROM productos WHERE codigo = ?', ['TUB-002']);
-        const [tub3] = await pool.query('SELECT id FROM productos WHERE codigo = ?', ['TUB-003']);
-        if (tub2.length) await pool.query(`INSERT INTO detalle_compra (compra_id, producto_id, cantidad, costo_unitario, subtotal) VALUES (?,?,?,?,?)`, [c2, tub2[0].id, 50, 25.00, 50*25.00]);
-        if (tub3.length) await pool.query(`INSERT INTO detalle_compra (compra_id, producto_id, cantidad, costo_unitario, subtotal) VALUES (?,?,?,?,?)`, [c2, tub3[0].id, 30, 38.00, 30*38.00]);
-        await pool.query(`UPDATE productos SET stock_actual = stock_actual + 100, costo_ultimo = 18.50, costo_promedio = 18.50 WHERE id = ?`, [prods[1].id]);
-        if (tub2.length) await pool.query(`UPDATE productos SET stock_actual = stock_actual + 50, costo_ultimo = 25.00, costo_promedio = 25.00 WHERE id = ?`, [tub2[0].id]);
-        if (tub3.length) await pool.query(`UPDATE productos SET stock_actual = stock_actual + 30, costo_ultimo = 38.00, costo_promedio = 38.00 WHERE id = ?`, [tub3[0].id]);
-        console.log(`  + Compra ${numero2} (Crédito - pendiente)`);
-      }
-
-      // Compra 3: Crédito parcial pagada - Pinturas El Color
-      const fecha3 = '2025-02-01';
-      const venc3 = new Date(fecha3);
-      venc3.setDate(venc3.getDate() + prov3.dias_credito);
-      const venc3Str = venc3.toISOString().split('T')[0];
-      const numero3 = 'C-2025-000003';
-      const subtotal3 = (15 * 285.00) + (25 * 45.00);
-      const iva3 = Math.round(subtotal3 * 0.12 * 100) / 100;
-      const total3 = Math.round((subtotal3 + iva3) * 100) / 100;
-      const pagado3 = Math.round(total3 * 0.4 * 100) / 100; // 40% pagado
-      const saldo3 = Math.round((total3 - pagado3) * 100) / 100;
-
-      await pool.query(
-        `INSERT INTO compras (numero, proveedor_id, fecha, numero_factura, condicion, fecha_vencimiento, subtotal, iva, total, monto_pagado, saldo_pendiente, estado_pago, estado, usuario_id, notas)
-         SELECT ?, ?, ?, 'FAC-003', 'credito', ?, ?, ?, ?, ?, ?, 'parcial', 'recibida', ?, 'Compra crédito pinturas - pago parcial'
-         FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM compras WHERE numero = ?)`,
-        [numero3, prov3.id, fecha3, venc3Str, subtotal3, iva3, total3, pagado3, saldo3, usuarioId, numero3]
-      );
-
-      const [compra3] = await pool.query('SELECT id FROM compras WHERE numero = ?', [numero3]);
-      if (compra3.length > 0) {
-        const c3 = compra3[0].id;
-        await pool.query(`INSERT INTO detalle_compra (compra_id, producto_id, cantidad, costo_unitario, subtotal) VALUES (?,?,?,?,?)`, [c3, prods[2].id, 15, 285.00, 15*285.00]);
-        await pool.query(`INSERT INTO pagos_proveedor (compra_id, fecha, monto, metodo, referencia, notas, usuario_id) VALUES (?,?,?,?,?,?,?)`, [c3, '2025-02-10', pagado3, 'transferencia', 'TRF-001', 'Abono 40%', usuarioId]);
-        await pool.query(`UPDATE productos SET stock_actual = stock_actual + 15, costo_ultimo = 285.00, costo_promedio = 285.00 WHERE id = ?`, [prods[2].id]);
-        console.log(`  + Compra ${numero3} (Crédito - parcial)`);
+    for (const definicion of COMPRAS_SEED) {
+      const resultado = await crearCompraSeed(connection, definicion, usuarioId);
+      if (resultado.omitida) {
+        console.log(`  = Compra ${resultado.numero} ya existe`);
+      } else {
+        console.log(
+          `  + Compra ${resultado.numero} ` +
+          `(Q${resultado.total.toFixed(2)}, ${resultado.lineas} líneas, ${resultado.pagos} pagos)`
+        );
       }
     }
 
-    // 7. Crear órdenes de compra de prueba
-    console.log('\n5. Creando órdenes de compra de prueba...');
-    if (prods.length >= 2 && provs.length >= 1) {
-      const prov = provs[0];
-      const [oc1] = await pool.query('SELECT MAX(CAST(SUBSTRING(numero, 5) AS UNSIGNED)) AS max_num FROM ordenes_compra WHERE numero LIKE ?', ['OC-2025-%']);
-      const maxNum = oc1[0]?.max_num || 0;
-      const numeroOC1 = `OC-2025-${String(maxNum + 1).padStart(6, '0')}`;
+    await crearOrdenesSeed(connection, usuarioId);
+    await actualizarSecuencias(connection);
 
-      const subtotalOC = (30 * 75.50) + (20 * 18.50);
-      const ivaOC = Math.round(subtotalOC * 0.12 * 100) / 100;
-      const totalOC = Math.round((subtotalOC + ivaOC) * 100) / 100;
-
-      await pool.query(
-        `INSERT INTO ordenes_compra (numero, proveedor_id, fecha, fecha_esperada, estado, notas, subtotal_estimado, iva_estimado, total_estimado, usuario_id)
-         SELECT ?, ?, '2025-02-15', '2025-02-28', 'enviada', 'Orden cemento y tuberías', ?, ?, ?, ? FROM DUAL
-         WHERE NOT EXISTS (SELECT 1 FROM ordenes_compra WHERE numero = ?)`,
-        [numeroOC1, prov.id, subtotalOC, ivaOC, totalOC, usuarioId, numeroOC1]
-      );
-
-      const [orden] = await pool.query('SELECT id FROM ordenes_compra WHERE numero = ?', [numeroOC1]);
-      if (orden.length > 0) {
-        const oid = orden[0].id;
-        await pool.query(`INSERT INTO detalle_orden_compra (orden_id, producto_id, cantidad_solicitada, cantidad_recibida, costo_estimado) VALUES (?,?,?,0,?)`, [oid, prods[0].id, 30, 75.50]);
-        await pool.query(`INSERT INTO detalle_orden_compra (orden_id, producto_id, cantidad_solicitada, cantidad_recibida, costo_estimado) VALUES (?,?,?,0,?)`, [oid, prods[1].id, 20, 18.50]);
-        console.log(`  + Orden ${numeroOC1} (Enviada)`);
-      }
-
-      // Orden 2: Borrador para generar desde stock bajo
-      const [oc2] = await pool.query('SELECT MAX(CAST(SUBSTRING(numero, 5) AS UNSIGNED)) AS max_num FROM ordenes_compra WHERE numero LIKE ?', ['OC-2025-%']);
-      const maxNum2 = oc2[0]?.max_num || 0;
-      const numeroOC2 = `OC-2025-${String(maxNum2 + 1).padStart(6, '0')}`;
-
-      await pool.query(
-        `INSERT INTO ordenes_compra (numero, proveedor_id, fecha, fecha_esperada, estado, notas, subtotal_estimado, iva_estimado, total_estimado, usuario_id)
-         SELECT ?, ?, '2025-02-20', '2025-03-05', 'borrador', 'Orden pendiente por confirmar', 0, 0, 0, ? FROM DUAL
-         WHERE NOT EXISTS (SELECT 1 FROM ordenes_compra WHERE numero = ?)`,
-        [numeroOC2, provs[1].id, usuarioId, numeroOC2]
-      );
-      console.log(`  + Orden ${numeroOC2} (Borrador)`);
-    }
-
+    await connection.commit();
     console.log('\n=== SEED COMPRAS COMPLETADO ===');
-    process.exit(0);
   } catch (error) {
+    await connection.rollback();
     console.error('Error en seed-compras:', error.message);
     console.error(error.stack);
-    process.exit(1);
+    process.exitCode = 1;
+  } finally {
+    connection.release();
+    try {
+      await pool.pool.end();
+    } catch (error) {
+      // Ignorar errores al cerrar el pool.
+    }
   }
 }
 

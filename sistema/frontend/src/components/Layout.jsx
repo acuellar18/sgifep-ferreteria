@@ -1,9 +1,18 @@
 import logoImg from '../assets/logo.png';
-import { Fragment, useEffect, useState } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import './modulos-menu.css';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import { Link, Outlet, useLocation } from 'react-router-dom';
+import { permisosCompras } from '../utils/permisosCompras';
+import {
+  MODULOS_SISTEMA,
+  RUTA_LOGIN,
+  RUTA_MODULOS_PRINCIPALES,
+  esSubitemActivo,
+  obtenerModuloActivo,
+  obtenerTituloDocumento
+} from '../config/navegacionSistema';
 
 const CLAVE_SESION = 'session';
+const CLAVE_EXPANDIDOS = 'sgifep.modulosExpandidos';
 
 function leerSesion() {
   try {
@@ -13,116 +22,104 @@ function leerSesion() {
   }
 }
 
-// Módulos que ya tienen páginas HTML propias. Cada uno despliega su lista de
-// submódulos en el menú lateral, igual que Usuarios. El módulo activo queda
-// expandido y resaltado en naranja; los demás, colapsados.
-//
-// Las rutas se arman con BASE_MODULOS porque estas páginas estáticas se
-// sirven bajo /usuarios/ en desarrollo (base de Vite, puerto 5174) y bajo la
-// raíz en producción (Express, puerto 3000).
-const BASE_MODULOS = import.meta.env.DEV ? '/usuarios/' : '/';
-
-const MODULOS_SISTEMA = [
-  {
-    id: 'usuarios',
-    icono: '👥',
-    titulo: 'Usuarios',
-    subitems: [
-      { to: '/', etiqueta: 'Listado de Usuarios' },
-      { to: '/reporte', etiqueta: 'Reporte de Usuarios' },
-      { to: '/roles', etiqueta: 'Gestión de Roles' },
-      { to: '/departamentos', etiqueta: 'Gestión de Departamentos' }
-    ]
-  },
-  {
-    id: 'compras',
-    icono: '🛒',
-    titulo: 'Compras',
-    subitems: [
-      { to: '/compras', etiqueta: 'Listado de Compras' },
-      { to: '/compras/proveedores', etiqueta: 'Proveedores' },
-      { to: '/compras/ordenes', etiqueta: 'Órdenes de Compra' },
-      { to: '/compras/reporte', etiqueta: 'Reporte de Compras' }
-    ]
-  },
-  {
-    id: 'inventario',
-    icono: '📦',
-    titulo: 'Inventario',
-    subitems: [
-      { archivo: 'index.html', etiqueta: 'Listado de Produtos' },
-      { archivo: 'categorias.html', etiqueta: 'Categorías' },
-      { archivo: 'movimientos.html', etiqueta: 'Movimientos de Inventario' },
-      { archivo: 'reporte.html', etiqueta: 'Reporte de Inventario' }
-    ]
-  },
-  {
-    id: 'facturacion',
-    icono: '🧾',
-    titulo: 'Facturación',
-    subitems: [
-      { archivo: 'index.html', etiqueta: 'Listado de Facturas' },
-      { archivo: 'clientes.html', etiqueta: 'Clientes' },
-      { archivo: 'cobros.html', etiqueta: 'Cobros' },
-      { archivo: 'reporte.html', etiqueta: 'Reporte de Facturación' }
-    ]
-  },
-  {
-    id: 'despacho',
-    icono: '📤',
-    titulo: 'Despacho',
-    subitems: [
-      { archivo: 'index.html', etiqueta: 'Listado de Despachos' },
-      { archivo: 'rutas-entregas.html', etiqueta: 'Rutas y Entregas' },
-      { archivo: 'reporte.html', etiqueta: 'Reporte de Despachos' }
-    ]
-  },
-  {
-    id: 'reportes',
-    icono: '📊',
-    titulo: 'Reportes',
-    subitems: [
-      { archivo: 'index.html', etiqueta: 'Reporte General' },
-      { archivo: 'ventas.html', etiqueta: 'Reporte de Ventas' },
-      { archivo: 'compras.html', etiqueta: 'Reporte de Compras' },
-      { archivo: 'inventario.html', etiqueta: 'Reporte de Inventario' }
-    ]
+function leerExpandidos() {
+  try {
+    const guardados = JSON.parse(sessionStorage.getItem(CLAVE_EXPANDIDOS) || '[]');
+    return new Set(Array.isArray(guardados) ? guardados : []);
+  } catch {
+    return new Set();
   }
-];
+}
+
+function esEscritorio() {
+  return typeof window !== 'undefined' && window.matchMedia('(min-width: 701px)').matches;
+}
 
 export default function Layout() {
   const [sesion] = useState(leerSesion);
-  const [menuAbierto, setMenuAbierto] = useState(false);
-  const [moduloExpandido, setModuloExpandido] = useState('usuarios');
-  const navigate = useNavigate();
+  const [menuAbierto, setMenuAbierto] = useState(esEscritorio);
+  const [modulosExpandidos, setModulosExpandidos] = useState(leerExpandidos);
   const location = useLocation();
+  const moduloActivo = obtenerModuloActivo(location.pathname);
+  const refModuloActivo = useRef(null);
 
-  if (!sesion || !sesion.token) {
-    window.location.href = '/login.html';
-    return null;
+  const permisos = permisosCompras(sesion);
+  const modulosVisibles = MODULOS_SISTEMA.filter(
+    (modulo) => !modulo.permiso || permisos[modulo.permiso]
+  );
+
+  function subitemsVisibles(modulo) {
+    return modulo.subitems.filter(
+      (subitem) => !subitem.permiso || permisos[subitem.permiso]
+    );
+  }
+
+  function cerrarMenuSiMovil() {
+    if (!esEscritorio()) setMenuAbierto(false);
   }
 
   useEffect(() => {
+    sessionStorage.setItem(CLAVE_EXPANDIDOS, JSON.stringify([...modulosExpandidos]));
+  }, [modulosExpandidos]);
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 701px)');
+    const manejarCambio = (evento) => setMenuAbierto(evento.matches);
+    media.addEventListener?.('change', manejarCambio);
+    return () => media.removeEventListener?.('change', manejarCambio);
+  }, []);
+
+  useEffect(() => {
+    if (!moduloActivo) return;
+
+    setModulosExpandidos((previos) => {
+      if (previos.has(moduloActivo)) return previos;
+      const siguientes = new Set(previos);
+      siguientes.add(moduloActivo);
+      return siguientes;
+    });
+
+    refModuloActivo.current?.scrollIntoView({ block: 'nearest' });
+  }, [moduloActivo]);
+
+  useEffect(() => {
+    document.title = `SGIFEP - ${obtenerTituloDocumento(location.pathname)}`;
+  }, [location.pathname]);
+
+  useEffect(() => {
     const manejarTecla = (e) => {
-      if (e.key === 'Escape') setMenuAbierto(false);
+      if (e.key === 'Escape' && !esEscritorio()) setMenuAbierto(false);
     };
     window.addEventListener('keydown', manejarTecla);
     return () => window.removeEventListener('keydown', manejarTecla);
   }, []);
 
-  function cerrarSesion() {
-    localStorage.removeItem(CLAVE_SESION);
-    window.location.href = '/login.html';
+  if (!sesion || !sesion.token) {
+    window.location.href = RUTA_LOGIN;
+    return null;
   }
 
-  function navegar(ruta) {
-    setMenuAbierto(false);
-    navigate(ruta);
+  function cerrarSesion() {
+    localStorage.removeItem(CLAVE_SESION);
+    window.location.href = RUTA_LOGIN;
+  }
+
+  function alternarModulo(id) {
+    if (id === moduloActivo) return;
+
+    setModulosExpandidos((previos) => {
+      const siguientes = new Set(previos);
+      if (siguientes.has(id)) {
+        siguientes.delete(id);
+      } else {
+        siguientes.add(id);
+      }
+      return siguientes;
+    });
   }
 
   return (
     <div className="layout">
-      {/* Encabezado superior unificado */}
       <header className="app-header">
         <div className="header-logo-box">
           <img src={logoImg} alt="Ferretería El Puente" className="header-logo" />
@@ -133,6 +130,7 @@ export default function Layout() {
           onClick={() => setMenuAbierto((abierto) => !abierto)}
           aria-label="Alternar menú"
           aria-expanded={menuAbierto}
+          aria-controls="menuLateral"
         >
           ☰
         </button>
@@ -154,50 +152,54 @@ export default function Layout() {
         </div>
       </header>
 
-      {/* Menú lateral (drawer) + Contenido */}
       <div className="app-body">
-        <aside className={`drawer${menuAbierto ? ' drawer-abierto' : ''}`}>
+        <aside
+          id="menuLateral"
+          className={`drawer${menuAbierto ? ' drawer-abierto' : ''}`}
+        >
           <div className="drawer-cabecera">
             <span className="drawer-logo">SGIFEP</span>
           </div>
-          <nav className="drawer-nav">
-            <a href="/usuarios/modulos.html" className="drawer-item drawer-volver-modulos" title="Volver al panel de módulos">
+          <nav className="drawer-nav" aria-label="Menú de módulos">
+            <a
+              href={RUTA_MODULOS_PRINCIPALES}
+              className="drawer-item drawer-volver-modulos"
+              title="Volver al panel de módulos"
+            >
               ← Módulos Principales
             </a>
-            {MODULOS_SISTEMA.map((modulo) => {
-              const expandido = moduloExpandido === modulo.id;
+            {modulosVisibles.map((modulo) => {
+              const expandido =
+                modulo.id === moduloActivo || modulosExpandidos.has(modulo.id);
+
               return (
                 <Fragment key={modulo.id}>
                   <button
                     type="button"
-                    className={`drawer-item${modulo.id === 'usuarios' ? ' modulo-activo' : ''}`}
+                    ref={modulo.id === moduloActivo ? refModuloActivo : null}
+                    className={`drawer-item${modulo.id === moduloActivo ? ' modulo-activo' : ''}`}
                     aria-expanded={expandido}
-                    onClick={() => setModuloExpandido(modulo.id === moduloExpandido ? null : modulo.id)}
+                    aria-controls={`subitems-${modulo.id}`}
+                    onClick={() => alternarModulo(modulo.id)}
                   >
                     <span>{modulo.icono} {modulo.titulo}</span>
-                    <span className={`drawer-flecha${expandido ? ' abierto' : ''}`}>▾</span>
+                    <span className={`drawer-flecha${expandido ? ' abierto' : ''}`}>▸</span>
                   </button>
                   {expandido && (
-                    <div className="drawer-subitems">
-                      {modulo.subitems.map((sub) => (
-                        sub.to ? (
-                          <button
-                            key={sub.to}
-                            type="button"
-                            className={`drawer-subitem${location.pathname === sub.to ? ' subitem-activo' : ''}`}
-                            onClick={() => navegar(sub.to)}
-                          >
-                            {sub.etiqueta}
-                          </button>
-                        ) : (
-                          <a
-                            key={sub.archivo}
-                            className="drawer-subitem drawer-subitem-enlace"
-                            href={`${BASE_MODULOS}${modulo.id}/${sub.archivo}`}
-                          >
-                            {sub.etiqueta}
-                          </a>
-                        )
+                    <div id={`subitems-${modulo.id}`} className="drawer-subitems">
+                      {subitemsVisibles(modulo).map((subitem) => (
+                        <Link
+                          key={subitem.to}
+                          to={subitem.to}
+                          className={`drawer-subitem${
+                            esSubitemActivo(location.pathname, subitem)
+                              ? ' subitem-activo'
+                              : ''
+                          }`}
+                          onClick={cerrarMenuSiMovil}
+                        >
+                          {subitem.etiqueta}
+                        </Link>
                       ))}
                     </div>
                   )}
@@ -210,7 +212,6 @@ export default function Layout() {
           </div>
         </aside>
 
-        {/* Contenido del módulo */}
         <div className="contenido">
           <main className="main">
             <Outlet />

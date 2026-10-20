@@ -3,13 +3,20 @@ import react from '@vitejs/plugin-react';
 
 // Plugin: en dev, con base '/usuarios/', Vite sirve public/ bajo /usuarios/*.
 // Reescritura mínima para que las rutas absolutas de login/modulos/imágenes
-// (/login.html, /modulos.html, /img/*) resuelvan igual que en producción.
-// Debe ser un plugin (configureServer no es una opción de `server`).
+// (/login.html, /modulos.html, /img/* y /assets-modulos/*) resuelvan igual
+// que en producción. Debe ser un plugin (configureServer no es una opción
+// de `server`).
 const reescribirRutasSistema = {
   name: 'reescribir-rutas-sistema',
   configureServer(server) {
     server.middlewares.use((req, _res, next) => {
-      if (req.url === '/login.html' || req.url === '/modulos.html' || req.url.startsWith('/img/')) {
+      const ruta = req.url.split('?')[0];
+      if (
+        ruta === '/login.html' ||
+        ruta === '/modulos.html' ||
+        ruta.startsWith('/img/') ||
+        ruta.startsWith('/assets-modulos/')
+      ) {
         req.url = '/usuarios' + req.url;
       }
       next();

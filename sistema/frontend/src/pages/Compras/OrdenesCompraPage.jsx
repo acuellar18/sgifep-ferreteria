@@ -7,6 +7,7 @@ import Paginacion from '../../components/Paginacion';
 import ThOrdenable from '../../components/ThOrdenable';
 import Modal from '../../components/Modal';
 import { useNotificacion } from '../../components/Toast';
+import { permisosCompras } from '../../utils/permisosCompras';
 import OrdenCompraFormModal from './OrdenCompraFormModal';
 import RecibirMercaderiaModal from './RecibirMercaderiaModal';
 
@@ -42,7 +43,7 @@ export default function OrdenesCompraPage() {
   const temporizadorBusqueda = useRef(null);
 
   const sesion = JSON.parse(localStorage.getItem('session') || '{}');
-  const esAdmin = sesion.superadmin || sesion.roles?.includes('administrador');
+  const permisos = permisosCompras(sesion);
 
   const totalPaginas = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -253,7 +254,7 @@ export default function OrdenesCompraPage() {
           </div>
           <div className="acciones-encabezado">
             {chipEstado(o.estado)}
-            {esAdmin && o.estado === 'borrador' && (
+            {permisos.crearOrden && o.estado === 'borrador' && (
               <>
                 <button type="button" className="btn btn-primario" onClick={() => setConfirmando({ ...o, accion: 'enviar' })}>
                   Enviar orden
@@ -261,17 +262,17 @@ export default function OrdenesCompraPage() {
                 <button type="button" className="btn btn-opcion" onClick={() => abrirEdicion(o)}>Editar</button>
               </>
             )}
-            {esAdmin && (o.estado === 'borrador' || o.estado === 'enviada' || o.estado === 'recibida_parcial') && (
+            {permisos.recibirOrden && (o.estado === 'borrador' || o.estado === 'enviada' || o.estado === 'recibida_parcial') && (
               <button type="button" className="btn btn-primario" onClick={() => abrirRecibir(o)}>
                 Recibir mercadería
               </button>
             )}
-            {esAdmin && (o.estado === 'borrador' || o.estado === 'cancelada') && (
+            {permisos.crearOrden && (o.estado === 'borrador' || o.estado === 'cancelada') && (
               <button type="button" className="btn btn-danger" onClick={() => setConfirmando({ ...o, accion: 'eliminar' })}>
                 Eliminar
               </button>
             )}
-            {esAdmin && (o.estado === 'borrador' || o.estado === 'enviada' || o.estado === 'recibida_parcial') && (
+            {permisos.crearOrden && (o.estado === 'borrador' || o.estado === 'enviada' || o.estado === 'recibida_parcial') && (
               <button type="button" className="btn btn-opcion" onClick={() => setConfirmando({ ...o, accion: 'cancelar' })}>
                 Cancelar
               </button>
@@ -343,7 +344,7 @@ export default function OrdenesCompraPage() {
       <div className="encabezado-pagina">
         <h2>Órdenes de Compra</h2>
         <div className="acciones-encabezado">
-          {esAdmin && (
+          {permisos.crearOrden && (
             <button type="button" className="btn btn-primario" onClick={abrirAlta}>
               + Nueva orden
             </button>
@@ -418,27 +419,27 @@ export default function OrdenesCompraPage() {
                         <button type="button" className="btn btn-opcion" onClick={() => navigate(`/compras/ordenes/${o.id}`)}>
                           Ver
                         </button>
-                        {esAdmin && o.estado === 'borrador' && (
+                        {permisos.crearOrden && o.estado === 'borrador' && (
                           <button type="button" className="btn btn-opcion" onClick={() => abrirEdicion(o)}>
                             Editar
                           </button>
                         )}
-                        {esAdmin && (o.estado === 'borrador' || o.estado === 'enviada' || o.estado === 'recibida_parcial') && (
+                        {permisos.recibirOrden && (o.estado === 'borrador' || o.estado === 'enviada' || o.estado === 'recibida_parcial') && (
                           <button type="button" className="btn btn-primario" onClick={() => abrirRecibir(o)}>
                             Recibir
                           </button>
                         )}
-                        {esAdmin && (o.estado === 'borrador' || o.estado === 'enviada') && (
+                        {permisos.crearOrden && (o.estado === 'borrador' || o.estado === 'enviada') && (
                           <button type="button" className="btn btn-opcion" onClick={() => confirmarAccion(o, 'enviar')}>
                             Enviar
                           </button>
                         )}
-                        {esAdmin && (o.estado === 'borrador' || o.estado === 'enviada' || o.estado === 'recibida_parcial') && (
+                        {permisos.crearOrden && (o.estado === 'borrador' || o.estado === 'enviada' || o.estado === 'recibida_parcial') && (
                           <button type="button" className="btn btn-opcion" onClick={() => confirmarAccion(o, 'cancelar')}>
                             Cancelar
                           </button>
                         )}
-                        {esAdmin && (o.estado === 'borrador' || o.estado === 'cancelada') && (
+                        {permisos.crearOrden && (o.estado === 'borrador' || o.estado === 'cancelada') && (
                           <button type="button" className="btn btn-opcion btn-danger" onClick={() => confirmarAccion(o, 'eliminar')}>
                             Eliminar
                           </button>

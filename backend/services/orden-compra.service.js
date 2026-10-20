@@ -3,7 +3,7 @@ const pool = require('../db');
 const ordenCompraRepository = require('../repositories/orden-compra.repository');
 const proveedorRepository = require('../repositories/proveedor.repository');
 const productoRepository = require('../repositories/producto.repository');
-const compraDto = require('../dtos/compra.dto');
+const secuenciaRepository = require('../repositories/secuencia.repository');
 
 const IVA_FACTOR = 0.12;
 
@@ -135,11 +135,15 @@ class OrdenCompraService {
       if (!prod.activo) throw new HttpError(400, `El producto "${prod.nombre}" está inactivo`);
     }
 
-    const numero = await ordenCompraRepository.obtenerSiguienteNumero();
-
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
+
+      const numero = await secuenciaRepository.obtenerNumero(connection, {
+        nombre: 'ordenes_compra',
+        prefijo: 'OC',
+        anio: Number(fecha.slice(0, 4))
+      });
 
       const ordenId = await ordenCompraRepository.crear(connection, {
         numero, proveedor_id, fecha, fecha_esperada, estado, notas,

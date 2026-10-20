@@ -1,94 +1,47 @@
 ﻿# AGENTS.md
 
-SGIFEP - Ferretería El Puente. Repositorio único con tres proyectos npm separados (una entrada por proyecto): `landing/` (página web, Vite HTML+CSS multi-página), `sistema/frontend/` (React 18 + Vite: módulo "Usuarios, Roles, Departamentos") y `backend/` (Express + MySQL, sirve la landing compilada en raíz y el sistema desde `backend/public/`). Los scripts SQL viven en `database/scripts/`.
+SGIFEP - Ferretería El Puente. Repo único con tres proyectos npm independientes (no hay `package.json` raíz): `landing/` (Vite HTML+CSS multi-página), `sistema/frontend/` (React 18 + Vite) y `backend/` (Express + MySQL). Los SQL viven en `database/scripts/` y `backend/migrations/`.
 
-## Commands
-- Backend: `npm start` in `backend/` (`node server.js`, port from `PORT`, default 3000). `backend/db.js` loads `backend/.env` via `__dirname`, so env loading no longer depends on the shell cwd. In production Express serves the landing from `landing/dist` (root `/`) and the system from `backend/public` (`/usuarios/`, `/login.html`, `/modulos.html`, `/img/*`).
-- Backend seed: `npm run seed` in `backend/` — **inicializador idempotente**: crea (si faltan) `departamentos`, `roles` (incl. `superadmin`), `usuarios` y `usuario_roles`; agrega columnas legacy que falten; siembra departamentos/roles por defecto y garantiza el usuario `admin`/`admin123` ACTIVO vinculado al rol `administrador`. Se puede reejecutar sin dañar datos.
-- DB migration: run `database/scripts/002_usuarios_roles_departamentos.sql` once (creates `departamentos`, `roles`, `usuario_roles`; extends `usuarios`). `database/scripts/schema.sql` is manual-reference only.
-- Backend DB migration (JWT/superadmin): `npm run migrate` in `backend/` — applies `backend/migrations/*.sql` in order (currently `003_superadmin.sql`: **idempotente**, adds `roles.superadmin` only if missing and syncs it from the legacy `acceso_total`). Re-runs are safe.
-- Landing dev: `npm install && npm run dev` in `landing/` (port 5173). Build: `npm run build` → `landing/dist` (served at `/` by Express).
-- Sistema dev: `npm install && npm run dev` in `sistema/frontend/` (port 5174, base `/usuarios/`, proxies `/api` → `http://127.0.0.1:3000`). Production: `npm run build:deploy` (vite build + `scripts/deploy.mjs` copies `dist/*` → `backend/public/usuarios/` and login/modulos/img → `backend/public/`).
+## Comandos
+- Backend: `npm start` en `backend/` (puerto `PORT`, por defecto 3000).
+- Seed: `npm run seed` en `backend/` (idempotente; crea tablas, catálogos y garantiza `admin`/`admin123` ACTIVO con rol `administrador`). **Reejecutarlo resetea la contraseña de `admin` a `admin123`**.
+- Migraciones backend: `npm run migrate` en `backend/` — ejecuta en orden todos los `backend/migrations/*.sql` (`003_superadmin`, `004_productos`, `005_compras`, `006_compras_esquema`, `007_compras_triggers`). La `002` es manual y se corre una sola vez.
+- Datos demo de Compras: `npm run reiniciar-compras` en `backend/` (borra proveedores/productos/compras/órdenes/pagos/movimientos y ejecuta el seed). Verificar con `npm run verificar-compras`; probar permisos con `npm run probar-permisos-compras` y reportes con `npm run probar-reportes-compras`.
+- Landing dev: `npm run dev` en `landing/` (5173). Build: `npm run build` → `landing/dist`.
+- Sistema dev: `npm run dev` en `sistema/frontend/` (5174, base `/usuarios/`, proxy `/api` → `http://127.0.0.1:3000`). Producción: `npm run build:deploy` (build + copia a `backend/public/`).
+- No hay framework de test, lint ni typecheck. Verificar con `npm run build` en los frontends, `node --check <archivo>` en el backend y los scripts `verificar-compras`, `probar-permisos-compras` y `probar-reportes-compras`.
 
-No test, lint, or typecheck tooling exists.
+## Backend y base de datos
+- `backend/db.js` carga `backend/.env` por `__dirname` (no depende del cwd) y exporta un pool singleton. `backend/.env` no está versionado.
+- Claves actuales de `.env`: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME=sgifep_db`, `PORT`. **No hay `JWT_SECRET`**, así que se usa el fallback de desarrollo de `config/auth.js`; definirlo antes de producción.
+- `database/scripts/schema.sql` es solo referencia y crea `sgifep_ferreteria` (no coincide con `sgifep_db`). No usarlo para levantar el entorno.
+- `004_productos.sql` y `005_compras.sql` usan `CREATE INDEX IF NOT EXISTS` (sintaxis MariaDB); en MySQL 8 pueden fallar.
+- Respetar el layering `routes/` (HTTP + permisos) → `controllers/` → `services/` → `repositories/` (solo SQL), con validación/serialización en `dtos/`.
+- `/api/login` y `/api/reset-password` son los únicos endpoints públicos. El resto exige `Authorization: Bearer <token>` (`autenticar`); escrituras/borrados exigen rol `administrador` o `superadmin` (`requerirRoles`). Tokens de 8 h.
+- Roles y departamentos siempre se leen de la BD; no hardcodearlos. Un usuario puede tener varios roles (`usuario_roles`).
+- No agregar registro público: el alta de usuarios es solo por administrador (`POST /api/usuarios`); es una decisión de diseño.
 
-## Setup
-- Config via `backend/.env` (requires `dotenv`). Committed values point at local MySQL: `DB_NAME=sgifep_db`, no password.
-- `database/scripts/schema.sql` is manual-reference only: it creates database `sgifep_ferreteria`, which does NOT match `.env` (`sgifep_db`). The runtime schema is `database/scripts/002_usuarios_roles_departamentos.sql`.
-- One pool shared by everything: `backend/db.js` (login, reset-password, and `/routes/*.js`). `db.js` exports a Database singleton; repositories use it directly or hand a `connection` (from `getConnection()`) for transactions.
-- Backend follows an MVC + Repository Pattern: `routes/` (HTTP + permisos) → `controllers/` (capa delgada) → `services/` (reglas de negocio) → `repositories/` (solo SQL) → MySQL, con validación y serialización en `dtos/`. New backend code must follow this layering.
-- Security is JWT-based. `/api/login` and `/api/reset-password` are the only public endpoints; `/api/login` verifies bcrypt, loads the user's roles and returns a `token` (8 h). Everything else requires `Authorization: Bearer <token>` (`autenticar`); read endpoints are open to any authenticated user, write/delete require rol `administrador` or `superadmin` (`requerirRoles([...])`).
-- Roles/departamentos are always read from the DB (`/api/roles`, `/api/departamentos`) — never hardcode them in backend or frontend.
-- A user can have one or several roles via `usuario_roles`. The legacy `usuarios.rol` column is kept only for the vanilla `login.html`/`modulos.html` flow.
-- `roles.superadmin` (new column, synced with legacy `acceso_total`) marks roles with full access; both are exposed by the rol DTO. Store de datos: roles = superadmin + nombre, so permissions live in the DB, never only on the client.
-- The React module gates the UI via `localStorage['session']` (created by `login.html`), which now also holds the JWT `token`; `src/services/api.js` injects it on every request and, on 401, clears the session and redirects to `/login.html`.
-- Línea gráfica del Módulo de Usuarios: encabezado superior fijo negro/antracita (`#141414`) con sombra sutil (sin borde naranja grueso), logo a la izquierda **importado como módulo React** (`import logoImg from '../assets/logo.png'` en `Layout.jsx`, copia en `sistema/frontend/src/assets/logo.png`; los HTMLL estáticos `login.html`/`modulos.html` usan `src="/img/logo.png"` absoluto) sobre contenedor **integrado a la barra negra** (`background: #141414;` sin caja blanca, `padding: 0 18px`), botón hamburguesa ☰/✕ que **alterna (toggle)** el **drawer en maquetación Flexbox tipo push** (`.app-body` = fila flex con `.drawer` + `.contenido`; abierto el drawer empuja el contenido a la derecha y lo reajusta, cerrado el contenido ocupa el 100%, sin superposiciones). El drawer usa acordeones: **"Módulos Principales"** (expande la lista de módulos del sistema —Compras y Abastecimiento, Control de Inventario, Facturación y Cobro, Despacho de Productos, Reportes como placeholders "Próximamente" sin enlaces, y Usuarios con badge "Activo" que navega al módulo) y **"Usuarios"** (Listado, Reporte, Roles, Departamentos). El regreso al panel usa `/usuarios/modulos.html` (enlace limpio, sin rutas React sin compilar). Tarjeta de usuario a la derecha (avatar, nombre, badge naranja, "Cerrar sesión"). Paleta: naranja `#ea580c` reservado a elementos de interacción (botones primarios `border-radius: 8px`, selección activa del menú con fondo `#fff7ed`, badges de rol); bordes gruesos naranjas eliminados (sombra `0 2px 8px rgba(0,0,0,0.25)` en el header, `border-right: 1px solid #e5e7eb` en el drawer); fondo `#f8f9fa`, tarjetas blancas (`border-radius: 12px`, `box-shadow: 0 1px 3px rgba(0,0,0,0.1)`); **sin tonos azules**. Toda la navegación interna es SPA bajo el header vía `react-router` (`Layout.jsx` usa `<Outlet/>`; no hay sidebar oscura fija).
-- Landing "Acceso al sistema" buttons point at the system login: dev → `http://localhost:5174/login.html`, prod → `/login.html`, overridable via `VITE_SISTEMA_LOGIN_URL` (see `landing/.env.example`). Implemented by `landing/src/login.js` for elements with `data-login-url`.
-- In sistema dev, because `base` is `/usuarios/`, Vite serves `public/` under `/usuarios/*`; `sistema/frontend/vite.config.js` rewrites absolute `/login.html`, `/modulos.html`, `/img/*` requests to `/usuarios/...` so URLs match production.
-- Git workflow: `main`/`master` must always stay stable and deployable; development happens on dedicated branches prefixed `feature/`. **El desarrollo y la integración de este módulo de Usuarios, Roles y Departamentos pertenece a la rama `feature/modulo-usuarios`**; solo se integra a `main`/`master` una vez verificado (build + sintaxis) y aprobado. Never commit breaking or half-finished work directly to `main`.
+## Sistema frontend
+- SPA con `base: '/usuarios/'` y `basename="/usuarios"`; en producción Express la sirve desde `backend/public/usuarios/` y hace catch-all de `/usuarios/*`.
+- `src/services/api.js` lee `localStorage['session']`, inyecta el JWT y ante 401 limpia la sesión y redirige a `/login.html`. La sesión la crea `login.html` con `{ nombre, username, rol, roles[], superadmin, token }`.
+- `vite.config.js` incluye el plugin `reescribir-rutas-sistema`: en dev reescribe `/login.html`, `/modulos.html` e `/img/*` a `/usuarios/*`. Debe ser un plugin; `configureServer` anidado en `server` se ignora.
+- Landing: `landing/src/login.js` configura los enlaces `data-login-url`. En dev el destino real es `http://localhost:5174/usuarios/login.html`; en producción `/login.html`.
 
+## Estado de los módulos
+- Implementados contra la API y en React: **Usuarios/Roles/Departamentos** y **Compras** (compras, proveedores, órdenes y reporte con filtros, CSV, Excel/PDF).
+- Inventario, Facturación, Despacho y Reportes son páginas HTML estáticas en `sistema/frontend/public/<modulo>/` que muestran "Módulo en construcción" mediante `public/assets-modulos/{sistema-modulos.js,css}`. No tienen backend.
+- `public/compras/*.html` son restos estáticos; el menú real apunta a las rutas React `/usuarios/compras...`.
+- `scripts/deploy.mjs` copia `dist/assets`, `index.html`, `login.html`, `modulos.html`, `img/` y `public/assets-modulos`; **no copia** las carpetas estáticas `inventario/`, `facturacion/`, `despacho/` ni `reportes/` a `backend/public/`, por lo que en producción esos enlaces pueden dar 404 hasta copiarlas.
+- La navegación interna usa `react-router` con `<Outlet/>`; el regreso al panel es `/usuarios/modulos.html` (nunca rutas sin compilar como `/modulos.html`).
 
-## Diseño (contrato de línea gráfica)
-- Paleta: fondos #f8f9fa/blanco, antracita #141414 para header/drawer, acento naranja #ea580c/#d97706 (rose #f2701d solo en detalles). **Prohibido azul o el fondo blanco del logo** (.header-logo-box/.logo-box usan ackground:#141414 transparente).
-- Logotipo: se importa como módulo React (src/assets/logo.png) vía import logoImg en Layout.jsx; en HTML estático usar siempre src='/img/logo.png' (ruta absoluta); tamaño height:40px (32px móvil).
-- Acordeones: MODULOS_SISTEMA (Compras, Inventario, Facturación, Despacho, Reportes) son placeholders «Próximamente» sin enlaces; SOLO Usuarios navega (acordeón Usuarios con Layout SPA). Cualquier enlace a módulo no compilado va a /usuarios/modulos.html (NUNCA rutas sin compilar como /modulos.html).
-- Hamburguesa: botón .menu-toggle en .app-header alterna (toggle) la clase .drawer.drawer-abierto (push en Flexbox, sin overlay/responsive); se cierra con Escape y click en subítem.
-- Resto del sistema: backend MVC, tokens JWT expiran 8h singn, oles desde BD (no hardcodear), session en localStorage en modulos.html/login.html = {nombre, username, rol, roles[], token} (estructura vivela en login.html).
-# AGENTS.md
-
-SGIFEP - Ferretería El Puente. Repositorio único con tres proyectos npm separados (una entrada por proyecto): `landing/` (página web, Vite HTML+CSS multi-página), `sistema/frontend/` (React 18 + Vite: módulo "Usuarios, Roles, Departamentos") y `backend/` (Express + MySQL, sirve la landing compilada en raíz y el sistema desde `backend/public/`). Los scripts SQL viven en `database/scripts/`.
-
-## Commands
-- Backend: `npm start` in `backend/` (`node server.js`, port from `PORT`, default 3000). `backend/db.js` loads `backend/.env` via `__dirname`, so env loading no longer depends on the shell cwd. In production Express serves the landing from `landing/dist` (root `/`) and the system from `backend/public` (`/usuarios/`, `/login.html`, `/modulos.html`, `/img/*`).
-- Backend seed: `npm run seed` in `backend/` — **inicializador idempotente**: crea (si faltan) `departamentos`, `roles` (incl. `superadmin`), `usuarios` y `usuario_roles`; agrega columnas legacy que falten; siembra departamentos/roles por defecto y garantiza el usuario `admin`/`admin123` ACTIVO vinculado al rol `administrador`. Se puede reejecutar sin dañar datos.
-- DB migration: run `database/scripts/002_usuarios_roles_departamentos.sql` once (creates `departamentos`, `roles`, `usuario_roles`; extends `usuarios`). `database/scripts/schema.sql` is manual-reference only.
-- Backend DB migration (JWT/superadmin): `npm run migrate` in `backend/` — applies `backend/migrations/*.sql` in order (currently `003_superadmin.sql`: **idempotente**, adds `roles.superadmin` only if missing and syncs it from the legacy `acceso_total`). Re-runs are safe.
-- Landing dev: `npm install && npm run dev` in `landing/` (port 5173). Build: `npm run build` → `landing/dist` (served at `/` by Express).
-- Sistema dev: `npm install && npm run dev` in `sistema/frontend/` (port 5174, base `/usuarios/`, proxies `/api` → `http://127.0.0.1:3000`). Production: `npm run build:deploy` (vite build + `scripts/deploy.mjs` copies `dist/*` → `backend/public/usuarios/` and login/modulos/img → `backend/public/`).
-
-No test, lint, or typecheck tooling exists.
-
-## Setup
-- Config via `backend/.env` (requires `dotenv`). Committed values point at local MySQL: `DB_NAME=sgifep_db`, no password.
-- `database/scripts/schema.sql` is manual-reference only: it creates database `sgifep_ferreteria`, which does NOT match `.env` (`sgifep_db`). The runtime schema is `database/scripts/002_usuarios_roles_departamentos.sql`.
-- One pool shared by everything: `backend/db.js` (login, reset-password, and `/routes/*.js`). `db.js` exports a Database singleton; repositories use it directly or hand a `connection` (from `getConnection()`) for transactions.
-- Backend follows an MVC + Repository Pattern: `routes/` (HTTP + permisos) → `controllers/` (capa delgada) → `services/` (reglas de negocio) → `repositories/` (solo SQL) → MySQL, con validación y serialización en `dtos/`. New backend code must follow this layering.
-- Security is JWT-based. `/api/login` and `/api/reset-password` are the only public endpoints; `/api/login` verifies bcrypt, loads the user's roles and returns a `token` (8 h). Everything else requires `Authorization: Bearer <token>` (`autenticar`); read endpoints are open to any authenticated user, write/delete require rol `administrador` or `superadmin` (`requerirRoles([...])`).
-- Roles/departamentos are always read from the DB (`/api/roles`, `/api/departamentos`) — never hardcode them in backend or frontend.
-- A user can have one or several roles via `usuario_roles`. The legacy `usuarios.rol` column is kept only for the vanilla `login.html`/`modulos.html` flow.
-- `roles.superadmin` (new column, synced with legacy `acceso_total`) marks roles with full access; both are exposed by the rol DTO. Store de datos: roles = superadmin + nombre, so permissions live in the DB, never only on the client.
-- The React module gates the UI via `localStorage['session']` (created by `login.html`), which now also holds the JWT `token`; `src/services/api.js` injects it on every request and, on 401, clears the session and redirects to `/login.html`.
-- Línea gráfica del Módulo de Usuarios: encabezado superior fijo negro/antracita (`#141414`) con sombra sutil (sin borde naranja grueso), logo a la izquierda **importado como módulo React** (`import logoImg from '../assets/logo.png'` en `Layout.jsx`, copia en `sistema/frontend/src/assets/logo.png`; los HTMLL estáticos `login.html`/`modulos.html` usan `src="/img/logo.png"` absoluto) sobre contenedor **integrado a la barra negra** (`background: #141414;` sin caja blanca, `padding: 0 18px`), botón hamburguesa ☰/✕ que **alterna (toggle)** el **drawer en maquetación Flexbox tipo push** (`.app-body` = fila flex con `.drawer` + `.contenido`; abierto el drawer empuja el contenido a la derecha y lo reajusta, cerrado el contenido ocupa el 100%, sin superposiciones). El drawer usa acordeones: **"Módulos Principales"** (expande la lista de módulos del sistema —Compras y Abastecimiento, Control de Inventario, Facturación y Cobro, Despacho de Productos, Reportes como placeholders "Próximamente" sin enlaces, y Usuarios con badge "Activo" que navega al módulo) y **"Usuarios"** (Listado, Reporte, Roles, Departamentos). El regreso al panel usa `/usuarios/modulos.html` (enlace limpio, sin rutas React sin compilar). Tarjeta de usuario a la derecha (avatar, nombre, badge naranja, "Cerrar sesión"). Paleta: naranja `#ea580c` reservado a elementos de interacción (botones primarios `border-radius: 8px`, selección activa del menú con fondo `#fff7ed`, badges de rol); bordes gruesos naranjas eliminados (sombra `0 2px 8px rgba(0,0,0,0.25)` en el header, `border-right: 1px solid #e5e7eb` en el drawer); fondo `#f8f9fa`, tarjetas blancas (`border-radius: 12px`, `box-shadow: 0 1px 3px rgba(0,0,0,0.1)`); **sin tonos azules**. Toda la navegación interna es SPA bajo el header vía `react-router` (`Layout.jsx` usa `<Outlet/>`; no hay sidebar oscura fija).
-- Landing "Acceso al sistema" buttons point at the system login: dev → `http://localhost:5174/login.html`, prod → `/login.html`, overridable via `VITE_SISTEMA_LOGIN_URL` (see `landing/.env.example`). Implemented by `landing/src/login.js` for elements with `data-login-url`.
-- In sistema dev, because `base` is `/usuarios/`, Vite serves `public/` under `/usuarios/*`; `sistema/frontend/vite.config.js` rewrites absolute `/login.html`, `/modulos.html`, `/img/*` requests to `/usuarios/...` so URLs match production.
-- Git workflow: `main`/`master` must always stay stable and deployable; development happens on dedicated branches prefixed `feature/`. **El desarrollo y la integración de este módulo de Usuarios, Roles y Departamentos pertenece a la rama `feature/modulo-usuarios`**; solo se integra a `main`/`master` una vez verificado (build + sintaxis) y aprobado. Never commit breaking or half-finished work directly to `main`.
+## Línea gráfica (contrato)
+- Paleta: fondos `#f8f9fa`/blanco, header/drawer antracita `#141414`, acento naranja `#ea580c`/`#d97706` para interacción. **Sin azules** y sin caja blanca alrededor del logo.
+- El logo se importa como módulo React (`src/assets/logo.png` en `Layout.jsx`); en HTML estático usar siempre `/img/logo.png` (absoluto).
+- El drawer se abre con `.menu-toggle`, alterna `.drawer.drawer-abierto` en Flexbox tipo push (sin overlay) y usa acordeones por módulo.
 
 ## Gotchas
-- `backend/gitignore` (no leading dot) is tracked and ignored by git as a normal file: `node_modules/` and `backend/.env` are committed. A valid root `.gitignore` now exists (node_modules/, .env, dist/) for new files, but already-tracked files stay tracked until `git rm --cached`.
-- `/api/login` only bcrypt-verifies the password and returns `{usuario: {nombre, rol}}`. There is no session/token: access control is client-side. No backend endpoint is actually protected.
-- **JWT security (current):** `/api/login` and `/api/reset-password` are the only endpoints without token. All other `/api/*` routes require `Authorization: Bearer <token>`; handling is centralized in `middlewares/auth.middleware.js`. A 401 clears the stored session and redirects to `/login.html`; a 403 means the authenticated user lacks the `administrador`/`superadmin` role, not that the token is invalid.
-- API responses use Spanish `mensaje` fields; error shapes differ (400/401/403/404/409/500).
-- "Volver a la página principal" en `login.html` apunta siempre a la landing: en dev (5174) a `http://localhost:5173/index.html`, en producción a `/index.html` (lo resuelve un script inline en el propio HTML).
-- En dev (5174), `sistema/frontend/vite.config.js` reescribe `/login.html`, `/modulos.html` e `/img/*` hacia `/usuarios/*` mediante un **plugin** de Vite (`name: 'reescribir-rutas-sistema'`). `configureServer` NO es una opción de `server`; si se anida ahí, Vite la ignora y las rutas raíz dan 404.
-- `backend/server.js` returns a plain-text notice if `landing/dist` is missing; build the landing before starting Express for production.
-
-## Conventions
-- Code comments, UI text, and commit messages are in Spanish (e.g. "Actualizar rutas de archivos estaticos a public"). Match this when writing.
-- Backend layering (routes → controllers → services → repositories, DTOs for validation/serialization) must be kept when adding or modifying features; never put SQL or business rules inside controllers/routes.
-- Security rules: production-like defaults (`JWT_SECRET` from `backend/.env`; the fallback in `config/auth.js` is dev-only). Never weaken `autenticar`/`requerirRoles` to "just work" — write rules in the DB (`roles.superadmin`, `usuario_roles`), introduce new write endpoints already protected.
-- Git: create `feature/<descripcion>` branches for work; keep `main` deployable at all times; commit only verified, scoped changes. El Módulo de Usuarios se desarrolla en `feature/modulo-usuarios` y se fusiona a `main`/`master` solo tras verificación y aprobación.
-- Despite `sgifep-ferreteria` elsewhere on disk, this is its own self-contained repo; do not treat it as part of a monorepo.## Gotchas
-- `backend/gitignore` (no leading dot) is tracked and ignored by git as a normal file: `node_modules/` and `backend/.env` are committed. A valid root `.gitignore` now exists (node_modules/, .env, dist/) for new files, but already-tracked files stay tracked until `git rm --cached`.
-- `/api/login` only bcrypt-verifies the password and returns `{usuario: {nombre, rol}}`. There is no session/token: access control is client-side. No backend endpoint is actually protected.
-- **JWT security (current):** `/api/login` and `/api/reset-password` are the only endpoints without token. All other `/api/*` routes require `Authorization: Bearer <token>`; handling is centralized in `middlewares/auth.middleware.js`. A 401 clears the stored session and redirects to `/login.html`; a 403 means the authenticated user lacks the `administrador`/`superadmin` role, not that the token is invalid.
-- API responses use Spanish `mensaje` fields; error shapes differ (400/401/403/404/409/500).
-- "Volver a la página principal" en `login.html` apunta siempre a la landing: en dev (5174) a `http://localhost:5173/index.html`, en producción a `/index.html` (lo resuelve un script inline en el propio HTML).
-- En dev (5174), `sistema/frontend/vite.config.js` reescribe `/login.html`, `/modulos.html` e `/img/*` hacia `/usuarios/*` mediante un **plugin** de Vite (`name: 'reescribir-rutas-sistema'`). `configureServer` NO es una opción de `server`; si se anida ahí, Vite la ignora y las rutas raíz dan 404.
-- `backend/server.js` returns a plain-text notice if `landing/dist` is missing; build the landing before starting Express for production.
-
-## Conventions
-- Code comments, UI text, and commit messages are in Spanish (e.g. "Actualizar rutas de archivos estaticos a public"). Match this when writing.
-- Backend layering (routes → controllers → services → repositories, DTOs for validation/serialization) must be kept when adding or modifying features; never put SQL or business rules inside controllers/routes.
-- Security rules: production-like defaults (`JWT_SECRET` from `backend/.env`; the fallback in `config/auth.js` is dev-only). Never weaken `autenticar`/`requerirRoles` to "just work" — write rules in the DB (`roles.superadmin`, `usuario_roles`), introduce new write endpoints already protected.
-- Git: create `feature/<descripcion>` branches for work; keep `main` deployable at all times; commit only verified, scoped changes. El Módulo de Usuarios se desarrolla en `feature/modulo-usuarios` y se fusiona a `main`/`master` solo tras verificación y aprobación.
-- Despite `sgifep-ferreteria` elsewhere on disk, this is its own self-contained repo; do not treat it as part of a monorepo.
+- `backend/node_modules/` sigue versionado (≈1000 archivos) pese al `.gitignore`: evitar `git add -A` para no commitear dependencias.
+- `backend/public/` contiene artefactos compilados versionados; tras cambiar el frontend ejecutar `npm run build:deploy` para no dejar producción desactualizada.
+- `landing/dist` debe existir para que Express sirva la raíz; si falta, responde con un aviso de texto.
+- Git: `main` siempre desplegable; trabajar en ramas `feature/*` y no commitear trabajo incompleto en `main`. Mensajes, comentarios y UI en español.
+- Este repo es autocontenido aunque exista otro `sgifep-ferreteria` en disco; no tratarlo como monorepo.

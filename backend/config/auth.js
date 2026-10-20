@@ -6,5 +6,10 @@ module.exports = {
     secreto: process.env.JWT_SECRET || 'clave-desarrollo-sgifep-no-usar-en-produccion',
     expiraEn: process.env.JWT_EXPIRA_EN || '8h'
   },
-  ROL_ADMINISTRADOR: 'administrador'
+  ROL_ADMINISTRADOR: 'administrador',
+  ROL_COMPRAS: 'compras',
+  ROL_BODEGA: 'bodega',
+  ROL_CAJA: 'caja',
+  ROL_VENTAS: 'ventas',
+  ROL_REPARTO: 'reparto'
 };

@@ -4,6 +4,7 @@ const compraRepository = require('../repositories/compra.repository');
 const proveedorRepository = require('../repositories/proveedor.repository');
 const productoRepository = require('../repositories/producto.repository');
 const ordenCompraRepository = require('../repositories/orden-compra.repository');
+const secuenciaRepository = require('../repositories/secuencia.repository');
 const compraDto = require('../dtos/compra.dto');
 
 class CompraService {
@@ -85,11 +86,16 @@ class CompraService {
       if (orden.estado === 'cancelada') throw new HttpError(400, 'La orden de compra está cancelada');
     }
 
-    const numero = await compraRepository.obtenerSiguienteNumero();
-
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
+      await connection.query('SET @usuario_id = ?', [usuarioId]);
+
+      const numero = await secuenciaRepository.obtenerNumero(connection, {
+        nombre: 'compras',
+        prefijo: 'C',
+        anio: Number(dto.fecha.slice(0, 4))
+      });
 
       // 1. Crear compra
       const compraId = await compraRepository.crear(connection, {
@@ -108,11 +114,25 @@ class CompraService {
       // 2. Crear detalles
       await compraRepository.crearDetalles(connection, compraId, dto.detalles);
 
-      // 3. Actualizar stock y costo de cada producto
+      // 3. Registrar la entrada de inventario. El trigger actualiza stock y costo.
       for (const d of dto.detalles) {
-        await productoRepository.actualizarStockYCosto(connection, d.producto_id, d.cantidad, d.costo_unitario);
-        // Actualizar costo último en producto_proveedor
-        await proveedorRepository.actualizarCostoProductoProveedor(d.producto_id, dto.proveedor_id, d.costo_unitario);
+        await productoRepository.registrarMovimiento(connection, {
+          producto_id: d.producto_id,
+          tipo: 'entrada',
+          origen: 'compra',
+          referencia_tipo: 'compras',
+          referencia_id: compraId,
+          cantidad: d.cantidad,
+          costo_unitario: d.costo_unitario,
+          notas: `Entrada por compra ${numero}`,
+          usuario_id: usuarioId
+        });
+        await proveedorRepository.actualizarCostoProductoProveedor(
+          d.producto_id,
+          dto.proveedor_id,
+          d.costo_unitario,
+          connection
+        );
       }
 
       // 4. Si es contado, registrar pago automático
@@ -168,7 +188,7 @@ class CompraService {
     if (!compra) throw new HttpError(404, 'Compra no encontrada');
     if (compra.estado === 'anulada') throw new HttpError(400, 'La compra ya está anulada');
     if (compra.monto_pagado > 0) {
-      throw new HttpError(400, 'No se puede anular una compra con pagos registrados. Elimine los pagos primero.');
+      throw new HttpError(400, 'No se puede anular una compra con pagos activos. Anule los pagos primero.');
     }
 
     const detalles = await compraRepository.obtenerParaAnular(id);
@@ -176,10 +196,21 @@ class CompraService {
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
+      await connection.query('SET @usuario_id = ?', [usuarioId]);
 
-      // Revertir stock de cada producto
+      // Revertir la entrada de inventario. El trigger valida y actualiza stock.
       for (const d of detalles) {
-        await productoRepository.revertirStock(connection, d.producto_id, d.cantidad);
+        await productoRepository.registrarMovimiento(connection, {
+          producto_id: d.producto_id,
+          tipo: 'salida',
+          origen: 'anulacion_compra',
+          referencia_tipo: 'compras',
+          referencia_id: id,
+          cantidad: d.cantidad,
+          costo_unitario: 0,
+          notas: `Reverso por anulación de compra ${compra.numero}`,
+          usuario_id: usuarioId
+        });
       }
 
       // Anular compra
@@ -201,8 +232,8 @@ class CompraService {
       await connection.commit();
     } catch (err) {
       await connection.rollback();
-      if (err.code === 'STOCK_INSUFICIENTE') {
-        throw new HttpError(400, err.message);
+      if (err.code === 'STOCK_INSUFICIENTE' || err.sqlState === '45000') {
+        throw new HttpError(400, err.sqlMessage || err.message);
       }
       throw err;
     } finally {
@@ -219,8 +250,9 @@ class CompraService {
     if (!Number.isFinite(monto) || monto <= 0) {
       throw new HttpError(400, 'El monto debe ser mayor a 0');
     }
-    if (monto > compra.saldo_pendiente) {
-      throw new HttpError(400, `El monto no puede exceder el saldo pendiente (Q${compra.saldo_pendiente.toFixed(2)})`);
+    const saldoPendiente = Number(compra.saldo_pendiente || 0);
+    if (monto > saldoPendiente) {
+      throw new HttpError(400, `El monto no puede exceder el saldo pendiente (Q${saldoPendiente.toFixed(2)})`);
     }
 
     const fecha = datos.fecha ? String(datos.fecha).trim() : new Date().toISOString().split('T')[0];
@@ -235,8 +267,9 @@ class CompraService {
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
+      await connection.query('SET @usuario_id = ?', [usuarioId]);
 
-      // Registrar pago
+      // El trigger de pagos recalcula monto pagado, saldo y estado de la compra.
       await compraRepository.registrarPago(connection, {
         compra_id: compraId,
         fecha,
@@ -247,54 +280,48 @@ class CompraService {
         usuario_id: usuarioId
       });
 
-      // Actualizar compra
-      const nuevoMontoPagado = Number(compra.monto_pagado) + monto;
-      const nuevoSaldo = Number(compra.total) - nuevoMontoPagado;
-      let nuevoEstadoPago = 'pendiente';
-      if (nuevoSaldo <= 0.01) nuevoEstadoPago = 'pagada';
-      else if (nuevoMontoPagado > 0) nuevoEstadoPago = 'parcial';
-
-      await compraRepository.actualizarPago(connection, compraId, nuevoMontoPagado, Math.max(0, nuevoSaldo), nuevoEstadoPago);
-
       await connection.commit();
     } catch (err) {
       await connection.rollback();
+      if (err.sqlState === '45000') {
+        throw new HttpError(400, err.sqlMessage || err.message);
+      }
       throw err;
     } finally {
       connection.release();
     }
   }
 
-  async eliminarPago(pagoId, usuarioId) {
-    // Obtener pago y compra
+  async eliminarPago(pagoId, usuarioId, motivo) {
     const [pagos] = await pool.query(
-      `SELECT pp.*, c.id AS compra_id, c.total, c.monto_pagado, c.saldo_pendiente, c.estado_pago, c.estado
-       FROM pagos_proveedor pp
+      `SELECT pp.id, pp.estado, c.estado AS estado_compra
+       FROM pagos_compra pp
        JOIN compras c ON c.id = pp.compra_id
        WHERE pp.id = ?`, [pagoId]);
     if (!pagos.length) throw new HttpError(404, 'Pago no encontrado');
-    const pago = pagos[0];
-    const compra = pago;
+    if (pagos[0].estado === 'anulado') throw new HttpError(400, 'El pago ya está anulado');
+    if (pagos[0].estado_compra === 'anulada') {
+      throw new HttpError(400, 'No se pueden modificar pagos de una compra anulada');
+    }
 
-    if (compra.estado === 'anulada') throw new HttpError(400, 'No se pueden modificar pagos de una compra anulada');
-
+    const motivoAnulacion = String(motivo || '').trim() || 'Anulación de pago';
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
-
-      await connection.query('DELETE FROM pagos_proveedor WHERE id = ?', [pagoId]);
-
-      const nuevoMontoPagado = Number(compra.monto_pagado) - Number(pago.monto);
-      const nuevoSaldo = Number(compra.total) - nuevoMontoPagado;
-      let nuevoEstadoPago = 'pendiente';
-      if (nuevoSaldo <= 0.01) nuevoEstadoPago = 'pagada';
-      else if (nuevoMontoPagado > 0) nuevoEstadoPago = 'parcial';
-
-      await compraRepository.actualizarPago(connection, compra.compra_id, nuevoMontoPagado, Math.max(0, nuevoSaldo), nuevoEstadoPago);
-
+      await connection.query('SET @usuario_id = ?', [usuarioId]);
+      await connection.query(
+        `UPDATE pagos_compra
+         SET estado = 'anulado', anulado_en = CURRENT_TIMESTAMP, anulado_por = ?,
+             anulacion_motivo = ?
+         WHERE id = ? AND estado = 'activo'`,
+        [usuarioId, motivoAnulacion, pagoId]
+      );
       await connection.commit();
     } catch (err) {
       await connection.rollback();
+      if (err.sqlState === '45000') {
+        throw new HttpError(400, err.sqlMessage || err.message);
+      }
       throw err;
     } finally {
       connection.release();

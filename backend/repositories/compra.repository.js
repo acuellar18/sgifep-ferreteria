@@ -158,17 +158,6 @@ class CompraRepository {
     return rows[0] || null;
   }
 
-  async obtenerSiguienteNumero() {
-    const anio = new Date().getFullYear();
-    const [rows] = await pool.query(
-      `SELECT MAX(CAST(SUBSTRING(numero, 4) AS UNSIGNED)) AS max_num
-       FROM compras
-       WHERE numero LIKE ?`, [`C-${anio}-%`]);
-    const maxNum = Number(rows[0]?.max_num || 0);
-    const siguiente = maxNum + 1;
-    return `C-${anio}-${String(siguiente).padStart(6, '0')}`;
-  }
-
   async crear(conn, datos) {
     const { numero, proveedor_id, fecha, numero_factura, condicion, fecha_vencimiento,
             subtotal, iva, total, monto_pagado, saldo_pendiente, estado_pago, estado,
@@ -211,20 +200,13 @@ class CompraRepository {
   async obtenerPagos(compraId) {
     const [rows] = await pool.query(
       `SELECT pp.id, pp.compra_id, pp.fecha, pp.monto, pp.metodo, pp.referencia, pp.notas,
+              pp.estado, pp.anulado_en, pp.anulado_por, pp.anulacion_motivo,
               pp.usuario_id, pp.creado_en, u.nombre AS usuario_nombre
-       FROM pagos_proveedor pp
+       FROM pagos_compra pp
        LEFT JOIN usuarios u ON u.id = pp.usuario_id
        WHERE pp.compra_id = ?
        ORDER BY pp.fecha DESC, pp.id DESC`, [compraId]);
     return rows;
-  }
-
-  async actualizarPago(conn, compraId, montoPagado, saldoPendiente, estadoPago) {
-    const destino = conn || pool;
-    await destino.query(
-      `UPDATE compras SET monto_pagado = ?, saldo_pendiente = ?, estado_pago = ?, actualizado_en = CURRENT_TIMESTAMP WHERE id = ?`,
-      [montoPagado, saldoPendiente, estadoPago, compraId]
-    );
   }
 
   async anular(conn, compraId, usuarioId, motivo) {
@@ -253,7 +235,7 @@ class CompraRepository {
     const { compra_id, fecha, monto, metodo, referencia, notas, usuario_id } = datos;
     const destino = conn || pool;
     const [result] = await destino.query(
-      `INSERT INTO pagos_proveedor (compra_id, fecha, monto, metodo, referencia, notas, usuario_id)
+      `INSERT INTO pagos_compra (compra_id, fecha, monto, metodo, referencia, notas, usuario_id)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [compra_id, fecha, monto, metodo, referencia, notas, usuario_id]
     );
@@ -262,13 +244,21 @@ class CompraRepository {
 
   async actualizarEstadoOrden(conn, ordenId) {
     const destino = conn || pool;
-    // Calcular estado basado en cantidad recibida vs solicitada
+    // Calcular estado segun cantidad recibida vs solicitada
     await destino.query(
       `UPDATE ordenes_compra oc
        SET estado = CASE
-         WHEN NOT EXISTS (SELECT 1 FROM detalle_orden_compra WHERE orden_id = oc.id) THEN 'borrador'
-         WHEN SUM(CASE WHEN doc.cantidad_recibida >= doc.cantidad_solicitada THEN 1 ELSE 0 END) = COUNT(*) THEN 'recibida'
-         WHEN SUM(doc.cantidad_recibida) > 0 THEN 'recibida_parcial'
+         WHEN NOT EXISTS (SELECT 1 FROM detalle_orden_compra d WHERE d.orden_id = oc.id) THEN 'borrador'
+         WHEN (
+           SELECT COUNT(*) FROM detalle_orden_compra d
+           WHERE d.orden_id = oc.id AND d.cantidad_recibida >= d.cantidad_solicitada
+         ) = (
+           SELECT COUNT(*) FROM detalle_orden_compra d WHERE d.orden_id = oc.id
+         ) THEN 'recibida'
+         WHEN (
+           SELECT COALESCE(SUM(d.cantidad_recibida), 0)
+           FROM detalle_orden_compra d WHERE d.orden_id = oc.id
+         ) > 0 THEN 'recibida_parcial'
          ELSE oc.estado END,
            actualizado_en = CURRENT_TIMESTAMP
        WHERE oc.id = ?`, [ordenId]

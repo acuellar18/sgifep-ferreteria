@@ -7,6 +7,7 @@ import Paginacion from '../../components/Paginacion';
 import ThOrdenable from '../../components/ThOrdenable';
 import Modal from '../../components/Modal';
 import { useNotificacion } from '../../components/Toast';
+import { permisosCompras } from '../../utils/permisosCompras';
 import ProveedorFormModal from './ProveedorFormModal';
 
 const FILTROS_INICIALES = {
@@ -37,7 +38,7 @@ export default function ProveedoresPage() {
   const temporizadorBusqueda = useRef(null);
 
   const sesion = JSON.parse(localStorage.getItem('session') || '{}');
-  const esAdmin = sesion.superadmin || sesion.roles?.includes('administrador');
+  const permisos = permisosCompras(sesion);
 
   const totalPaginas = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -205,13 +206,10 @@ export default function ProveedoresPage() {
             <span className={`chip ${ficha.activo ? 'chip-ok' : 'chip-peligro'}`}>
               {ficha.activo ? 'Activo' : 'Inactivo'}
             </span>
-            {esAdmin && (
+            {permisos.editarProveedor && (
               <>
                 <button type="button" className="btn btn-secundario" onClick={() => setConfirmando({ accion: 'estado', ...ficha })}>
                   {ficha.activo ? 'Inactivar' : 'Activar'}
-                </button>
-                <button type="button" className="btn btn-primario" onClick={() => navigate(`/compras/nueva?proveedor=${ficha.id}`)}>
-                  Nueva compra
                 </button>
                 <button type="button" className="btn btn-secundario" onClick={abrirEdicion}>
                   Editar
@@ -339,7 +337,7 @@ export default function ProveedoresPage() {
       <div className="encabezado-pagina">
         <h2>Proveedores</h2>
         <div className="acciones-encabezado">
-          {esAdmin && (
+          {permisos.editarProveedor && (
             <button type="button" className="btn btn-primario" onClick={abrirAlta}>
               + Agregar proveedor
             </button>
@@ -407,7 +405,7 @@ export default function ProveedoresPage() {
                         <button type="button" className="btn btn-opcion" onClick={() => verFicha(p)}>
                           Ver ficha
                         </button>
-                        {esAdmin && (
+                        {permisos.editarProveedor && (
                           <>
                             <button type="button" className="btn btn-opcion" onClick={() => abrirEdicion(p)}>
                               Editar
@@ -419,16 +417,16 @@ export default function ProveedoresPage() {
                             >
                               {p.activo ? 'Inactivar' : 'Activar'}
                             </button>
-                            {p.saldo_pendiente === 0 && !p.activo && (
-                              <button
-                                type="button"
-                                className="btn btn-opcion btn-danger"
-                                onClick={() => setConfirmando({ accion: 'eliminar', ...p })}
-                              >
-                                Eliminar
-                              </button>
-                            )}
                           </>
+                        )}
+                        {permisos.eliminarProveedor && p.saldo_pendiente === 0 && !p.activo && (
+                          <button
+                            type="button"
+                            className="btn btn-opcion btn-danger"
+                            onClick={() => setConfirmando({ accion: 'eliminar', ...p })}
+                          >
+                            Eliminar
+                          </button>
                         )}
                       </div>
                     </td>

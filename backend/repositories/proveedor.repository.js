@@ -179,8 +179,9 @@ class ProveedorRepository {
     };
   }
 
-  async actualizarCostoProductoProveedor(producto_id, proveedor_id, costo) {
-    await pool.query(
+  async actualizarCostoProductoProveedor(producto_id, proveedor_id, costo, conn) {
+    const destino = conn || pool;
+    await destino.query(
       `INSERT INTO producto_proveedor (producto_id, proveedor_id, costo_ultimo, es_preferido)
        VALUES (?, ?, ?, 0)
        ON DUPLICATE KEY UPDATE costo_ultimo = ?, actualizado_en = CURRENT_TIMESTAMP`,

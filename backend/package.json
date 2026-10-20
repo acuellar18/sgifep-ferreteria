@@ -6,7 +6,12 @@
   "scripts": {
     "start": "node server.js",
     "seed": "node seed.js",
-    "migrate": "node scripts/migrate.js"
+    "seed-compras": "node seed-compras.js",
+    "migrate": "node scripts/migrate.js",
+    "reiniciar-compras": "node scripts/reiniciar-demo-compras.js",
+    "verificar-compras": "node scripts/verificar-integridad-compras.js",
+    "probar-permisos-compras": "node scripts/probar-permisos-compras.js",
+    "probar-reportes-compras": "node scripts/probar-reportes-compras.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

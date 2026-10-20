@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import FilterBar from '../../components/FilterBar';
 import ConfirmDialog from '../../components/ConfirmDialog';
@@ -7,6 +6,7 @@ import Paginacion from '../../components/Paginacion';
 import ThOrdenable from '../../components/ThOrdenable';
 import Modal from '../../components/Modal';
 import { useNotificacion } from '../../components/Toast';
+import { permisosCompras } from '../../utils/permisosCompras';
 
 const FILTROS_INICIALES = {
   q: '',
@@ -20,7 +20,6 @@ const FILTROS_INICIALES = {
 const PAGE_SIZE = 10;
 
 export default function ComprasPage() {
-  const navigate = useNavigate();
   const notificar = useNotificacion();
 
   const [compras, setCompras] = useState([]);
@@ -35,10 +34,16 @@ export default function ComprasPage() {
   const [detalleAbierto, setDetalleAbierto] = useState(false);
   const [detalleCompra, setDetalleCompra] = useState(null);
   const [confirmando, setConfirmando] = useState(null);
+  const [pagoCompra, setPagoCompra] = useState(null);
+  const [pagoForm, setPagoForm] = useState({ fecha: '', monto: '', metodo: 'efectivo', referencia: '', notas: '' });
+  const [guardandoPago, setGuardandoPago] = useState(false);
+  const [pagoAnular, setPagoAnular] = useState(null);
+  const [motivoAnulacionPago, setMotivoAnulacionPago] = useState('');
+  const [anulandoPago, setAnulandoPago] = useState(false);
   const temporizadorBusqueda = useRef(null);
 
   const sesion = JSON.parse(localStorage.getItem('session') || '{}');
-  const esAdmin = sesion.superadmin || sesion.roles?.includes('administrador');
+  const permisos = permisosCompras(sesion);
 
   const totalPaginas = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -153,6 +158,62 @@ export default function ComprasPage() {
     }
   }
 
+  function abrirPago(compra) {
+    setPagoCompra(compra);
+    setPagoForm({
+      fecha: new Date().toISOString().slice(0, 10),
+      monto: Number(compra.saldo_pendiente || 0).toFixed(2),
+      metodo: 'efectivo',
+      referencia: '',
+      notas: ''
+    });
+  }
+
+  async function registrarPago(e) {
+    e.preventDefault();
+    if (!pagoCompra) return;
+    setGuardandoPago(true);
+    try {
+      await api.post(`/compras/${pagoCompra.id}/pagos`, {
+        fecha: pagoForm.fecha,
+        monto: Number(pagoForm.monto),
+        metodo: pagoForm.metodo,
+        referencia: pagoForm.referencia,
+        notas: pagoForm.notas
+      });
+      notificar.exito('Pago registrado correctamente');
+      setPagoCompra(null);
+      await cargarCompras(filtros, pagina, orden);
+      await cargarResumenes();
+    } catch (err) {
+      notificar.error(err.message);
+    } finally {
+      setGuardandoPago(false);
+    }
+  }
+
+  async function anularPago(e) {
+    e.preventDefault();
+    if (!pagoAnular || !detalleCompra) return;
+    setAnulandoPago(true);
+    try {
+      await api.delete(`/compras/${detalleCompra.id}/pagos/${pagoAnular.id}`, {
+        data: { motivo: motivoAnulacionPago }
+      });
+      notificar.exito('Pago anulado correctamente');
+      setPagoAnular(null);
+      setMotivoAnulacionPago('');
+      const res = await api.get(`/compras/${detalleCompra.id}`);
+      setDetalleCompra(res.data);
+      await cargarCompras(filtros, pagina, orden);
+      await cargarResumenes();
+    } catch (err) {
+      notificar.error(err.message);
+    } finally {
+      setAnulandoPago(false);
+    }
+  }
+
   function formatearFecha(fecha) {
     if (!fecha) return '—';
     const d = new Date(fecha);
@@ -189,14 +250,7 @@ export default function ComprasPage() {
   return (
     <section>
       <div className="encabezado-pagina">
-        <h2>Listado de Compras</h2>
-        <div className="acciones-encabezado">
-          {esAdmin && (
-            <button type="button" className="btn btn-primario" onClick={() => navigate('/compras/nueva')}>
-              + Nueva Compra
-            </button>
-          )}
-        </div>
+        <h2>Facturas de proveedor</h2>
       </div>
 
       <div className="tarjetas">
@@ -309,16 +363,16 @@ export default function ComprasPage() {
                         <button type="button" className="btn btn-opcion" onClick={() => window.print()}>
                           Imprimir
                         </button>
-                        {c.estado_pago !== 'pagada' && c.estado === 'recibida' && esAdmin && (
+                        {c.estado_pago !== 'pagada' && c.estado === 'recibida' && permisos.registrarPago && (
                           <button
                             type="button"
                             className="btn btn-opcion"
-                            onClick={() => navigate(`/compras/${c.id}/pagar`)}
+                            onClick={() => abrirPago(c)}
                           >
                             Registrar pago
                           </button>
                         )}
-                        {c.estado === 'recibida' && esAdmin && (
+                        {c.estado === 'recibida' && permisos.anularCompra && (
                           <button
                             type="button"
                             className="btn btn-opcion btn-danger"
@@ -404,7 +458,9 @@ export default function ComprasPage() {
                         <th>Monto</th>
                         <th>Método</th>
                         <th>Referencia</th>
+                        <th>Estado</th>
                         <th>Registrado por</th>
+                        <th>Acciones</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -414,7 +470,26 @@ export default function ComprasPage() {
                           <td>{formatearMoneda(p.monto)}</td>
                           <td>{p.metodo}</td>
                           <td>{p.referencia || '—'}</td>
+                          <td>
+                            <span className={`chip ${p.estado === 'anulado' ? 'chip-peligro' : 'chip-ok'}`}>
+                              {p.estado === 'anulado' ? 'Anulado' : 'Activo'}
+                            </span>
+                          </td>
                           <td>{p.usuario_nombre || '—'}</td>
+                          <td>
+                            {p.estado === 'activo' && permisos.anularPago && detalleCompra?.estado !== 'anulada' ? (
+                              <button
+                                type="button"
+                                className="btn btn-opcion btn-danger"
+                                onClick={() => {
+                                  setPagoAnular(p);
+                                  setMotivoAnulacionPago('');
+                                }}
+                              >
+                                Anular
+                              </button>
+                            ) : '—'}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -429,6 +504,119 @@ export default function ComprasPage() {
               </p>
             )}
           </div>
+        )}
+      </Modal>
+
+      <Modal
+        abierto={Boolean(pagoCompra)}
+        titulo={`Registrar pago: ${pagoCompra?.numero || ''}`}
+        onCerrar={() => setPagoCompra(null)}
+        ancho="520px"
+      >
+        {pagoCompra && (
+          <form onSubmit={registrarPago}>
+            <div className="form-grid">
+              <label className="campo">
+                <span>Fecha *</span>
+                <input
+                  type="date"
+                  className="control"
+                  required
+                  value={pagoForm.fecha}
+                  onChange={(e) => setPagoForm({ ...pagoForm, fecha: e.target.value })}
+                />
+              </label>
+              <label className="campo">
+                <span>Monto *</span>
+                <input
+                  type="number"
+                  className="control"
+                  step="0.01"
+                  min="0.01"
+                  max={Number(pagoCompra.saldo_pendiente || 0)}
+                  required
+                  value={pagoForm.monto}
+                  onChange={(e) => setPagoForm({ ...pagoForm, monto: e.target.value })}
+                />
+              </label>
+              <label className="campo">
+                <span>Método *</span>
+                <select
+                  className="control"
+                  value={pagoForm.metodo}
+                  onChange={(e) => setPagoForm({ ...pagoForm, metodo: e.target.value })}
+                >
+                  <option value="efectivo">Efectivo</option>
+                  <option value="transferencia">Transferencia</option>
+                  <option value="cheque">Cheque</option>
+                  <option value="otro">Otro</option>
+                </select>
+              </label>
+              <label className="campo">
+                <span>Referencia</span>
+                <input
+                  type="text"
+                  className="control"
+                  value={pagoForm.referencia}
+                  onChange={(e) => setPagoForm({ ...pagoForm, referencia: e.target.value })}
+                />
+              </label>
+            </div>
+            <p className="reporte-detalle" style={{ marginTop: '8px' }}>
+              Saldo pendiente: <strong>{formatearMoneda(pagoCompra.saldo_pendiente)}</strong>
+            </p>
+            <label className="campo">
+              <span>Notas</span>
+              <textarea
+                className="control"
+                rows={2}
+                value={pagoForm.notas}
+                onChange={(e) => setPagoForm({ ...pagoForm, notas: e.target.value })}
+              />
+            </label>
+            <div className="modal-acciones" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
+              <button type="button" className="btn btn-secundario" onClick={() => setPagoCompra(null)}>
+                Cancelar
+              </button>
+              <button type="submit" className="btn btn-primario" disabled={guardandoPago}>
+                {guardandoPago ? 'Guardando...' : 'Registrar pago'}
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
+      <Modal
+        abierto={Boolean(pagoAnular)}
+        titulo="Anular pago"
+        onCerrar={() => setPagoAnular(null)}
+        ancho="460px"
+      >
+        {pagoAnular && (
+          <form onSubmit={anularPago}>
+            <p className="confirmar-mensaje">
+              Se anulará el pago de <strong>{formatearMoneda(pagoAnular.monto)}</strong> del{' '}
+              {formatearFecha(pagoAnular.fecha)}. El monto volverá al saldo pendiente de la compra.
+            </p>
+            <label className="campo">
+              <span>Motivo *</span>
+              <textarea
+                className="control"
+                rows={3}
+                required
+                value={motivoAnulacionPago}
+                onChange={(e) => setMotivoAnulacionPago(e.target.value)}
+              />
+            </label>
+            <div className="modal-acciones" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
+              <button type="button" className="btn btn-secundario" onClick={() => setPagoAnular(null)}>
+                Cancelar
+              </button>
+              <button type="submit" className="btn btn-danger" disabled={anulandoPago}>
+                {anulandoPago ? 'Anulando...' : 'Anular pago'}
+              </button>
+            </div>
+          </form>
         )}
       </Modal>
 

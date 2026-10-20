@@ -93,17 +93,6 @@ class OrdenCompraRepository {
     return rows;
   }
 
-  async obtenerSiguienteNumero() {
-    const anio = new Date().getFullYear();
-    const [rows] = await pool.query(
-      `SELECT MAX(CAST(SUBSTRING(numero, 5) AS UNSIGNED)) AS max_num
-       FROM ordenes_compra
-       WHERE numero LIKE ?`, [`OC-${anio}-%`]);
-    const maxNum = Number(rows[0]?.max_num || 0);
-    const siguiente = maxNum + 1;
-    return `OC-${anio}-${String(siguiente).padStart(6, '0')}`;
-  }
-
   async crear(conn, datos) {
     const { numero, proveedor_id, fecha, fecha_esperada, estado, notas,
             subtotal_estimado, iva_estimado, total_estimado, usuario_id } = datos;

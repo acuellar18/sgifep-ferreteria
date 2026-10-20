@@ -124,36 +124,38 @@ class ProductoRepository {
     return result.affectedRows;
   }
 
-  async actualizarStockYCosto(conn, productoId, cantidad, costoNuevo) {
+  async registrarMovimiento(conn, datos) {
     const destino = conn || pool;
-    // Actualiza stock y recalcula costo promedio ponderado
-    await destino.query(
-      `UPDATE productos
-       SET stock_actual = stock_actual + ?,
-           costo_ultimo = ?,
-           costo_promedio = CASE
-             WHEN stock_actual + ? > 0 THEN
-               ((stock_actual * costo_promedio) + (? * ?)) / (stock_actual + ?)
-             ELSE ? END,
-           actualizado_en = CURRENT_TIMESTAMP
-       WHERE id = ?`,
-      [cantidad, costoNuevo, cantidad, cantidad, costoNuevo, cantidad, costoNuevo, productoId]
-    );
-  }
+    const {
+      producto_id,
+      tipo,
+      origen,
+      referencia_tipo,
+      referencia_id,
+      cantidad,
+      costo_unitario,
+      notas,
+      usuario_id
+    } = datos;
 
-  async revertirStock(conn, productoId, cantidad) {
-    const destino = conn || pool;
-    const [rows] = await destino.query('SELECT stock_actual FROM productos WHERE id = ? FOR UPDATE', [productoId]);
-    const stockActual = Number(rows[0]?.stock_actual || 0);
-    if (stockActual < cantidad) {
-      const err = new Error(`Stock insuficiente para revertir: disponible ${stockActual}, requerido ${cantidad}`);
-      err.code = 'STOCK_INSUFICIENTE';
-      throw err;
-    }
-    await destino.query(
-      `UPDATE productos SET stock_actual = stock_actual - ?, actualizado_en = CURRENT_TIMESTAMP WHERE id = ?`,
-      [cantidad, productoId]
+    const [result] = await destino.query(
+      `INSERT INTO movimientos_inventario
+        (producto_id, tipo, origen, referencia_tipo, referencia_id, cantidad,
+         costo_unitario, notas, usuario_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        producto_id,
+        tipo,
+        origen,
+        referencia_tipo || null,
+        referencia_id || null,
+        cantidad,
+        costo_unitario || 0,
+        notas || null,
+        usuario_id || null
+      ]
     );
+    return result.insertId;
   }
 
   async cambiarEstado(id, activo) {

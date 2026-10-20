@@ -1,26 +1,37 @@
 const pool = require('../db');
 
+function agregarFiltros(where, params, filtros = {}, { fecha = 'c.fecha' } = {}) {
+  if (filtros.proveedor) {
+    where.push('c.proveedor_id = ?');
+    params.push(filtros.proveedor);
+  }
+  if (filtros.categoria) {
+    where.push(
+      `EXISTS (
+        SELECT 1
+        FROM detalle_compra dc_filtro
+        JOIN productos p_filtro ON p_filtro.id = dc_filtro.producto_id
+        WHERE dc_filtro.compra_id = c.id AND p_filtro.categoria_id = ?
+      )`
+    );
+    params.push(filtros.categoria);
+  }
+  if (filtros.startDate) {
+    where.push(`DATE(${fecha}) >= ?`);
+    params.push(filtros.startDate);
+  }
+  if (filtros.endDate) {
+    where.push(`DATE(${fecha}) <= ?`);
+    params.push(filtros.endDate);
+  }
+}
+
 class ReporteCompraRepository {
   async resumenCompras(filtros = {}) {
     const where = ["c.estado = 'recibida'"];
     const params = [];
 
-    if (filtros.proveedor) {
-      where.push('c.proveedor_id = ?');
-      params.push(filtros.proveedor);
-    }
-    if (filtros.categoria) {
-      where.push('p.categoria_id = ?');
-      params.push(filtros.categoria);
-    }
-    if (filtros.startDate) {
-      where.push('DATE(c.fecha) >= ?');
-      params.push(filtros.startDate);
-    }
-    if (filtros.endDate) {
-      where.push('DATE(c.fecha) <= ?');
-      params.push(filtros.endDate);
-    }
+    agregarFiltros(where, params, filtros);
 
     const whereSql = 'WHERE ' + where.join(' AND ');
 
@@ -44,22 +55,7 @@ class ReporteCompraRepository {
     const where = ["c.estado = 'recibida'"];
     const params = [];
 
-    if (filtros.proveedor) {
-      where.push('c.proveedor_id = ?');
-      params.push(filtros.proveedor);
-    }
-    if (filtros.categoria) {
-      where.push('p.categoria_id = ?');
-      params.push(filtros.categoria);
-    }
-    if (filtros.startDate) {
-      where.push('DATE(c.fecha) >= ?');
-      params.push(filtros.startDate);
-    }
-    if (filtros.endDate) {
-      where.push('DATE(c.fecha) <= ?');
-      params.push(filtros.endDate);
-    }
+    agregarFiltros(where, params, filtros);
 
     const whereSql = 'WHERE ' + where.join(' AND ');
 
@@ -69,8 +65,6 @@ class ReporteCompraRepository {
         COUNT(*) AS cantidad,
         COALESCE(SUM(c.total), 0) AS total
        FROM compras c
-       JOIN detalle_compra dc ON dc.compra_id = c.id
-       JOIN productos p ON p.id = dc.producto_id
        ${whereSql}
        GROUP BY DATE_FORMAT(c.fecha, '%Y-%m')
        ORDER BY mes ASC`, params);
@@ -86,14 +80,7 @@ class ReporteCompraRepository {
     const where = ["c.estado = 'recibida'"];
     const params = [];
 
-    if (filtros.startDate) {
-      where.push('DATE(c.fecha) >= ?');
-      params.push(filtros.startDate);
-    }
-    if (filtros.endDate) {
-      where.push('DATE(c.fecha) <= ?');
-      params.push(filtros.endDate);
-    }
+    agregarFiltros(where, params, filtros);
 
     const whereSql = 'WHERE ' + where.join(' AND ');
 
@@ -206,18 +193,7 @@ class ReporteCompraRepository {
     const where = ["c.estado = 'recibida'", "c.estado_pago IN ('pendiente','parcial')"];
     const params = [];
 
-    if (filtros.proveedor) {
-      where.push('c.proveedor_id = ?');
-      params.push(filtros.proveedor);
-    }
-    if (filtros.startDate) {
-      where.push('DATE(c.fecha_vencimiento) >= ?');
-      params.push(filtros.startDate);
-    }
-    if (filtros.endDate) {
-      where.push('DATE(c.fecha_vencimiento) <= ?');
-      params.push(filtros.endDate);
-    }
+    agregarFiltros(where, params, filtros, { fecha: 'c.fecha_vencimiento' });
 
     const whereSql = 'WHERE ' + where.join(' AND ');
 

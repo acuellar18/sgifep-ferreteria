@@ -139,6 +139,10 @@ function serializarDetalle(fila, detalles = [], pagos = []) {
       metodo: p.metodo,
       referencia: p.referencia,
       notas: p.notas,
+      estado: p.estado,
+      anulado_en: p.anulado_en,
+      anulado_por: p.anulado_por,
+      anulacion_motivo: p.anulacion_motivo,
       usuario_id: p.usuario_id,
       usuario_nombre: p.usuario_nombre
     }))

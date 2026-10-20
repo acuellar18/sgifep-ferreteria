@@ -33,7 +33,7 @@ module.exports = {
   }),
 
   eliminarPago: manejarAsync(async (req, res) => {
-    await compraService.eliminarPago(req.params.pagoId, req.usuario.id);
-    res.json({ success: true, mensaje: 'Pago eliminado correctamente' });
+    await compraService.eliminarPago(req.params.pagoId, req.usuario.id, req.body?.motivo);
+    res.json({ success: true, mensaje: 'Pago anulado correctamente' });
   })
 };
