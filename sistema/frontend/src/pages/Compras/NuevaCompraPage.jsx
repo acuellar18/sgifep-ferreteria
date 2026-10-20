@@ -10,6 +10,7 @@ const FORM_INICIAL = {
   proveedor_nombre: '',
   proveedor_dias_credito: 0,
   fecha: new Date().toISOString().split('T')[0],
+  serie: '',
   numero_factura: '',
   condicion: 'contado',
   fecha_vencimiento: '',
@@ -228,6 +229,7 @@ export default function NuevaCompraPage() {
     const payload = {
       proveedor_id: Number(form.proveedor_id),
       fecha: form.fecha,
+      serie: form.serie.trim().toUpperCase() || null,
       numero_factura: form.numero_factura.trim().toUpperCase() || null,
       condicion: form.condicion,
       fecha_vencimiento: form.fecha_vencimiento || null,
@@ -316,6 +318,17 @@ export default function NuevaCompraPage() {
                 required
                 value={form.fecha}
                 onChange={(e) => actualizarCampo('fecha', e.target.value)}
+              />
+            </label>
+
+            <label className="campo">
+              <span>Serie</span>
+              <input
+                type="text"
+                className="control"
+                value={form.serie}
+                onChange={(e) => actualizarCampo('serie', e.target.value.toUpperCase())}
+                placeholder="A"
               />
             </label>
 

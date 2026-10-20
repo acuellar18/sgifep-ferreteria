@@ -164,10 +164,9 @@
                     <span class="drawer-flecha">▸</span>
                 </button>
                 <div class="drawer-subitems" id="subitems-inventario" hidden>
-                    <a class="drawer-subitem" href="/usuarios/inventario">Listado de Productos</a>
+                    <a class="drawer-subitem" href="/usuarios/inventario/productos">Productos</a>
                     <a class="drawer-subitem" href="/usuarios/inventario/categorias">Categorías</a>
                     <a class="drawer-subitem" href="/usuarios/inventario/movimientos">Movimientos de Inventario</a>
-                    <a class="drawer-subitem" href="/usuarios/inventario/reporte">Reporte de Inventario</a>
                 </div>
 
                 <button type="button" class="drawer-item" data-menu-toggle="facturacion" aria-expanded="false" aria-controls="subitems-facturacion">
@@ -303,8 +302,8 @@
                 nombre: 'Control de Inventario',
                 icono: '📦',
                 desc: 'Administre su inventario de productos.',
-                roles: ['administrador', 'admin', 'bodega'],
-                url: `${BASE_USUARIOS}inventario`
+                roles: ['administrador', 'admin', 'compras', 'bodega', 'caja', 'ventas', 'reparto'],
+                url: `${BASE_USUARIOS}inventario/productos`
             },
             {
                 nombre: 'Facturación y Cobro',

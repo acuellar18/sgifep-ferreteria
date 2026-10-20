@@ -59,10 +59,10 @@
       titulo: 'Inventario',
       subpaginas: [
         {
-          id: 'listado',
-          etiqueta: 'Listado de Productos',
-          ruta: 'inventario',
-          titulo: 'Listado de Productos',
+          id: 'productos',
+          etiqueta: 'Productos',
+          ruta: 'inventario/productos',
+          titulo: 'Productos',
           descripcion: 'Productos existentes y su saldo en bodega.',
           columnas: ['Código', 'Producto', 'Categoría', 'Existencia', 'Estado']
         },
@@ -81,15 +81,6 @@
           titulo: 'Movimientos de Inventario',
           descripcion: 'Entradas y salidas de productos del inventario.',
           columnas: ['Fecha', 'Producto', 'Tipo de movimiento', 'Cantidad', 'Referencia']
-        },
-        {
-          id: 'reporte',
-          etiqueta: 'Reporte de Inventario',
-          ruta: 'inventario/reporte',
-          titulo: 'Reporte de Inventario',
-          descripcion: 'Resumen del inventario valorizado y rotación.',
-          vista: 'reporte',
-          columnas: ['Categoría', 'Productos', 'Unidades', 'Valor']
         }
       ]
     },

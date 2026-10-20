@@ -33,11 +33,11 @@ export const MODULOS_SISTEMA = [
     id: 'inventario',
     icono: '📦',
     titulo: 'Inventario',
+    permiso: 'consultarInventario',
     subitems: [
-      { to: '/inventario', etiqueta: 'Listado de Productos' },
-      { to: '/inventario/categorias', etiqueta: 'Categorías' },
-      { to: '/inventario/movimientos', etiqueta: 'Movimientos de Inventario' },
-      { to: '/inventario/reporte', etiqueta: 'Reporte de Inventario' }
+      { to: '/inventario/productos', etiqueta: 'Productos' },
+      { to: '/inventario/categorias', etiqueta: 'Categorías', permiso: 'consultarCategorias' },
+      { to: '/inventario/movimientos', etiqueta: 'Movimientos de Inventario', permiso: 'consultarMovimientos' }
     ]
   },
   {
@@ -69,7 +69,7 @@ export const MODULOS_SISTEMA = [
       { to: '/reportes', etiqueta: 'Reporte General' },
       { to: '/reportes/ventas', etiqueta: 'Reporte de Ventas' },
       { to: '/reportes/compras', etiqueta: 'Reporte de Compras', permiso: 'consultarReportes' },
-      { to: '/reportes/inventario', etiqueta: 'Reporte de Inventario' }
+      { to: '/reportes/inventario', etiqueta: 'Reporte de Inventario', permiso: 'consultarReporteInventario' }
     ]
   }
 ];

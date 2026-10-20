@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
-import FilterBar from '../../components/FilterBar';
+import FiltrosCompras from '../../components/FiltrosCompras';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import Paginacion from '../../components/Paginacion';
 import ThOrdenable from '../../components/ThOrdenable';
@@ -198,7 +198,9 @@ export default function ProveedoresPage() {
           <div>
             <h2>{ficha.nombre}</h2>
             <p className="reporte-detalle">
-              {ficha.nit && `NIT: ${ficha.nit}  |  `}{ficha.telefono && `Tel: ${ficha.telefono}  |  `}
+              {ficha.nit && `NIT: ${ficha.nit}  |  `}
+              {ficha.dpi && `DPI: ${ficha.dpi}  |  `}
+              {ficha.telefono && `Tel: ${ficha.telefono}  |  `}
               {ficha.correo && `Email: ${ficha.correo}`}
             </p>
           </div>
@@ -245,7 +247,9 @@ export default function ProveedoresPage() {
             <div className="tabla-wrapper">
               <table className="tabla">
                 <tbody>
-                  <tr><th style={{width:'180px'}}>Dirección</th><td>{ficha.direccion || '—'}</td></tr>
+                  <tr><th style={{width:'180px'}}>Contacto</th><td>{ficha.contacto_nombre || '—'}</td></tr>
+                  <tr><th>Teléfonos</th><td>{[ficha.telefono, ficha.telefono2].filter(Boolean).join(' / ') || '—'}</td></tr>
+                  <tr><th>Dirección</th><td>{ficha.direccion || '—'}</td></tr>
                   <tr><th>Días de crédito</th><td>{ficha.dias_credito || 0}</td></tr>
                   <tr><th>Notas</th><td>{ficha.notas || '—'}</td></tr>
                 </tbody>
@@ -294,6 +298,7 @@ export default function ProveedoresPage() {
                     <ThOrdenable columna="numero" ordenActual={orden} onOrdenar={cambiarOrden}>N° compra</ThOrdenable>
                     <ThOrdenable columna="numero_factura" ordenActual={orden} onOrdenar={cambiarOrden}>N° factura</ThOrdenable>
                     <ThOrdenable columna="total" ordenActual={orden} onOrdenar={cambiarOrden}>Total</ThOrdenable>
+                    <th>Saldo</th>
                     <th>Estado pago</th>
                     <th>Estado</th>
                   </tr>
@@ -303,8 +308,9 @@ export default function ProveedoresPage() {
                     <tr key={c.id}>
                       <td>{formatearFecha(c.fecha)}</td>
                       <td>{c.numero}</td>
-                      <td>{c.numero_factura || '—'}</td>
+                      <td>{[c.serie, c.numero_factura].filter(Boolean).join('-') || '—'}</td>
                       <td>{formatearMoneda(c.total)}</td>
+                      <td>{formatearMoneda(c.saldo_pendiente)}</td>
                       <td>
                         <span className={`chip ${
                           c.estado_pago === 'pagada' ? 'chip-ok' :
@@ -345,13 +351,12 @@ export default function ProveedoresPage() {
         </div>
       </div>
 
-      <FilterBar
+      <FiltrosCompras
         filtros={filtros}
-        departamentos={[]}
-        roles={[]}
         onChange={cambiarFiltros}
         onFiltrar={aplicarFiltros}
         onLimpiar={limpiarFiltros}
+        placeholder="Buscar por nombre, NIT, contacto o correo..."
       >
         <select
           className="control"
@@ -362,7 +367,7 @@ export default function ProveedoresPage() {
           <option value="activo">Activos</option>
           <option value="inactivo">Inactivos</option>
         </select>
-      </FilterBar>
+      </FiltrosCompras>
 
       {error && <div className="alerta alerta-error">{error}</div>}
 

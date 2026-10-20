@@ -20,6 +20,7 @@ function baseValidacion(datos = {}) {
   }
 
   const numero_factura = typeof datos.numero_factura === 'string' ? datos.numero_factura.trim().toUpperCase() : '';
+  const serie = typeof datos.serie === 'string' ? datos.serie.trim().toUpperCase() : '';
   const condicion = datos.condicion === 'credito' ? 'credito' : 'contado';
 
   let fecha_vencimiento = null;
@@ -59,6 +60,7 @@ function baseValidacion(datos = {}) {
     proveedor_id,
     fecha,
     numero_factura: numero_factura || null,
+    serie: serie || null,
     condicion,
     fecha_vencimiento,
     orden_compra_id,
@@ -77,9 +79,44 @@ function validarCrear(datos = {}) {
 }
 
 function validarActualizar(datos = {}) {
-  // Para actualizar solo permitimos ciertos campos, no los detalles (eso requeriría lógica compleja)
-  // Por simplicidad, no permitimos editar compras ya registradas (solo anular)
-  throw new HttpError(400, 'Las compras no se pueden editar, solo anular');
+  if (Array.isArray(datos.detalles)) {
+    throw new HttpError(400, 'Los productos de una compra no se pueden editar; anule y registre una nueva factura');
+  }
+
+  const fecha = datos.fecha ? String(datos.fecha).trim() : '';
+  if (!fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+    throw new HttpError(400, 'La fecha es requerida y debe tener formato YYYY-MM-DD');
+  }
+
+  const numero_factura = typeof datos.numero_factura === 'string' ? datos.numero_factura.trim().toUpperCase() : '';
+  if (numero_factura.length > 50) {
+    throw new HttpError(400, 'El número de factura no puede exceder 50 caracteres');
+  }
+
+  const serie = typeof datos.serie === 'string' ? datos.serie.trim().toUpperCase() : '';
+  if (serie.length > 20) {
+    throw new HttpError(400, 'La serie no puede exceder 20 caracteres');
+  }
+
+  const condicion = datos.condicion === 'credito' ? 'credito' : 'contado';
+  let fecha_vencimiento = null;
+  if (condicion === 'credito') {
+    fecha_vencimiento = datos.fecha_vencimiento ? String(datos.fecha_vencimiento).trim() : '';
+    if (!fecha_vencimiento || !/^\d{4}-\d{2}-\d{2}$/.test(fecha_vencimiento)) {
+      throw new HttpError(400, 'En compras a crédito, la fecha de vencimiento es requerida');
+    }
+  }
+
+  const notas = typeof datos.notas === 'string' ? datos.notas.trim() : '';
+
+  return {
+    fecha,
+    numero_factura: numero_factura || null,
+    serie: serie || null,
+    condicion,
+    fecha_vencimiento,
+    notas: notas || null
+  };
 }
 
 function serializar(fila) {
@@ -89,8 +126,10 @@ function serializar(fila) {
     numero: fila.numero,
     proveedor_id: fila.proveedor_id,
     proveedor_nombre: fila.proveedor_nombre,
+    proveedor_nit: fila.proveedor_nit || null,
     fecha: fila.fecha,
     numero_factura: fila.numero_factura,
+    serie: fila.serie,
     condicion: fila.condicion,
     fecha_vencimiento: fila.fecha_vencimiento,
     subtotal: Number(fila.subtotal || 0),

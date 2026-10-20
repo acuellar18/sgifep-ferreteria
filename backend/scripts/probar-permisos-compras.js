@@ -54,12 +54,17 @@ async function main() {
     const lectura = [
       ['/api/compras', ['administrador', 'compras', 'bodega', 'caja'], ['ventas', 'reparto']],
       ['/api/compras/resumenes', ['administrador', 'compras', 'bodega', 'caja'], ['ventas', 'reparto']],
+      ['/api/compras/1/impresion', ['administrador', 'compras', 'bodega', 'caja'], ['ventas', 'reparto']],
+      ['/api/compras/impresion/lista', ['administrador', 'compras', 'bodega', 'caja'], ['ventas', 'reparto']],
+      ['/api/compras/1/comentarios', ['administrador', 'compras', 'bodega', 'caja'], ['ventas', 'reparto']],
+      ['/api/compras/1/archivos', ['administrador', 'compras', 'bodega', 'caja'], ['ventas', 'reparto']],
       ['/api/proveedores', ['administrador', 'compras', 'bodega', 'caja'], ['ventas', 'reparto']],
-      ['/api/productos', ['administrador', 'compras', 'bodega', 'caja'], ['ventas', 'reparto']],
-      ['/api/productos/autocompletar?q=ce', ['administrador', 'compras', 'bodega', 'caja'], ['ventas', 'reparto']],
+      ['/api/productos', ['administrador', 'compras', 'bodega', 'caja', 'ventas', 'reparto'], []],
+      ['/api/productos/autocompletar?q=ce', ['administrador', 'compras', 'bodega', 'caja', 'ventas', 'reparto'], []],
       ['/api/ordenes-compra', ['administrador', 'compras', 'bodega'], ['caja', 'ventas', 'reparto']],
       ['/api/ordenes-compra/stock-bajo', ['administrador', 'compras', 'bodega'], ['caja', 'ventas', 'reparto']],
-      ['/api/reportes-compras/resumen', ['administrador', 'compras', 'bodega', 'caja'], ['ventas', 'reparto']]
+      ['/api/reportes-compras/resumen', ['administrador', 'compras', 'bodega', 'caja'], ['ventas', 'reparto']],
+      ['/api/configuracion-empresa', ['administrador', 'compras', 'bodega', 'caja', 'ventas', 'reparto'], []]
     ];
 
     for (const [ruta, permitidos, denegados] of lectura) {
@@ -80,10 +85,11 @@ async function main() {
       ['DELETE', '/api/compras/1/pagos/999999', null, ['administrador'], ['compras', 'caja', 'bodega']],
       ['POST', '/api/proveedores', {}, ['administrador', 'compras'], ['bodega', 'caja']],
       ['DELETE', '/api/proveedores/999999', null, ['administrador'], ['compras', 'bodega']],
-      ['POST', '/api/productos', {}, ['administrador', 'bodega'], ['compras', 'caja']],
+      ['POST', '/api/productos', {}, ['administrador', 'compras', 'bodega'], ['caja', 'ventas', 'reparto']],
       ['DELETE', '/api/productos/999999', null, ['administrador'], ['bodega', 'compras']],
       ['POST', '/api/ordenes-compra', {}, ['administrador', 'compras'], ['bodega', 'caja']],
-      ['POST', '/api/ordenes-compra/1/recibir', {}, ['administrador', 'compras', 'bodega'], ['caja', 'ventas']]
+      ['POST', '/api/ordenes-compra/1/recibir', {}, ['administrador', 'compras', 'bodega'], ['caja', 'ventas']],
+      ['PUT', '/api/configuracion-empresa', {}, ['administrador'], ['compras', 'bodega', 'caja', 'ventas', 'reparto']]
     ];
 
     for (const [metodo, ruta, body, permitidos, denegados] of escrituras) {
@@ -95,6 +101,25 @@ async function main() {
         const r = await api(ruta, { rol, metodo, body });
         check(`${metodo} ${ruta} (${rol}) denegado`, r.status === 403, `status ${r.status}`);
       }
+    }
+
+    for (const rol of ['compras', 'bodega']) {
+      const r = await api('/api/productos', { rol });
+      const producto = r.body?.data?.[0];
+      check(
+        `GET /api/productos (${rol}) incluye costos`,
+        producto && 'costo_ultimo' in producto && 'costo_promedio' in producto,
+        JSON.stringify(producto)
+      );
+    }
+    for (const rol of ['caja', 'ventas', 'reparto']) {
+      const r = await api('/api/productos', { rol });
+      const producto = r.body?.data?.[0];
+      check(
+        `GET /api/productos (${rol}) oculta costos`,
+        producto && !('costo_ultimo' in producto) && !('costo_promedio' in producto),
+        JSON.stringify(producto)
+      );
     }
   } finally {
     await new Promise((resolve) => server.close(resolve));

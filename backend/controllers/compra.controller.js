@@ -17,6 +17,21 @@ module.exports = {
     res.json({ success: true, data });
   }),
 
+  actualizar: manejarAsync(async (req, res) => {
+    const data = await compraService.actualizarCabecera(req.params.id, req.body);
+    res.json({ success: true, mensaje: 'Factura actualizada correctamente', data });
+  }),
+
+  impresion: manejarAsync(async (req, res) => {
+    const data = await compraService.impresionDetalle(req.params.id);
+    res.json({ success: true, data });
+  }),
+
+  impresionLista: manejarAsync(async (req, res) => {
+    const data = await compraService.impresionLista(req.query);
+    res.json({ success: true, data });
+  }),
+
   crear: manejarAsync(async (req, res) => {
     const id = await compraService.crear(req.body, req.usuario.id);
     res.status(201).json({ success: true, mensaje: 'Compra registrada correctamente', data: { id } });

@@ -30,9 +30,9 @@ class CompraRepository {
     const params = [];
 
     if (q) {
-      where.push('(c.numero LIKE ? OR c.numero_factura LIKE ? OR p.nombre LIKE ?)');
+      where.push('(c.numero LIKE ? OR c.numero_factura LIKE ? OR c.serie LIKE ? OR p.nombre LIKE ?)');
       const like = `%${q}%`;
-      params.push(like, like, like);
+      params.push(like, like, like, like);
     }
     if (proveedor) {
       where.push('c.proveedor_id = ?');
@@ -74,7 +74,7 @@ class CompraRepository {
     const offset = (paginaActual - 1) * limite;
 
     const sql = `
-      SELECT c.id, c.numero, c.proveedor_id, c.fecha, c.numero_factura, c.condicion,
+      SELECT c.id, c.numero, c.proveedor_id, c.fecha, c.numero_factura, c.serie, c.condicion,
              c.fecha_vencimiento, c.subtotal, c.iva, c.total, c.monto_pagado, c.saldo_pendiente,
              c.estado_pago, c.estado, c.orden_compra_id, c.notas, c.usuario_id, c.adjunto_factura,
              c.creado_en, c.actualizado_en, c.anulada_en, c.anulada_por, c.anulacion_motivo,
@@ -117,6 +117,41 @@ class CompraRepository {
     return Number(rows[0]?.total || 0);
   }
 
+  async listarResumenVencido(proveedor_id = null) {
+    const where = [
+      "c.estado = 'recibida'",
+      "c.estado_pago IN ('pendiente','parcial')",
+      'c.fecha_vencimiento IS NOT NULL',
+      'c.fecha_vencimiento < CURDATE()'
+    ];
+    const params = [];
+    if (proveedor_id) {
+      where.push('c.proveedor_id = ?');
+      params.push(proveedor_id);
+    }
+    const whereSql = 'WHERE ' + where.join(' AND ');
+    const [rows] = await pool.query(
+      `SELECT COALESCE(SUM(c.saldo_pendiente), 0) AS total FROM compras c ${whereSql}`, params);
+    return Number(rows[0]?.total || 0);
+  }
+
+  async listarResumenPorVencer(proveedor_id = null) {
+    const where = [
+      "c.estado = 'recibida'",
+      "c.estado_pago IN ('pendiente','parcial')",
+      'c.fecha_vencimiento BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)'
+    ];
+    const params = [];
+    if (proveedor_id) {
+      where.push('c.proveedor_id = ?');
+      params.push(proveedor_id);
+    }
+    const whereSql = 'WHERE ' + where.join(' AND ');
+    const [rows] = await pool.query(
+      `SELECT COALESCE(SUM(c.saldo_pendiente), 0) AS total FROM compras c ${whereSql}`, params);
+    return Number(rows[0]?.total || 0);
+  }
+
   async listarResumenSemana(proveedor_id = null) {
     const where = ["c.estado = 'recibida'"];
     const params = [];
@@ -133,7 +168,7 @@ class CompraRepository {
 
   async buscarPorId(id) {
     const [rows] = await pool.query(
-      `SELECT c.id, c.numero, c.proveedor_id, c.fecha, c.numero_factura, c.condicion,
+      `SELECT c.id, c.numero, c.proveedor_id, c.fecha, c.numero_factura, c.serie, c.condicion,
               c.fecha_vencimiento, c.subtotal, c.iva, c.total, c.monto_pagado, c.saldo_pendiente,
               c.estado_pago, c.estado, c.orden_compra_id, c.notas, c.usuario_id, c.adjunto_factura,
               c.creado_en, c.actualizado_en, c.anulada_en, c.anulada_por, c.anulacion_motivo,
@@ -158,17 +193,110 @@ class CompraRepository {
     return rows[0] || null;
   }
 
+  async actualizarCabecera(compraId, datos) {
+    const { fecha, numero_factura, serie, condicion, fecha_vencimiento, notas } = datos;
+    const [result] = await pool.query(
+      `UPDATE compras
+       SET fecha = ?, numero_factura = ?, serie = ?, condicion = ?, fecha_vencimiento = ?,
+           notas = ?, actualizado_en = CURRENT_TIMESTAMP
+       WHERE id = ? AND estado = 'recibida'`,
+      [fecha, numero_factura, serie, condicion, fecha_vencimiento, notas, compraId]
+    );
+    return result.affectedRows;
+  }
+
+  async buscarImpresionPorId(id) {
+    const [rows] = await pool.query(
+      `SELECT c.*, p.nombre AS proveedor_nombre, p.nit AS proveedor_nit,
+              p.dpi AS proveedor_dpi, p.contacto_nombre AS proveedor_contacto,
+              p.telefono AS proveedor_telefono, p.telefono2 AS proveedor_telefono2,
+              p.correo AS proveedor_correo, p.direccion AS proveedor_direccion,
+              p.dias_credito AS proveedor_dias_credito,
+              u.nombre AS usuario_nombre,
+              ua.nombre AS anulada_por_nombre
+       FROM compras c
+       LEFT JOIN proveedores p ON p.id = c.proveedor_id
+       LEFT JOIN usuarios u ON u.id = c.usuario_id
+       LEFT JOIN usuarios ua ON ua.id = c.anulada_por
+       WHERE c.id = ?`,
+      [id]
+    );
+    return rows[0] || null;
+  }
+
+  async listarImpresion(filtros = {}, limite = 1000) {
+    const where = [];
+    const params = [];
+
+    if (filtros.q) {
+      where.push('(c.numero LIKE ? OR c.numero_factura LIKE ? OR c.serie LIKE ? OR p.nombre LIKE ?)');
+      const like = `%${filtros.q}%`;
+      params.push(like, like, like, like);
+    }
+    if (filtros.proveedor) {
+      where.push('c.proveedor_id = ?');
+      params.push(Number(filtros.proveedor));
+    }
+    if (filtros.estado_pago) {
+      where.push('c.estado_pago = ?');
+      params.push(filtros.estado_pago);
+    }
+    if (filtros.estado) {
+      where.push('c.estado = ?');
+      params.push(filtros.estado);
+    }
+    const desde = filtros.startDate || filtros.fechaInicio;
+    const hasta = filtros.endDate || filtros.fechaFin;
+    if (desde) {
+      where.push('DATE(c.fecha) >= ?');
+      params.push(desde);
+    }
+    if (hasta) {
+      where.push('DATE(c.fecha) <= ?');
+      params.push(hasta);
+    }
+
+    const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : '';
+    const [conteoRows] = await pool.query(
+      `SELECT COUNT(*) AS total FROM compras c
+       LEFT JOIN proveedores p ON p.id = c.proveedor_id ${whereSql}`,
+      params
+    );
+    const total = Number(conteoRows[0]?.total) || 0;
+    if (total > limite) {
+      return { rows: [], total, excedeLimite: true, limite };
+    }
+
+    const columnaOrden = COLUMNAS_ORDENABLES[filtros.sortBy] || 'c.fecha';
+    const direccionOrden = String(filtros.sortDir).toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+    const [rows] = await pool.query(
+      `SELECT c.id, c.numero, c.fecha, c.numero_factura, c.serie, c.condicion,
+              c.fecha_vencimiento, c.subtotal, c.iva, c.total, c.monto_pagado, c.saldo_pendiente,
+              c.estado_pago, c.estado, c.creado_en,
+              p.nombre AS proveedor_nombre, p.nit AS proveedor_nit,
+              u.nombre AS usuario_nombre
+       FROM compras c
+       LEFT JOIN proveedores p ON p.id = c.proveedor_id
+       LEFT JOIN usuarios u ON u.id = c.usuario_id
+       ${whereSql}
+       ORDER BY ${columnaOrden} ${direccionOrden}, c.id DESC
+       LIMIT ?`,
+      [...params, limite]
+    );
+    return { rows, total, excedeLimite: false, limite };
+  }
+
   async crear(conn, datos) {
-    const { numero, proveedor_id, fecha, numero_factura, condicion, fecha_vencimiento,
+    const { numero, proveedor_id, fecha, numero_factura, serie, condicion, fecha_vencimiento,
             subtotal, iva, total, monto_pagado, saldo_pendiente, estado_pago, estado,
             orden_compra_id, notas, usuario_id, adjunto_factura } = datos;
     const destino = conn || pool;
     const [result] = await destino.query(
-      `INSERT INTO compras (numero, proveedor_id, fecha, numero_factura, condicion, fecha_vencimiento,
+      `INSERT INTO compras (numero, proveedor_id, fecha, numero_factura, serie, condicion, fecha_vencimiento,
                             subtotal, iva, total, monto_pagado, saldo_pendiente, estado_pago, estado,
                             orden_compra_id, notas, usuario_id, adjunto_factura)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [numero, proveedor_id, fecha, numero_factura, condicion, fecha_vencimiento,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [numero, proveedor_id, fecha, numero_factura, serie, condicion, fecha_vencimiento,
        subtotal, iva, total, monto_pagado, saldo_pendiente, estado_pago, estado,
        orden_compra_id, notas, usuario_id, adjunto_factura]
     );
@@ -224,9 +352,11 @@ class CompraRepository {
   async obtenerParaAnular(compraId) {
     const [rows] = await pool.query(
       `SELECT c.id, c.estado, c.estado_pago, c.proveedor_id,
-              dc.producto_id, dc.cantidad
+              dc.producto_id, dc.cantidad, dc.costo_unitario,
+              p.tipo AS producto_tipo
        FROM compras c
        JOIN detalle_compra dc ON dc.compra_id = c.id
+       JOIN productos p ON p.id = dc.producto_id
        WHERE c.id = ?`, [compraId]);
     return rows;
   }

@@ -11,7 +11,11 @@
     "reiniciar-compras": "node scripts/reiniciar-demo-compras.js",
     "verificar-compras": "node scripts/verificar-integridad-compras.js",
     "probar-permisos-compras": "node scripts/probar-permisos-compras.js",
-    "probar-reportes-compras": "node scripts/probar-reportes-compras.js"
+    "probar-reportes-compras": "node scripts/probar-reportes-compras.js",
+    "probar-reportes-inventario": "node scripts/probar-reportes-inventario.js",
+    "probar-inventario": "node scripts/probar-inventario.js",
+    "probar-categorias": "node scripts/probar-categorias.js",
+    "probar-productos": "node scripts/probar-productos.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -19,6 +23,8 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.3",
-    "mysql2": "^3.11.0"
+    "multer": "^2.4.0",
+    "mysql2": "^3.11.0",
+    "sharp": "^0.33.5"
   }
 }

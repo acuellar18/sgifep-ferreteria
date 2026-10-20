@@ -37,12 +37,24 @@ app.use('/api/usuarios', require('./routes/usuarios.routes'));
 app.use('/api/roles', require('./routes/roles.routes'));
 app.use('/api/departamentos', require('./routes/departamentos.routes'));
 app.use('/api/productos', require('./routes/productos.routes'));
+app.use('/api/categorias', require('./routes/categorias.routes'));
 app.use('/api/proveedores', require('./routes/proveedores.routes'));
 app.use('/api/compras', require('./routes/compras.routes'));
 app.use('/api/ordenes-compra', require('./routes/ordenes-compra.routes'));
 app.use('/api/reportes-compras', require('./routes/reporte-compras.routes'));
+app.use('/api/configuracion-empresa', require('./routes/configuracion-empresa.routes'));
+app.use('/api/reportes-inventario', require('./routes/reporte-inventario.routes'));
 
 // ---------- SPA / catch-all ----------
+
+// Compatibilidad con enlaces internos antiguos sin el prefijo /usuarios
+// (por ejemplo impresiones abiertas desde un bundle o marcador previo).
+app.get(
+  ['/compras', '/compras/*', '/inventario', '/inventario/*', '/reportes', '/reportes/*'],
+  (req, res) => {
+    res.redirect(302, `/usuarios${req.originalUrl}`);
+  }
+);
 
 // Catch-all del módulo React: sirve index.html para rutas internas como
 // /usuarios/reporte sin que el servidor devuelva 404 al recargar.

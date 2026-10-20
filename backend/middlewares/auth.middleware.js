@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const pool = require('../db');
 const { jwt: jwtConfig } = require('../config/auth');
 const { HttpError } = require('../utils/http-error');
 
@@ -44,4 +45,50 @@ function requerirRoles(rolesPermitidos = [], opciones = {}) {
   };
 }
 
-module.exports = { autenticar, requerirRoles };
+// Carga en req.permisos las claves activas del usuario según sus roles.
+// Debe ejecutarse después de autenticar. Los superadmins reciben todas.
+async function cargarPermisos(req, _res, next) {
+  try {
+    if (!req.usuario) {
+      return next(new HttpError(401, 'Se requiere un token de acceso'));
+    }
+
+    let filas = [];
+    if (req.usuario.superadmin) {
+      [filas] = await pool.query('SELECT clave FROM permisos WHERE activo = 1');
+    } else {
+      const roles = Array.isArray(req.usuario.roles) ? req.usuario.roles : [];
+      if (roles.length) {
+        const marcadores = roles.map(() => '?').join(', ');
+        [filas] = await pool.query(
+          `SELECT DISTINCT p.clave
+           FROM permisos p
+           JOIN permisos_rol pr ON pr.permiso_id = p.id
+           JOIN roles r ON r.id = pr.rol_id
+           WHERE p.activo = 1 AND r.activo = 1 AND r.nombre IN (${marcadores})`,
+          roles
+        );
+      }
+    }
+
+    req.permisos = new Set(filas.map((fila) => fila.clave));
+    return next();
+  } catch (error) {
+    return next(error);
+  }
+}
+
+// Restricción por permiso granular cargado desde la base de datos.
+function requerirPermiso(clave) {
+  return (req, _res, next) => {
+    if (!req.usuario) {
+      return next(new HttpError(401, 'Se requiere un token de acceso'));
+    }
+    if (req.permisos?.has(clave)) {
+      return next();
+    }
+    return next(new HttpError(403, 'No tiene permisos para realizar esta acción'));
+  };
+}
+
+module.exports = { autenticar, requerirRoles, cargarPermisos, requerirPermiso };

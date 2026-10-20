@@ -1,28 +1,29 @@
 const express = require('express');
 const router = express.Router();
 const productoController = require('../controllers/producto.controller');
-const { autenticar, requerirRoles } = require('../middlewares/auth.middleware');
-const {
-  ROL_ADMINISTRADOR,
-  ROL_COMPRAS,
-  ROL_BODEGA,
-  ROL_CAJA
-} = require('../config/auth');
+const productoImagenController = require('../controllers/producto-imagen.controller');
+const { subirImagenProducto } = require('../middlewares/upload-producto.middleware');
+const { autenticar, cargarPermisos, requerirPermiso } = require('../middlewares/auth.middleware');
 
-const ROLES_CONSULTA = [ROL_ADMINISTRADOR, ROL_COMPRAS, ROL_BODEGA, ROL_CAJA];
-const ROLES_ESCRITURA = [ROL_ADMINISTRADOR, ROL_BODEGA];
-const ROLES_ELIMINAR = [ROL_ADMINISTRADOR];
+router.use(autenticar, cargarPermisos);
 
-router.use(autenticar);
+router.get('/autocompletar', requerirPermiso('inventario.productos.ver'), productoController.autocompletar);
+router.get('/categorias', requerirPermiso('inventario.productos.ver'), productoController.categorias);
+router.get('/', requerirPermiso('inventario.productos.ver'), productoController.listar);
+router.get('/:id/imagen/miniatura', requerirPermiso('inventario.productos.ver'), productoImagenController.miniatura);
+router.get('/:id/imagen', requerirPermiso('inventario.productos.ver'), productoImagenController.imagen);
+router.get('/:id', requerirPermiso('inventario.productos.ver'), productoController.detalle);
 
-router.get('/autocompletar', requerirRoles(ROLES_CONSULTA), productoController.autocompletar);
-router.get('/categorias', requerirRoles(ROLES_CONSULTA), productoController.categorias);
-router.get('/', requerirRoles(ROLES_CONSULTA), productoController.listar);
-router.get('/:id', requerirRoles(ROLES_CONSULTA), productoController.detalle);
-
-router.post('/', requerirRoles(ROLES_ESCRITURA), productoController.crear);
-router.put('/:id', requerirRoles(ROLES_ESCRITURA), productoController.actualizar);
-router.patch('/:id/estado', requerirRoles(ROLES_ESCRITURA), productoController.cambiarEstado);
-router.delete('/:id', requerirRoles(ROLES_ELIMINAR), productoController.eliminar);
+router.post('/', requerirPermiso('inventario.productos.crear'), productoController.crear);
+router.put('/:id', requerirPermiso('inventario.productos.editar'), productoController.actualizar);
+router.patch('/:id/estado', requerirPermiso('inventario.productos.editar'), productoController.cambiarEstado);
+router.post(
+  '/:id/imagen',
+  requerirPermiso('inventario.productos.editar'),
+  subirImagenProducto,
+  productoImagenController.subir
+);
+router.delete('/:id/imagen', requerirPermiso('inventario.productos.editar'), productoImagenController.eliminar);
+router.delete('/:id', requerirPermiso('inventario.productos.eliminar'), productoController.eliminar);
 
 module.exports = router;

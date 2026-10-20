@@ -5,6 +5,10 @@ const proveedorRepository = require('../repositories/proveedor.repository');
 const productoRepository = require('../repositories/producto.repository');
 const ordenCompraRepository = require('../repositories/orden-compra.repository');
 const secuenciaRepository = require('../repositories/secuencia.repository');
+const comentarioRepository = require('../repositories/compra-comentario.repository');
+const archivoRepository = require('../repositories/compra-archivo.repository');
+const configuracionRepository = require('../repositories/configuracion-empresa.repository');
+const configuracionDto = require('../dtos/configuracion-empresa.dto');
 const compraDto = require('../dtos/compra.dto');
 
 class CompraService {
@@ -26,12 +30,18 @@ class CompraService {
 
   async resumenes(filtros = {}) {
     const proveedor_id = filtros.proveedor ? Number(filtros.proveedor) : null;
-    const [mes, porPagar, semana] = await Promise.all([
-      compraRepository.listarResumenMes(proveedor_id),
+    const [porPagar, vencido, porVencer] = await Promise.all([
       compraRepository.listarResumenPorPagar(proveedor_id),
-      compraRepository.listarResumenSemana(proveedor_id)
+      compraRepository.listarResumenVencido(proveedor_id),
+      compraRepository.listarResumenPorVencer(proveedor_id)
     ]);
-    return { data: { comprado_mes: mes, total_por_pagar: porPagar, compras_semana: semana } };
+    return {
+      data: {
+        total_por_pagar: porPagar,
+        total_vencido: vencido,
+        vence_7_dias: porVencer
+      }
+    };
   }
 
   async detalle(id) {
@@ -42,6 +52,129 @@ class CompraService {
       compraRepository.obtenerPagos(id)
     ]);
     return compraDto.serializarDetalle(fila, detalles, pagos);
+  }
+
+  async actualizarCabecera(id, datos) {
+    const compra = await compraRepository.buscarPorId(id);
+    if (!compra) throw new HttpError(404, 'Compra no encontrada');
+    if (compra.estado === 'anulada') {
+      throw new HttpError(400, 'No se puede editar una compra anulada');
+    }
+
+    const dto = compraDto.validarActualizar(datos);
+
+    if (dto.numero_factura) {
+      const duplicada = await compraRepository.buscarPorNumeroFactura(
+        compra.proveedor_id,
+        dto.numero_factura,
+        id
+      );
+      if (duplicada) {
+        throw new HttpError(409, 'Ya existe otra compra con ese número de factura para este proveedor');
+      }
+    }
+
+    await compraRepository.actualizarCabecera(id, dto);
+    return this.detalle(id);
+  }
+
+  async impresionDetalle(id) {
+    const fila = await compraRepository.buscarImpresionPorId(id);
+    if (!fila) throw new HttpError(404, 'Compra no encontrada');
+
+    const [detalles, pagos, comentarios, archivos, empresa] = await Promise.all([
+      compraRepository.obtenerDetalles(id),
+      compraRepository.obtenerPagos(id),
+      comentarioRepository.listar(id),
+      archivoRepository.listar(id),
+      configuracionRepository.obtener()
+    ]);
+
+    const compra = compraDto.serializarDetalle(fila, detalles, pagos);
+    return {
+      empresa: configuracionDto.serializar(empresa),
+      compra: {
+        ...compra,
+        serie: fila.serie,
+        anulada_por_nombre: fila.anulada_por_nombre,
+        proveedor: {
+          id: fila.proveedor_id,
+          nombre: fila.proveedor_nombre,
+          nit: fila.proveedor_nit,
+          dpi: fila.proveedor_dpi,
+          contacto_nombre: fila.proveedor_contacto,
+          telefono: fila.proveedor_telefono,
+          telefono2: fila.proveedor_telefono2,
+          correo: fila.proveedor_correo,
+          direccion: fila.proveedor_direccion,
+          dias_credito: fila.proveedor_dias_credito
+        },
+        comentarios: comentarios.map((c) => ({
+          id: c.id,
+          comentario: c.comentario,
+          usuario_nombre: c.usuario_nombre,
+          creado_en: c.creado_en
+        })),
+        archivos: archivos.map((a) => ({
+          id: a.id,
+          nombre_original: a.nombre_original,
+          mime: a.mime,
+          tamano: Number(a.tamano || 0),
+          usuario_nombre: a.usuario_nombre,
+          creado_en: a.creado_en
+        }))
+      }
+    };
+  }
+
+  async impresionLista(filtros = {}) {
+    const limite = 1000;
+    const resultado = await compraRepository.listarImpresion(filtros, limite);
+    if (resultado.excedeLimite) {
+      throw new HttpError(
+        400,
+        `La lista tiene ${resultado.total} compras y supera el límite de ${limite}. Aplique más filtros para imprimir.`
+      );
+    }
+
+    const empresa = await configuracionRepository.obtener();
+    const compras = compraDto.serializarLista(resultado.rows);
+    let proveedor_nombre = null;
+    if (filtros.proveedor) {
+      const proveedor = await proveedorRepository.buscarPorId(filtros.proveedor);
+      proveedor_nombre = proveedor?.nombre || null;
+    }
+
+    const filtrosTexto = [];
+    if (filtros.q) filtrosTexto.push(`Búsqueda: ${filtros.q}`);
+    if (proveedor_nombre) filtrosTexto.push(`Proveedor: ${proveedor_nombre}`);
+    if (filtros.estado_pago) filtrosTexto.push(`Estado de pago: ${filtros.estado_pago}`);
+    if (filtros.estado) filtrosTexto.push(`Estado: ${filtros.estado}`);
+    if (filtros.startDate || filtros.fechaInicio) {
+      filtrosTexto.push(`Desde: ${filtros.startDate || filtros.fechaInicio}`);
+    }
+    if (filtros.endDate || filtros.fechaFin) {
+      filtrosTexto.push(`Hasta: ${filtros.endDate || filtros.fechaFin}`);
+    }
+
+    const totales = compras.reduce((acc, c) => {
+      if (c.estado !== 'anulada') {
+        acc.total += c.total;
+        acc.pagado += c.monto_pagado;
+        acc.saldo += c.saldo_pendiente;
+      }
+      return acc;
+    }, { total: 0, pagado: 0, saldo: 0 });
+
+    return {
+      empresa: configuracionDto.serializar(empresa),
+      compras,
+      total: resultado.total,
+      limite,
+      filtros_texto: filtrosTexto,
+      totales,
+      generado_en: new Date().toISOString()
+    };
   }
 
   async crear(datos, usuarioId) {
@@ -70,10 +203,12 @@ class CompraService {
 
     // Validar productos existen y están activos
     const productosIds = [...new Set(dto.detalles.map(d => d.producto_id))];
+    const productosPorId = new Map();
     for (const pid of productosIds) {
       const prod = await productoRepository.buscarPorId(pid);
       if (!prod) throw new HttpError(404, `Producto ID ${pid} no encontrado`);
       if (!prod.activo) throw new HttpError(400, `El producto "${prod.nombre}" está inactivo`);
+      productosPorId.set(Number(pid), prod);
     }
 
     // Verificar orden de compra si se proporciona
@@ -114,19 +249,22 @@ class CompraService {
       // 2. Crear detalles
       await compraRepository.crearDetalles(connection, compraId, dto.detalles);
 
-      // 3. Registrar la entrada de inventario. El trigger actualiza stock y costo.
+      // 3. Registrar la entrada de inventario. Los servicios no mueven stock.
       for (const d of dto.detalles) {
-        await productoRepository.registrarMovimiento(connection, {
-          producto_id: d.producto_id,
-          tipo: 'entrada',
-          origen: 'compra',
-          referencia_tipo: 'compras',
-          referencia_id: compraId,
-          cantidad: d.cantidad,
-          costo_unitario: d.costo_unitario,
-          notas: `Entrada por compra ${numero}`,
-          usuario_id: usuarioId
-        });
+        const producto = productosPorId.get(Number(d.producto_id));
+        if (producto?.tipo !== 'servicio') {
+          await productoRepository.registrarMovimiento(connection, {
+            producto_id: d.producto_id,
+            tipo: 'entrada',
+            origen: 'compra',
+            referencia_tipo: 'compras',
+            referencia_id: compraId,
+            cantidad: d.cantidad,
+            costo_unitario: d.costo_unitario,
+            notas: `Entrada por compra ${numero}`,
+            usuario_id: usuarioId
+          });
+        }
         await proveedorRepository.actualizarCostoProductoProveedor(
           d.producto_id,
           dto.proveedor_id,
@@ -198,8 +336,9 @@ class CompraService {
       await connection.beginTransaction();
       await connection.query('SET @usuario_id = ?', [usuarioId]);
 
-      // Revertir la entrada de inventario. El trigger valida y actualiza stock.
+      // Revertir la entrada de inventario. Los servicios no tienen movimientos.
       for (const d of detalles) {
+        if (d.producto_tipo === 'servicio') continue;
         await productoRepository.registrarMovimiento(connection, {
           producto_id: d.producto_id,
           tipo: 'salida',
@@ -207,7 +346,7 @@ class CompraService {
           referencia_tipo: 'compras',
           referencia_id: id,
           cantidad: d.cantidad,
-          costo_unitario: 0,
+          costo_unitario: Number(d.costo_unitario || 0),
           notas: `Reverso por anulación de compra ${compra.numero}`,
           usuario_id: usuarioId
         });

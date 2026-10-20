@@ -293,6 +293,12 @@ h1, h2, h3, h4 {
   border: 1px solid #fecaca;
 }
 
+.alerta-info {
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fed7aa;
+}
+
 .estado {
   color: var(--color-texto-suave);
   padding: 16px 0;
@@ -337,6 +343,95 @@ h1, h2, h3, h4 {
 
 .tarjeta-peligro .tarjeta-valor {
   color: var(--color-peligro);
+}
+
+.tarjeta-alerta .tarjeta-valor {
+  color: var(--color-primario);
+}
+
+.comentarios-archivos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-borde);
+}
+
+.comentarios-archivos h4 {
+  margin: 0 0 10px;
+}
+
+.lista-comentarios,
+.lista-archivos {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lista-comentarios li,
+.lista-archivos li {
+  padding: 10px 12px;
+  background: var(--color-fondo);
+  border-radius: var(--radio);
+}
+
+.lista-comentarios p {
+  margin: 0 0 4px;
+}
+
+.lista-comentarios span,
+.lista-archivos span {
+  color: var(--color-texto-suave);
+  font-size: 12px;
+}
+
+.lista-archivos li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.lista-archivos li span {
+  flex: 1;
+}
+
+.enlace-archivo {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--color-primario-oscuro);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.enlace-archivo:hover {
+  text-decoration: underline;
+}
+
+.form-comentario,
+.form-archivo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.form-archivo small {
+  color: var(--color-texto-suave);
+  font-size: 12px;
+}
+
+@media (max-width: 800px) {
+  .comentarios-archivos {
+    grid-template-columns: 1fr;
+  }
 }
 
 .reporte-grid {

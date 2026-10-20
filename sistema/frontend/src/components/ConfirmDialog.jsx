@@ -11,7 +11,7 @@ export default function ConfirmDialog({
 }) {
   return (
     <Modal abierto={abierto} titulo={titulo} onCerrar={onCancelar} ancho="420px">
-      <p className="confirmar-mensaje">{mensaje}</p>
+      <div className="confirmar-mensaje">{mensaje}</div>
       <div className="modal-acciones">
         <button type="button" className="btn btn-secundario" onClick={onCancelar}>Cancelar</button>
         <button type="button" className="btn btn-danger" onClick={onConfirmar}>{confirmarTexto}</button>

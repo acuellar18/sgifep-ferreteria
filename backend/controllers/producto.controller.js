@@ -1,26 +1,32 @@
 const manejarAsync = require('../utils/async-handler');
 const productoService = require('../services/producto.service');
 
+function opcionesCostos(req) {
+  return {
+    incluirCostos: Boolean(req.permisos?.has('inventario.productos.ver_costos'))
+  };
+}
+
 module.exports = {
   listar: manejarAsync(async (req, res) => {
-    const { data, total, page, pageSize } = await productoService.listar(req.query);
+    const { data, total, page, pageSize } = await productoService.listar(req.query, opcionesCostos(req));
     res.json({ success: true, data, total, page, pageSize });
   }),
 
   autocompletar: manejarAsync(async (req, res) => {
     const q = req.query.q || '';
     const limite = Math.min(Number(req.query.limite) || 10, 50);
-    const { data } = await productoService.autocompletar(q, limite);
+    const { data } = await productoService.autocompletar(q, limite, opcionesCostos(req));
     res.json({ success: true, data });
   }),
 
   detalle: manejarAsync(async (req, res) => {
-    const data = await productoService.detalle(req.params.id);
+    const data = await productoService.detalle(req.params.id, opcionesCostos(req));
     res.json({ success: true, data });
   }),
 
   crear: manejarAsync(async (req, res) => {
-    const id = await productoService.crear(req.body);
+    const id = await productoService.crear(req.body, req.usuario.id);
     res.status(201).json({ success: true, mensaje: 'Producto creado correctamente', data: { id } });
   }),
 

@@ -41,7 +41,7 @@ class ProveedorRepository {
     const offset = (paginaActual - 1) * limite;
 
     const sql = `
-      SELECT p.id, p.nombre, p.nit, p.contacto_nombre, p.telefono, p.correo,
+      SELECT p.id, p.nombre, p.nit, p.dpi, p.contacto_nombre, p.telefono, p.telefono2, p.correo,
              p.direccion, p.dias_credito, p.notas, p.activo, p.creado_en, p.actualizado_en
       FROM proveedores p
       ${whereSql}
@@ -80,7 +80,7 @@ class ProveedorRepository {
 
   async buscarPorId(id) {
     const [rows] = await pool.query(
-      `SELECT id, nombre, nit, contacto_nombre, telefono, correo, direccion, dias_credito, notas, activo, creado_en, actualizado_en
+      `SELECT id, nombre, nit, dpi, contacto_nombre, telefono, telefono2, correo, direccion, dias_credito, notas, activo, creado_en, actualizado_en
        FROM proveedores WHERE id = ?`, [id]);
     return rows[0] || null;
   }
@@ -99,24 +99,24 @@ class ProveedorRepository {
   }
 
   async crear(datos) {
-    const { nombre, nit, contacto_nombre, telefono, correo, direccion, dias_credito, notas, activo } = datos;
+    const { nombre, nit, dpi, contacto_nombre, telefono, telefono2, correo, direccion, dias_credito, notas, activo } = datos;
     const [result] = await pool.query(
-      `INSERT INTO proveedores (nombre, nit, contacto_nombre, telefono, correo, direccion, dias_credito, notas, activo)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [nombre, nit, contacto_nombre, telefono, correo, direccion, dias_credito, notas, activo ? 1 : 0]
+      `INSERT INTO proveedores (nombre, nit, dpi, contacto_nombre, telefono, telefono2, correo, direccion, dias_credito, notas, activo)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [nombre, nit, dpi, contacto_nombre, telefono, telefono2, correo, direccion, dias_credito, notas, activo ? 1 : 0]
     );
     return result.insertId;
   }
 
   async actualizar(id, datos) {
-    const { nombre, nit, contacto_nombre, telefono, correo, direccion, dias_credito, notas, activo } = datos;
+    const { nombre, nit, dpi, contacto_nombre, telefono, telefono2, correo, direccion, dias_credito, notas, activo } = datos;
     const [result] = await pool.query(
       `UPDATE proveedores
-       SET nombre = ?, nit = ?, contacto_nombre = ?, telefono = ?, correo = ?,
+       SET nombre = ?, nit = ?, dpi = ?, contacto_nombre = ?, telefono = ?, telefono2 = ?, correo = ?,
            direccion = ?, dias_credito = ?, notas = ?, activo = ?,
            actualizado_en = CURRENT_TIMESTAMP
        WHERE id = ?`,
-      [nombre, nit, contacto_nombre, telefono, correo, direccion, dias_credito, notas, activo ? 1 : 0, id]
+      [nombre, nit, dpi, contacto_nombre, telefono, telefono2, correo, direccion, dias_credito, notas, activo ? 1 : 0, id]
     );
     return result.affectedRows;
   }
@@ -149,7 +149,7 @@ class ProveedorRepository {
 
     // Compras del proveedor (no anuladas)
     const [compras] = await pool.query(
-      `SELECT id, numero, fecha, total, estado_pago, estado
+      `SELECT id, numero, fecha, numero_factura, serie, total, saldo_pendiente, estado_pago, estado
        FROM compras
        WHERE proveedor_id = ? AND estado = 'recibida'
        ORDER BY fecha DESC, id DESC

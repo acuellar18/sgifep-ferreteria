@@ -2,6 +2,7 @@ import logoImg from '../assets/logo.png';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { permisosCompras } from '../utils/permisosCompras';
+import { permisosInventario } from '../utils/permisosInventario';
 import {
   MODULOS_SISTEMA,
   RUTA_LOGIN,
@@ -43,7 +44,7 @@ export default function Layout() {
   const moduloActivo = obtenerModuloActivo(location.pathname);
   const refModuloActivo = useRef(null);
 
-  const permisos = permisosCompras(sesion);
+  const permisos = { ...permisosCompras(sesion), ...permisosInventario(sesion) };
   const modulosVisibles = MODULOS_SISTEMA.filter(
     (modulo) => !modulo.permiso || permisos[modulo.permiso]
   );

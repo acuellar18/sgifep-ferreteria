@@ -16,8 +16,14 @@ function baseValidacion(datos = {}) {
     throw new HttpError(400, 'El NIT no tiene un formato válido (ej: 12345678-9)');
   }
 
+  const dpi = typeof datos.dpi === 'string' ? datos.dpi.replace(/\s/g, '') : '';
+  if (dpi && !/^\d{13}$/.test(dpi)) {
+    throw new HttpError(400, 'El DPI debe contener exactamente 13 dígitos');
+  }
+
   const contacto_nombre = typeof datos.contacto_nombre === 'string' ? datos.contacto_nombre.trim() : '';
   const telefono = typeof datos.telefono === 'string' ? datos.telefono.trim() : '';
+  const telefono2 = typeof datos.telefono2 === 'string' ? datos.telefono2.trim() : '';
   const correo = typeof datos.correo === 'string' ? datos.correo.trim().toLowerCase() : '';
   if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
     throw new HttpError(400, 'El correo no tiene un formato válido');
@@ -36,8 +42,10 @@ function baseValidacion(datos = {}) {
   return {
     nombre,
     nit: nit || null,
+    dpi: dpi || null,
     contacto_nombre: contacto_nombre || null,
     telefono: telefono || null,
+    telefono2: telefono2 || null,
     correo: correo || null,
     direccion: direccion || null,
     dias_credito,
@@ -60,8 +68,10 @@ function serializar(fila) {
     id: fila.id,
     nombre: fila.nombre,
     nit: fila.nit,
+    dpi: fila.dpi,
     contacto_nombre: fila.contacto_nombre,
     telefono: fila.telefono,
+    telefono2: fila.telefono2,
     correo: fila.correo,
     direccion: fila.direccion,
     dias_credito: fila.dias_credito,
@@ -102,7 +112,10 @@ function serializarFicha(fila, compras = [], productos = []) {
       id: c.id,
       numero: c.numero,
       fecha: c.fecha,
+      numero_factura: c.numero_factura,
+      serie: c.serie,
       total: Number(c.total),
+      saldo_pendiente: Number(c.saldo_pendiente || 0),
       estado_pago: c.estado_pago,
       estado: c.estado
     })),

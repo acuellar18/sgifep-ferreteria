@@ -1,12 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../../services/api';
-import FilterBar from '../../components/FilterBar';
+import FiltrosCompras from '../../components/FiltrosCompras';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import Paginacion from '../../components/Paginacion';
 import ThOrdenable from '../../components/ThOrdenable';
 import Modal from '../../components/Modal';
 import { useNotificacion } from '../../components/Toast';
 import { permisosCompras } from '../../utils/permisosCompras';
+import {
+  etiquetaEstado,
+  etiquetaEstadoPago,
+  formatearFecha,
+  formatearFechaHora,
+  formatearMoneda,
+  formatearNumero
+} from '../../utils/formatos';
+import EditarFacturaModal from './EditarFacturaModal';
+import ConfiguracionEmpresaModal from './ConfiguracionEmpresaModal';
 
 const FILTROS_INICIALES = {
   q: '',
@@ -19,6 +30,34 @@ const FILTROS_INICIALES = {
 
 const PAGE_SIZE = 10;
 
+function rutaImpresionFactura(id) {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+  return `${base}/compras/facturas/${id}/imprimir`;
+}
+
+function rutaImpresionLista(filtros) {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+  const params = new URLSearchParams();
+  for (const [clave, valor] of Object.entries(filtros)) {
+    if (valor !== '' && valor !== 'todos' && valor != null) params.set(clave, valor);
+  }
+  const query = params.toString();
+  return `${base}/compras/facturas/imprimir${query ? `?${query}` : ''}`;
+}
+
+function ChipEstadoPago({ estado }) {
+  const clase = estado === 'pagada' ? 'chip-ok' : estado === 'parcial' ? 'chip-rol' : 'chip-peligro';
+  return <span className={`chip ${clase}`}>{etiquetaEstadoPago(estado)}</span>;
+}
+
+function ChipEstado({ estado }) {
+  return (
+    <span className={`chip ${estado === 'anulada' ? 'chip-peligro' : 'chip-ok'}`}>
+      {etiquetaEstado(estado)}
+    </span>
+  );
+}
+
 export default function ComprasPage() {
   const notificar = useNotificacion();
 
@@ -30,9 +69,16 @@ export default function ComprasPage() {
   const [orden, setOrden] = useState({ sortBy: 'fecha', sortDir: 'desc' });
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
-  const [resumenes, setResumenes] = useState({ comprado_mes: 0, total_por_pagar: 0, compras_semana: 0 });
+  const [resumenes, setResumenes] = useState({ total_por_pagar: 0, total_vencido: 0, vence_7_dias: 0 });
   const [detalleAbierto, setDetalleAbierto] = useState(false);
   const [detalleCompra, setDetalleCompra] = useState(null);
+  const [comentarios, setComentarios] = useState([]);
+  const [archivos, setArchivos] = useState([]);
+  const [comentarioNuevo, setComentarioNuevo] = useState('');
+  const [guardandoComentario, setGuardandoComentario] = useState(false);
+  const [subiendoArchivo, setSubiendoArchivo] = useState(false);
+  const [editandoCompra, setEditandoCompra] = useState(null);
+  const [configAbierta, setConfigAbierta] = useState(false);
   const [confirmando, setConfirmando] = useState(null);
   const [pagoCompra, setPagoCompra] = useState(null);
   const [pagoForm, setPagoForm] = useState({ fecha: '', monto: '', metodo: 'efectivo', referencia: '', notas: '' });
@@ -41,6 +87,7 @@ export default function ComprasPage() {
   const [motivoAnulacionPago, setMotivoAnulacionPago] = useState('');
   const [anulandoPago, setAnulandoPago] = useState(false);
   const temporizadorBusqueda = useRef(null);
+  const inputArchivoRef = useRef(null);
 
   const sesion = JSON.parse(localStorage.getItem('session') || '{}');
   const permisos = permisosCompras(sesion);
@@ -127,28 +174,44 @@ export default function ComprasPage() {
     setOrden({ sortBy, sortDir });
   }
 
+  async function cargarDetalle(compraId, abrirModal = true) {
+    const [resDetalle, resComentarios, resArchivos] = await Promise.all([
+      api.get(`/compras/${compraId}`),
+      api.get(`/compras/${compraId}/comentarios`),
+      api.get(`/compras/${compraId}/archivos`)
+    ]);
+    setDetalleCompra(resDetalle.data);
+    setComentarios(resComentarios.data || []);
+    setArchivos(resArchivos.data || []);
+    if (abrirModal) setDetalleAbierto(true);
+  }
+
   async function verDetalle(compra) {
     try {
-      const res = await api.get(`/compras/${compra.id}`);
-      setDetalleCompra(res.data);
-      setDetalleAbierto(true);
+      await cargarDetalle(compra.id);
     } catch (err) {
       notificar.error(err.message);
     }
   }
 
-  async function confirmarAnular(compra) {
-    setConfirmando({ ...compra, accion: 'anular' });
+  function solicitarAnulacion(compra) {
+    setConfirmando({ ...compra, accion: 'anular', motivo: '' });
   }
 
   async function ejecutarAnulacion() {
     const target = confirmando;
     if (!target) return;
+    if (!target.motivo?.trim()) {
+      notificar.error('Ingrese el motivo de anulación');
+      return;
+    }
     setError('');
     try {
       await api.post(`/compras/${target.id}/anular`, { motivo: target.motivo });
       notificar.exito('Compra anulada correctamente');
       setConfirmando(null);
+      setDetalleAbierto(false);
+      setDetalleCompra(null);
       await cargarCompras(filtros, pagina, orden);
       await cargarResumenes();
     } catch (err) {
@@ -182,9 +245,11 @@ export default function ComprasPage() {
         notas: pagoForm.notas
       });
       notificar.exito('Pago registrado correctamente');
+      const idDetalle = detalleCompra?.id;
       setPagoCompra(null);
       await cargarCompras(filtros, pagina, orden);
       await cargarResumenes();
+      if (idDetalle) await cargarDetalle(idDetalle, false);
     } catch (err) {
       notificar.error(err.message);
     } finally {
@@ -203,8 +268,7 @@ export default function ComprasPage() {
       notificar.exito('Pago anulado correctamente');
       setPagoAnular(null);
       setMotivoAnulacionPago('');
-      const res = await api.get(`/compras/${detalleCompra.id}`);
-      setDetalleCompra(res.data);
+      await cargarDetalle(detalleCompra.id, false);
       await cargarCompras(filtros, pagina, orden);
       await cargarResumenes();
     } catch (err) {
@@ -214,64 +278,133 @@ export default function ComprasPage() {
     }
   }
 
-  function formatearFecha(fecha) {
-    if (!fecha) return '—';
-    const d = new Date(fecha);
-    return d.toLocaleDateString('es-GT');
+  async function agregarComentario(e) {
+    e.preventDefault();
+    if (!detalleCompra || !comentarioNuevo.trim()) return;
+    setGuardandoComentario(true);
+    try {
+      await api.post(`/compras/${detalleCompra.id}/comentarios`, {
+        comentario: comentarioNuevo.trim()
+      });
+      setComentarioNuevo('');
+      const res = await api.get(`/compras/${detalleCompra.id}/comentarios`);
+      setComentarios(res.data || []);
+      notificar.exito('Comentario agregado');
+    } catch (err) {
+      notificar.error(err.message);
+    } finally {
+      setGuardandoComentario(false);
+    }
   }
 
-  function formatearMoneda(valor) {
-    if (valor === null || valor === undefined) return 'Q0.00';
-    return new Intl.NumberFormat('es-GT', { style: 'currency', currency: 'GTQ', minimumFractionDigits: 2 }).format(valor);
+  async function subirArchivo(e) {
+    e.preventDefault();
+    const archivo = inputArchivoRef.current?.files?.[0];
+    if (!detalleCompra || !archivo) {
+      notificar.error('Seleccione un archivo PDF, JPG o PNG');
+      return;
+    }
+    setSubiendoArchivo(true);
+    try {
+      const formData = new FormData();
+      formData.append('archivo', archivo);
+      await api.post(`/compras/${detalleCompra.id}/archivos`, formData);
+      inputArchivoRef.current.value = '';
+      const res = await api.get(`/compras/${detalleCompra.id}/archivos`);
+      setArchivos(res.data || []);
+      notificar.exito('Archivo adjuntado correctamente');
+    } catch (err) {
+      notificar.error(err.message);
+    } finally {
+      setSubiendoArchivo(false);
+    }
   }
 
-  function chipEstadoPago(estado) {
-    const clases = {
-      pagada: 'chip-ok',
-      parcial: 'chip-rol',
-      pendiente: 'chip-peligro'
-    };
-    const etiquetas = {
-      pagada: 'Pagada',
-      parcial: 'Parcial',
-      pendiente: 'Pendiente'
-    };
-    return <span className={`chip ${clases[estado] || 'chip'}`}>{etiquetas[estado] || estado}</span>;
+  async function descargarArchivo(archivo) {
+    if (!detalleCompra) return;
+    try {
+      const blob = await api.get(
+        `/compras/${detalleCompra.id}/archivos/${archivo.id}`,
+        { responseType: 'blob' }
+      );
+      const url = URL.createObjectURL(blob);
+      const enlace = document.createElement('a');
+      enlace.href = url;
+      enlace.download = archivo.nombre_original;
+      document.body.appendChild(enlace);
+      enlace.click();
+      enlace.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      notificar.error(err.message);
+    }
   }
 
-  function chipEstado(estado) {
-    return (
-      <span className={`chip ${estado === 'anulada' ? 'chip-peligro' : 'chip-ok'}`}>
-        {estado}
-      </span>
-    );
+  async function eliminarArchivo(archivo) {
+    if (!detalleCompra) return;
+    if (!window.confirm(`¿Eliminar el archivo "${archivo.nombre_original}"?`)) return;
+    try {
+      await api.delete(`/compras/${detalleCompra.id}/archivos/${archivo.id}`);
+      setArchivos((prev) => prev.filter((a) => a.id !== archivo.id));
+      notificar.exito('Archivo eliminado');
+    } catch (err) {
+      notificar.error(err.message);
+    }
+  }
+
+  async function alEditar(mensaje) {
+    setEditandoCompra(null);
+    notificar.exito(mensaje || 'Factura actualizada correctamente');
+    await cargarCompras(filtros, pagina, orden);
+    await cargarResumenes();
+    if (detalleCompra) await cargarDetalle(detalleCompra.id, false);
   }
 
   return (
     <section>
       <div className="encabezado-pagina">
-        <h2>Facturas de proveedor</h2>
+        <div>
+          <h2>Facturas de proveedor</h2>
+          <p className="reporte-detalle">Compras registradas, pagos y documentos de respaldo.</p>
+        </div>
+        <div className="acciones-encabezado">
+          <button
+            type="button"
+            className="btn btn-secundario"
+            onClick={() => window.open(rutaImpresionLista(filtros), '_blank')}
+          >
+            Imprimir listado
+          </button>
+          {permisos.configurarEmpresa && (
+            <button type="button" className="btn btn-secundario" onClick={() => setConfigAbierta(true)}>
+              Datos de la empresa
+            </button>
+          )}
+          {permisos.crearCompra && (
+            <Link to="/compras/facturas/nueva" className="btn btn-primario">
+              + Registrar factura
+            </Link>
+          )}
+        </div>
       </div>
 
       <div className="tarjetas">
         <div className="tarjeta">
-          <span className="tarjeta-valor">{formatearMoneda(resumenes.comprado_mes)}</span>
-          <span className="tarjeta-etiqueta">Comprado este mes</span>
-        </div>
-        <div className="tarjeta tarjeta-peligro">
           <span className="tarjeta-valor">{formatearMoneda(resumenes.total_por_pagar)}</span>
           <span className="tarjeta-etiqueta">Total por pagar</span>
         </div>
-        <div className="tarjeta">
-          <span className="tarjeta-valor">{resumenes.compras_semana}</span>
-          <span className="tarjeta-etiqueta">Compras esta semana</span>
+        <div className="tarjeta tarjeta-peligro">
+          <span className="tarjeta-valor">{formatearMoneda(resumenes.total_vencido)}</span>
+          <span className="tarjeta-etiqueta">Vencido</span>
+        </div>
+        <div className="tarjeta tarjeta-alerta">
+          <span className="tarjeta-valor">{formatearMoneda(resumenes.vence_7_dias)}</span>
+          <span className="tarjeta-etiqueta">Vence en 7 días</span>
         </div>
       </div>
 
-      <FilterBar
+      <FiltrosCompras
         filtros={filtros}
-        departamentos={[]}
-        roles={[]}
         onChange={cambiarFiltros}
         onFiltrar={aplicarFiltros}
         onLimpiar={limpiarFiltros}
@@ -282,7 +415,7 @@ export default function ComprasPage() {
           onChange={(e) => cambiarFiltros({ ...filtros, proveedor: e.target.value })}
         >
           <option value="">Proveedor: todos</option>
-          {proveedores.map(p => (
+          {proveedores.map((p) => (
             <option key={p.id} value={p.id}>{p.nombre}</option>
           ))}
         </select>
@@ -319,7 +452,7 @@ export default function ComprasPage() {
           value={filtros.endDate}
           onChange={(e) => cambiarFiltros({ ...filtros, endDate: e.target.value })}
         />
-      </FilterBar>
+      </FiltrosCompras>
 
       {error && <div className="alerta alerta-error">{error}</div>}
 
@@ -336,11 +469,11 @@ export default function ComprasPage() {
                   <ThOrdenable columna="numero" ordenActual={orden} onOrdenar={cambiarOrden}>N° compra</ThOrdenable>
                   <ThOrdenable columna="fecha" ordenActual={orden} onOrdenar={cambiarOrden}>Fecha</ThOrdenable>
                   <ThOrdenable columna="proveedor_nombre" ordenActual={orden} onOrdenar={cambiarOrden}>Proveedor</ThOrdenable>
-                  <ThOrdenable columna="numero_factura" ordenActual={orden} onOrdenar={cambiarOrden}>N° factura</ThOrdenable>
+                  <ThOrdenable columna="numero_factura" ordenActual={orden} onOrdenar={cambiarOrden}>Factura</ThOrdenable>
                   <ThOrdenable columna="total" ordenActual={orden} onOrdenar={cambiarOrden}>Total</ThOrdenable>
+                  <th>Saldo</th>
                   <th>Estado pago</th>
                   <th>Estado</th>
-                  <ThOrdenable columna="creado_en" ordenActual={orden} onOrdenar={cambiarOrden}>Registrado</ThOrdenable>
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -350,25 +483,30 @@ export default function ComprasPage() {
                     <td>{c.numero}</td>
                     <td>{formatearFecha(c.fecha)}</td>
                     <td>{c.proveedor_nombre}</td>
-                    <td>{c.numero_factura || '—'}</td>
+                    <td>{[c.serie, c.numero_factura].filter(Boolean).join('-') || '—'}</td>
                     <td>{formatearMoneda(c.total)}</td>
-                    <td>{chipEstadoPago(c.estado_pago)}</td>
-                    <td>{chipEstado(c.estado)}</td>
-                    <td>{formatearFecha(c.creado_en)}</td>
+                    <td>{formatearMoneda(c.saldo_pendiente)}</td>
+                    <td><ChipEstadoPago estado={c.estado_pago} /></td>
+                    <td><ChipEstado estado={c.estado} /></td>
                     <td>
                       <div className="acciones-fila">
                         <button type="button" className="btn btn-opcion" onClick={() => verDetalle(c)}>
-                          Ver detalle
+                          Ver
                         </button>
-                        <button type="button" className="btn btn-opcion" onClick={() => window.print()}>
+                        <button
+                          type="button"
+                          className="btn btn-opcion"
+                          onClick={() => window.open(rutaImpresionFactura(c.id), '_blank')}
+                        >
                           Imprimir
                         </button>
+                        {c.estado === 'recibida' && permisos.crearCompra && (
+                          <button type="button" className="btn btn-opcion" onClick={() => setEditandoCompra(c)}>
+                            Editar
+                          </button>
+                        )}
                         {c.estado_pago !== 'pagada' && c.estado === 'recibida' && permisos.registrarPago && (
-                          <button
-                            type="button"
-                            className="btn btn-opcion"
-                            onClick={() => abrirPago(c)}
-                          >
+                          <button type="button" className="btn btn-opcion" onClick={() => abrirPago(c)}>
                             Registrar pago
                           </button>
                         )}
@@ -376,7 +514,7 @@ export default function ComprasPage() {
                           <button
                             type="button"
                             className="btn btn-opcion btn-danger"
-                            onClick={() => confirmarAnular(c)}
+                            onClick={() => solicitarAnulacion(c)}
                           >
                             Anular
                           </button>
@@ -397,7 +535,7 @@ export default function ComprasPage() {
         abierto={detalleAbierto}
         titulo={`Detalle de compra: ${detalleCompra?.numero || ''}`}
         onCerrar={() => { setDetalleAbierto(false); setDetalleCompra(null); }}
-        ancho="900px"
+        ancho="980px"
       >
         {detalleCompra && (
           <div>
@@ -405,12 +543,12 @@ export default function ComprasPage() {
               <div className="campo"><span>N° compra</span> <strong>{detalleCompra.numero}</strong></div>
               <div className="campo"><span>Fecha</span> <strong>{formatearFecha(detalleCompra.fecha)}</strong></div>
               <div className="campo"><span>Proveedor</span> <strong>{detalleCompra.proveedor_nombre}</strong></div>
-              <div className="campo"><span>N° factura</span> <strong>{detalleCompra.numero_factura || '—'}</strong></div>
-              <div className="campo"><span>Condición</span> <strong>{detalleCompra.condicion}</strong></div>
-              <div className="campo"><span>Fecha venc.</span> <strong>{formatearFecha(detalleCompra.fecha_vencimiento) || '—'}</strong></div>
+              <div className="campo"><span>Factura</span> <strong>{[detalleCompra.serie, detalleCompra.numero_factura].filter(Boolean).join('-') || '—'}</strong></div>
+              <div className="campo"><span>Condición</span> <strong>{detalleCompra.condicion === 'credito' ? 'Crédito' : 'Contado'}</strong></div>
+              <div className="campo"><span>Fecha venc.</span> <strong>{formatearFecha(detalleCompra.fecha_vencimiento)}</strong></div>
               <div className="campo"><span>Registrado por</span> <strong>{detalleCompra.usuario_nombre || '—'}</strong></div>
-              <div className="campo"><span>Estado</span> <strong>{chipEstado(detalleCompra.estado)}</strong></div>
-              <div className="campo"><span>Estado pago</span> <strong>{chipEstadoPago(detalleCompra.estado_pago)}</strong></div>
+              <div className="campo"><span>Estado</span> <strong><ChipEstado estado={detalleCompra.estado} /></strong></div>
+              <div className="campo"><span>Estado pago</span> <strong><ChipEstadoPago estado={detalleCompra.estado_pago} /></strong></div>
             </div>
 
             <h4 style={{ margin: '16px 0 8px' }}>Productos</h4>
@@ -420,19 +558,19 @@ export default function ComprasPage() {
                   <tr>
                     <th>Código</th>
                     <th>Producto</th>
-                    <th style={{textAlign:'right'}}>Cantidad</th>
-                    <th style={{textAlign:'right'}}>Costo unit.</th>
-                    <th style={{textAlign:'right'}}>Subtotal</th>
+                    <th style={{ textAlign: 'right' }}>Cantidad</th>
+                    <th style={{ textAlign: 'right' }}>Costo unit.</th>
+                    <th style={{ textAlign: 'right' }}>Subtotal</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {detalleCompra.detalles?.map(d => (
+                  {detalleCompra.detalles?.map((d) => (
                     <tr key={d.id}>
                       <td>{d.producto_codigo}</td>
                       <td>{d.producto_nombre}</td>
-                      <td style={{textAlign:'right'}}>{Number(d.cantidad).toLocaleString('es-GT', {minimumFractionDigits: 2})} {d.unidad_medida}</td>
-                      <td style={{textAlign:'right'}}>{formatearMoneda(d.costo_unitario)}</td>
-                      <td style={{textAlign:'right'}}>{formatearMoneda(d.subtotal)}</td>
+                      <td style={{ textAlign: 'right' }}>{formatearNumero(d.cantidad, 2)} {d.unidad_medida}</td>
+                      <td style={{ textAlign: 'right' }}>{formatearMoneda(d.costo_unitario)}</td>
+                      <td style={{ textAlign: 'right' }}>{formatearMoneda(d.subtotal)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -442,12 +580,12 @@ export default function ComprasPage() {
             <div className="form-grid" style={{ marginTop: '16px' }}>
               <div className="campo"><span>Subtotal</span> <strong>{formatearMoneda(detalleCompra.subtotal)}</strong></div>
               <div className="campo"><span>IVA (12%)</span> <strong>{formatearMoneda(detalleCompra.iva)}</strong></div>
-              <div className="campo"><span>Total</span> <strong style={{fontSize:'18px'}}>{formatearMoneda(detalleCompra.total)}</strong></div>
+              <div className="campo"><span>Total</span> <strong style={{ fontSize: '18px' }}>{formatearMoneda(detalleCompra.total)}</strong></div>
               <div className="campo"><span>Pagado</span> <strong>{formatearMoneda(detalleCompra.monto_pagado)}</strong></div>
-              <div className="campo"><span>Saldo pendiente</span> <strong style={{color: detalleCompra.saldo_pendiente > 0 ? '#dc2626' : '#16a34a'}}>{formatearMoneda(detalleCompra.saldo_pendiente)}</strong></div>
+              <div className="campo"><span>Saldo pendiente</span> <strong style={{ color: detalleCompra.saldo_pendiente > 0 ? '#dc2626' : '#16a34a' }}>{formatearMoneda(detalleCompra.saldo_pendiente)}</strong></div>
             </div>
 
-            {detalleCompra.pagos?.length && (
+            {detalleCompra.pagos?.length > 0 && (
               <>
                 <h4 style={{ margin: '16px 0 8px' }}>Historial de pagos</h4>
                 <div className="tabla-wrapper">
@@ -464,7 +602,7 @@ export default function ComprasPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {detalleCompra.pagos.map(p => (
+                      {detalleCompra.pagos.map((p) => (
                         <tr key={p.id}>
                           <td>{formatearFecha(p.fecha)}</td>
                           <td>{formatearMoneda(p.monto)}</td>
@@ -477,14 +615,11 @@ export default function ComprasPage() {
                           </td>
                           <td>{p.usuario_nombre || '—'}</td>
                           <td>
-                            {p.estado === 'activo' && permisos.anularPago && detalleCompra?.estado !== 'anulada' ? (
+                            {p.estado === 'activo' && permisos.anularPago && detalleCompra.estado !== 'anulada' ? (
                               <button
                                 type="button"
                                 className="btn btn-opcion btn-danger"
-                                onClick={() => {
-                                  setPagoAnular(p);
-                                  setMotivoAnulacionPago('');
-                                }}
+                                onClick={() => { setPagoAnular(p); setMotivoAnulacionPago(''); }}
                               >
                                 Anular
                               </button>
@@ -503,9 +638,85 @@ export default function ComprasPage() {
                 <strong>Notas:</strong> {detalleCompra.notas}
               </p>
             )}
+
+            <div className="comentarios-archivos">
+              <div>
+                <h4>Comentarios</h4>
+                {comentarios.length === 0 ? (
+                  <p className="estado">Sin comentarios.</p>
+                ) : (
+                  <ul className="lista-comentarios">
+                    {comentarios.map((c) => (
+                      <li key={c.id}>
+                        <p>{c.comentario}</p>
+                        <span>{c.usuario_nombre || 'Usuario'} · {formatearFechaHora(c.creado_en)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {permisos.crearCompra && (
+                  <form className="form-comentario" onSubmit={agregarComentario}>
+                    <textarea
+                      className="control"
+                      rows={2}
+                      placeholder="Agregar una observación..."
+                      value={comentarioNuevo}
+                      onChange={(e) => setComentarioNuevo(e.target.value)}
+                    />
+                    <button type="submit" className="btn btn-secundario" disabled={guardandoComentario || !comentarioNuevo.trim()}>
+                      {guardandoComentario ? 'Guardando...' : 'Agregar comentario'}
+                    </button>
+                  </form>
+                )}
+              </div>
+
+              <div>
+                <h4>Archivos adjuntos</h4>
+                {archivos.length === 0 ? (
+                  <p className="estado">Sin archivos adjuntos.</p>
+                ) : (
+                  <ul className="lista-archivos">
+                    {archivos.map((a) => (
+                      <li key={a.id}>
+                        <button type="button" className="enlace-archivo" onClick={() => descargarArchivo(a)}>
+                          {a.nombre_original}
+                        </button>
+                        <span>{(a.tamano / 1024).toFixed(0)} KB · {formatearFechaHora(a.creado_en)}</span>
+                        {permisos.crearCompra && (
+                          <button type="button" className="btn btn-opcion btn-danger" onClick={() => eliminarArchivo(a)}>
+                            Eliminar
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {permisos.crearCompra && detalleCompra.estado === 'recibida' && (
+                  <form className="form-archivo" onSubmit={subirArchivo}>
+                    <input ref={inputArchivoRef} type="file" accept=".pdf,.jpg,.jpeg,.png" />
+                    <button type="submit" className="btn btn-secundario" disabled={subiendoArchivo}>
+                      {subiendoArchivo ? 'Subiendo...' : 'Adjuntar archivo'}
+                    </button>
+                    <small>PDF, JPG o PNG. Máximo 5 MB.</small>
+                  </form>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </Modal>
+
+      <EditarFacturaModal
+        abierto={Boolean(editandoCompra)}
+        compra={editandoCompra}
+        onCerrar={() => setEditandoCompra(null)}
+        onGuardado={() => alEditar()}
+      />
+
+      <ConfiguracionEmpresaModal
+        abierto={configAbierta}
+        onCerrar={() => setConfigAbierta(false)}
+      />
 
       <Modal
         abierto={Boolean(pagoCompra)}
@@ -574,7 +785,7 @@ export default function ComprasPage() {
                 onChange={(e) => setPagoForm({ ...pagoForm, notas: e.target.value })}
               />
             </label>
-            <div className="modal-acciones" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
+            <div className="modal-acciones">
               <button type="button" className="btn btn-secundario" onClick={() => setPagoCompra(null)}>
                 Cancelar
               </button>
@@ -608,7 +819,7 @@ export default function ComprasPage() {
                 onChange={(e) => setMotivoAnulacionPago(e.target.value)}
               />
             </label>
-            <div className="modal-acciones" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
+            <div className="modal-acciones">
               <button type="button" className="btn btn-secundario" onClick={() => setPagoAnular(null)}>
                 Cancelar
               </button>

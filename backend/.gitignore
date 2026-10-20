@@ -10,3 +10,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Archivos privados subidos por usuarios
+storage/

@@ -24,6 +24,7 @@ export function permisosCompras(sesion = leerSesion()) {
     consultarOrdenes: tieneAlgunRol(sesion, [ADMINISTRADOR, COMPRAS, BODEGA]),
     crearOrden: tieneAlgunRol(sesion, [ADMINISTRADOR, COMPRAS]),
     recibirOrden: tieneAlgunRol(sesion, [ADMINISTRADOR, COMPRAS, BODEGA]),
-    consultarReportes: tieneAlgunRol(sesion, [ADMINISTRADOR, COMPRAS, BODEGA, CAJA])
+    consultarReportes: tieneAlgunRol(sesion, [ADMINISTRADOR, COMPRAS, BODEGA, CAJA]),
+    configurarEmpresa: tieneAlgunRol(sesion, [ADMINISTRADOR])
   };
 }
