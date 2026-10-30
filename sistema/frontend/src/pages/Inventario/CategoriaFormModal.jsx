@@ -8,7 +8,7 @@ const FORM_VACIO = {
   activo: true
 };
 
-export default function CategoriaFormModal({ abierto, categoria, onCerrar, onGuardado }) {
+export default function CategoriaFormModal({ abierto, categoria, onCerrar, onGuardado, onCreada }) {
   const [form, setForm] = useState(FORM_VACIO);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
@@ -46,7 +46,8 @@ export default function CategoriaFormModal({ abierto, categoria, onCerrar, onGua
 
     try {
       if (esAlta) {
-        await api.post('/categorias', payload);
+        const respuesta = await api.post('/categorias', payload);
+        onCreada?.(respuesta.data);
         onGuardado('Categoría creada correctamente');
       } else {
         await api.put(`/categorias/${categoria.id}`, payload);

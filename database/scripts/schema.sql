@@ -1,4 +1,7 @@
 -- Ejecutar esto en MySQL (Workbench, phpMyAdmin, o cliente de línea de comandos)
+-- Importar con: mysql --default-character-set=utf8mb4 -u root -p < schema.sql
+
+SET NAMES utf8mb4;
 
 CREATE DATABASE IF NOT EXISTS sgifep_ferreteria
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

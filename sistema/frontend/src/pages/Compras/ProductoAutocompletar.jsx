@@ -94,12 +94,12 @@ export default function ProductoAutocompletar({
                 borderRadius: '6px',
                 transition: 'background 0.1s'
               }}
-              onMouseEnter={(e) => e.target.style.background = '#fff7ed'}
+              onMouseEnter={(e) => e.target.style.background = '#dcfce7'}
               onMouseLeave={(e) => e.target.style.background = 'transparent'}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <strong>{p.nombre}</strong>
-                <span style={{ fontSize: '12px', color: '#ea580c', fontWeight: 600 }}>
+                <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: 600 }}>
                   {new Intl.NumberFormat('es-GT', { style: 'currency', currency: 'GTQ', minimumFractionDigits: 2 }).format(p.costo_ultimo || 0)}
                 </span>
               </div>

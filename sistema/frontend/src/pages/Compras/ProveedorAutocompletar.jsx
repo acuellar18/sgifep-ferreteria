@@ -102,7 +102,7 @@ export default function ProveedorAutocompletar({
                 borderRadius: '6px',
                 transition: 'background 0.1s'
               }}
-              onMouseEnter={(e) => e.target.style.background = '#fff7ed'}
+              onMouseEnter={(e) => e.target.style.background = '#dcfce7'}
               onMouseLeave={(e) => e.target.style.background = 'transparent'}
             >
               <strong>{p.nombre}</strong>
@@ -111,7 +111,7 @@ export default function ProveedorAutocompletar({
                 {p.telefono && `Tel: ${p.telefono}`} {p.correo && ` | ${p.correo}`}
               </div>
               {p.dias_credito > 0 && (
-                <span style={{ fontSize: '11px', background: '#fff7ed', color: '#ea580c', padding: '1px 6px', borderRadius: '999px' }}>
+                <span style={{ fontSize: '11px', background: '#dcfce7', color: '#16a34a', padding: '1px 6px', borderRadius: '999px' }}>
                   Crédito: {p.dias_credito} días
                 </span>
               )}

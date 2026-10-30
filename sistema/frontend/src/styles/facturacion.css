@@ -1,0 +1,672 @@
+/* ============================================================
+   Facturación - Clientes
+   Reutiliza la línea gráfica de Inventario (naranja, antracita,
+   fondos neutros) sin tonos azules.
+   ============================================================ */
+
+.facturacion-clientes .tabla-clientes {
+  min-width: 980px;
+}
+
+.facturacion-clientes .inventario-estadistica-valor {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.facturacion-cliente-celda {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  max-width: 240px;
+}
+
+.facturacion-cliente-celda strong,
+.facturacion-cliente-celda span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.facturacion-cliente-celda small {
+  overflow: hidden;
+  color: var(--color-texto-suave);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.facturacion-nit {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.facturacion-chip-predeterminado {
+  margin-left: 6px;
+  padding: 2px 7px;
+  font-size: 10px;
+  vertical-align: middle;
+}
+
+.facturacion-stat-detalle {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-texto-suave);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.facturacion-icono-clientes {
+  background: var(--color-ok-fondo);
+  color: var(--color-ok);
+}
+
+.facturacion-icono-saldo {
+  background: var(--color-primario-suave);
+  color: var(--color-primario-oscuro);
+}
+
+.facturacion-icono-cobrar {
+  background: var(--color-peligro-fondo);
+  color: var(--color-peligro);
+}
+
+.facturacion-filtro-estado {
+  flex: 0 1 190px;
+  height: 44px;
+  border-radius: 12px;
+}
+
+/* ---------- Formulario ---------- */
+
+.facturacion-formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.facturacion-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+
+.facturacion-form-grid .campo label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-texto);
+}
+
+.facturacion-form-completo {
+  grid-column: 1 / -1;
+}
+
+.facturacion-check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  background: #f9fafb;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.facturacion-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primario);
+}
+
+/* ---------- Detalle ---------- */
+
+.facturacion-detalle-cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid #bbf7d0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #dcfce7, #ffffff 62%);
+}
+
+.facturacion-detalle-titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.facturacion-detalle-titulo h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.facturacion-detalle-saldo {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  text-align: right;
+}
+
+.facturacion-detalle-saldo span {
+  color: var(--color-texto-suave);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.facturacion-detalle-saldo strong {
+  color: var(--color-primario-oscuro);
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.facturacion-detalle-saldo small {
+  color: var(--color-texto-suave);
+  font-size: 11px;
+}
+
+.facturacion-detalle-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.facturacion-detalle-dato {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  background: var(--color-superficie);
+}
+
+.facturacion-detalle-dato span {
+  color: var(--color-texto-suave);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.facturacion-detalle-dato strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.facturacion-detalle-completo {
+  grid-column: 1 / -1;
+}
+
+.facturacion-historial {
+  padding-top: 16px;
+  border-top: 1px solid var(--color-borde);
+}
+
+.facturacion-historial-encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.facturacion-historial-encabezado h4 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.facturacion-historial-encabezado span {
+  color: var(--color-texto-suave);
+  font-size: 12px;
+}
+
+.facturacion-historial-vacio {
+  padding: 22px;
+  border: 1px dashed var(--color-borde);
+  background: #fafafa;
+  box-shadow: none;
+}
+
+.facturacion-historial-vacio small {
+  color: var(--color-texto-suave);
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
+  .facturacion-detalle-cabecera {
+    flex-direction: column;
+  }
+
+  .facturacion-detalle-saldo {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .facturacion-detalle-grid,
+  .facturacion-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .facturacion-filtro-estado {
+    flex: 1 1 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .facturacion-detalle-titulo h3 {
+    font-size: 18px;
+  }
+
+  .facturacion-detalle-saldo strong {
+    font-size: 21px;
+  }
+}
+
+/* ============================================================
+   Facturación - Facturas
+   ============================================================ */
+
+.facturacion-facturas .facturacion-tabla-facturas {
+  min-width: 1080px;
+}
+
+.facturacion-fila-anulada {
+  background: #fff7f7;
+}
+
+.facturacion-fila-anulada td {
+  color: var(--color-texto-suave);
+}
+
+.facturacion-fila-anulada td strong {
+  color: var(--color-texto);
+}
+
+.facturacion-icono-facturado {
+  background: var(--color-primario-suave);
+  color: var(--color-primario-oscuro);
+}
+
+.facturacion-icono-cobrado {
+  background: var(--color-ok-fondo);
+  color: var(--color-ok);
+}
+
+.facturacion-icono-vencidas {
+  background: var(--color-peligro-fondo);
+  color: var(--color-peligro);
+}
+
+.facturacion-filtro-fecha {
+  flex: 0 1 155px;
+  height: 44px;
+  border-radius: 12px;
+}
+
+/* ---------- Autocompletado ---------- */
+
+.facturacion-autocompletar {
+  position: relative;
+}
+
+.facturacion-sugerencias {
+  position: absolute;
+  z-index: 120;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  max-height: 280px;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  border: 1px solid var(--color-borde);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  list-style: none;
+}
+
+.facturacion-sugerencias li {
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.facturacion-sugerencias li:hover {
+  background: #dcfce7;
+}
+
+.facturacion-sugerencia-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.facturacion-sugerencia-precio {
+  flex: 0 0 auto;
+  color: var(--color-primario-oscuro);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.facturacion-sugerencia-detalle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 3px;
+  color: var(--color-texto-suave);
+  font-size: 11px;
+}
+
+/* ---------- Detalle de factura ---------- */
+
+.facturacion-tabla-detalle {
+  min-width: 720px;
+}
+
+.facturacion-col-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.facturacion-chip-servicio {
+  margin-left: 6px;
+  padding: 2px 7px;
+  font-size: 10px;
+  vertical-align: middle;
+}
+
+.facturacion-totales {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(100%, 330px);
+  margin: 16px 0 0 auto;
+  padding: 14px 16px;
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.facturacion-totales > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--color-texto-suave);
+  font-size: 13px;
+}
+
+.facturacion-totales strong {
+  color: var(--color-texto);
+  font-size: 14px;
+}
+
+.facturacion-total-final {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 2px solid var(--color-borde);
+}
+
+.facturacion-total-final span,
+.facturacion-total-final strong {
+  color: var(--color-primario-oscuro);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.facturacion-notas {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.facturacion-notas h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.facturacion-notas p {
+  margin: 3px 0;
+  font-size: 13px;
+}
+
+.facturacion-notas-anulada {
+  border-color: #fecaca;
+  background: #fff7f7;
+}
+
+.facturacion-confirmar-anulacion p {
+  margin: 0 0 14px;
+  line-height: 1.5;
+}
+
+/* ---------- Nueva factura ---------- */
+
+.facturacion-nueva-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  align-items: start;
+  gap: 20px;
+}
+
+.facturacion-nueva-principal {
+  min-width: 0;
+}
+
+.facturacion-panel {
+  margin-bottom: 16px;
+  padding: 16px;
+}
+
+.facturacion-lineas-encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 18px 0 10px;
+}
+
+.facturacion-lineas-encabezado h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.facturacion-tabla-lineas {
+  min-width: 760px;
+}
+
+.facturacion-col-producto {
+  width: 44%;
+}
+
+.facturacion-col-cantidad {
+  width: 12%;
+  text-align: center;
+}
+
+.facturacion-col-precio {
+  width: 16%;
+  text-align: right;
+}
+
+.facturacion-col-subtotal {
+  width: 16%;
+  text-align: right;
+}
+
+.facturacion-col-acciones {
+  width: 8%;
+  text-align: center;
+}
+
+.facturacion-input-numero {
+  width: 100%;
+  min-width: 90px;
+  padding: 6px 8px;
+  text-align: right;
+}
+
+.facturacion-linea-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 12px;
+  margin-top: 4px;
+  color: var(--color-texto-suave);
+  font-size: 11px;
+}
+
+.facturacion-linea-error {
+  color: var(--color-peligro);
+}
+
+.facturacion-linea-error strong {
+  font-size: 11px;
+}
+
+.facturacion-btn-eliminar {
+  padding: 4px 9px;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.facturacion-cliente-elegido {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #dcfce7;
+  color: var(--color-texto-suave);
+  font-size: 12px;
+}
+
+.facturacion-cliente-elegido .btn {
+  margin-left: auto;
+  padding: 3px 9px;
+  font-size: 11px;
+}
+
+.facturacion-nueva-resumen {
+  position: sticky;
+  top: 110px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.facturacion-resumen-card {
+  padding: 20px;
+}
+
+.facturacion-resumen-card h3 {
+  margin: 0 0 14px;
+  text-align: center;
+}
+
+.facturacion-resumen-fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 5px 0;
+  color: var(--color-texto-suave);
+  font-size: 13px;
+}
+
+.facturacion-resumen-fila strong {
+  color: var(--color-texto);
+}
+
+.facturacion-resumen-total {
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 2px solid var(--color-borde);
+}
+
+.facturacion-resumen-total span {
+  color: var(--color-texto);
+  font-weight: 600;
+}
+
+.facturacion-resumen-total strong {
+  color: var(--color-primario-oscuro);
+  font-size: 26px;
+}
+
+.facturacion-resumen-vencimiento {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #dcfce7;
+  font-size: 12px;
+}
+
+.facturacion-resumen-vencimiento span {
+  color: var(--color-texto-suave);
+}
+
+.facturacion-resumen-acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.facturacion-resumen-ayuda {
+  margin: 14px 0 0;
+  color: var(--color-texto-suave);
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.facturacion-notas-card {
+  padding: 16px;
+}
+
+@media (max-width: 980px) {
+  .facturacion-nueva-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .facturacion-nueva-resumen {
+    position: static;
+  }
+}
+
+@media (max-width: 760px) {
+  .facturacion-filtro-fecha {
+    flex: 1 1 100%;
+  }
+
+  .facturacion-totales {
+    width: 100%;
+  }
+
+  .facturacion-lineas-encabezado {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

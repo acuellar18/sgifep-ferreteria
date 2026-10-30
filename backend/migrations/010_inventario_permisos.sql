@@ -1,4 +1,4 @@
-﻿-- 010_inventario_permisos.sql
+-- 010_inventario_permisos.sql
 -- Fase 2 de Inventario: permisos granulares por rol.
 -- La autorización se consulta en base de datos; no se hardcodean roles en las
 -- rutas de Inventario.
@@ -28,7 +28,7 @@ INSERT INTO permisos (clave, nombre, descripcion, modulo) VALUES
     ('inventario.productos.ver_costos', 'Ver costos de productos', 'Consultar costo último, costo promedio y valor del inventario.', 'inventario'),
     ('inventario.productos.crear', 'Crear productos', 'Registrar productos nuevos.', 'inventario'),
     ('inventario.productos.editar', 'Editar productos', 'Modificar datos de productos sin alterar existencias.', 'inventario'),
-    ('inventario.productos.eliminar', 'Eliminar productos', 'Eliminar productos sin movimientos asociados.', 'inventario'),
+    ('inventario.productos.eliminar', 'Eliminar productos', 'Eliminar productos sin compras, órdenes ni movimientos distintos al inventario inicial.', 'inventario'),
     ('inventario.categorias.ver', 'Ver categorías', 'Consultar las categorías de inventario.', 'inventario'),
     ('inventario.categorias.crear', 'Crear categorías', 'Registrar categorías de inventario.', 'inventario'),
     ('inventario.categorias.editar', 'Editar categorías', 'Modificar categorías de inventario.', 'inventario'),

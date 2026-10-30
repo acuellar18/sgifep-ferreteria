@@ -11,7 +11,7 @@ const MIMES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 2 * 1024 * 1024, files: 1 },
+  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
   fileFilter: (_req, file, cb) => {
     if (!MIMES.has(file.mimetype)) {
       return cb(new HttpError(400, 'La imagen debe ser JPG, PNG o WebP'));
@@ -25,7 +25,7 @@ function subirImagenProducto(req, res, next) {
     if (!err) return next();
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
-        return next(new HttpError(400, 'La imagen no puede superar los 2 MB'));
+        return next(new HttpError(400, 'La imagen no puede superar los 5 MB'));
       }
       return next(new HttpError(400, 'No se pudo cargar la imagen'));
     }

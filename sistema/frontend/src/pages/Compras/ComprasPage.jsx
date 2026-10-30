@@ -18,6 +18,7 @@ import {
 } from '../../utils/formatos';
 import EditarFacturaModal from './EditarFacturaModal';
 import ConfiguracionEmpresaModal from './ConfiguracionEmpresaModal';
+import FlujoCompras from './FlujoCompras';
 
 const FILTROS_INICIALES = {
   q: '',
@@ -93,6 +94,7 @@ export default function ComprasPage() {
   const permisos = permisosCompras(sesion);
 
   const totalPaginas = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const hayFiltros = Object.values(filtros).some((valor) => valor !== '' && valor !== 'todos');
 
   const cargarCompras = useCallback(async (filtrosActuales, paginaActual, ordenActual) => {
     setCargando(true);
@@ -364,8 +366,10 @@ export default function ComprasPage() {
     <section>
       <div className="encabezado-pagina">
         <div>
-          <h2>Facturas de proveedor</h2>
-          <p className="reporte-detalle">Compras registradas, pagos y documentos de respaldo.</p>
+          <h2>Facturas y pagos</h2>
+          <p className="reporte-detalle">
+            Paso 3: revisa las facturas generadas por tus compras, sus saldos y pagos.
+          </p>
         </div>
         <div className="acciones-encabezado">
           <button
@@ -382,11 +386,13 @@ export default function ComprasPage() {
           )}
           {permisos.crearCompra && (
             <Link to="/compras/facturas/nueva" className="btn btn-primario">
-              + Registrar factura
+              + Registrar compra
             </Link>
           )}
         </div>
       </div>
+
+      <FlujoCompras pasoActivo={3} />
 
       <div className="tarjetas">
         <div className="tarjeta">
@@ -459,7 +465,37 @@ export default function ComprasPage() {
       {cargando ? (
         <p className="estado">Cargando compras...</p>
       ) : compras.length === 0 ? (
-        <p className="estado">No se encontraron compras con los filtros aplicados.</p>
+        <div className="estado-vacio">
+          <h3>
+            {hayFiltros
+              ? 'No se encontraron compras'
+              : proveedores.length === 0
+                ? 'Primero registra un proveedor'
+                : 'Aún no hay compras registradas'}
+          </h3>
+          <p>
+            {hayFiltros
+              ? 'Prueba con otros filtros o limpia la búsqueda.'
+              : proveedores.length === 0
+                ? 'Las compras se registran a nombre de un proveedor. Crea el primero para continuar.'
+                : 'Registra la primera compra para que aparezca aquí con su factura y saldo por pagar.'}
+          </p>
+          <div className="estado-vacio-acciones">
+            {hayFiltros ? (
+              <button type="button" className="btn btn-secundario" onClick={limpiarFiltros}>
+                Limpiar filtros
+              </button>
+            ) : proveedores.length === 0 ? (
+              <Link to="/compras/proveedores" className="btn btn-primario">
+                Registrar proveedor
+              </Link>
+            ) : permisos.crearCompra ? (
+              <Link to="/compras/facturas/nueva" className="btn btn-primario">
+                + Registrar primera compra
+              </Link>
+            ) : null}
+          </div>
+        </div>
       ) : (
         <>
           <div className="tabla-wrapper">
@@ -474,7 +510,7 @@ export default function ComprasPage() {
                   <th>Saldo</th>
                   <th>Estado pago</th>
                   <th>Estado</th>
-                  <th>Acciones</th>
+                  <th className="tabla-acciones">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -488,32 +524,49 @@ export default function ComprasPage() {
                     <td>{formatearMoneda(c.saldo_pendiente)}</td>
                     <td><ChipEstadoPago estado={c.estado_pago} /></td>
                     <td><ChipEstado estado={c.estado} /></td>
-                    <td>
+                    <td className="tabla-acciones">
                       <div className="acciones-fila">
-                        <button type="button" className="btn btn-opcion" onClick={() => verDetalle(c)}>
+                        <button
+                          type="button"
+                          className="btn btn-opcion"
+                          title="Ver detalle de la factura"
+                          onClick={() => verDetalle(c)}
+                        >
                           Ver
                         </button>
                         <button
                           type="button"
                           className="btn btn-opcion"
+                          title="Imprimir factura"
                           onClick={() => window.open(rutaImpresionFactura(c.id), '_blank')}
                         >
                           Imprimir
                         </button>
                         {c.estado === 'recibida' && permisos.crearCompra && (
-                          <button type="button" className="btn btn-opcion" onClick={() => setEditandoCompra(c)}>
+                          <button
+                            type="button"
+                            className="btn btn-opcion"
+                            title="Editar factura"
+                            onClick={() => setEditandoCompra(c)}
+                          >
                             Editar
                           </button>
                         )}
                         {c.estado_pago !== 'pagada' && c.estado === 'recibida' && permisos.registrarPago && (
-                          <button type="button" className="btn btn-opcion" onClick={() => abrirPago(c)}>
-                            Registrar pago
+                          <button
+                            type="button"
+                            className="btn btn-opcion"
+                            title="Registrar pago"
+                            onClick={() => abrirPago(c)}
+                          >
+                            Pagar
                           </button>
                         )}
                         {c.estado === 'recibida' && permisos.anularCompra && (
                           <button
                             type="button"
                             className="btn btn-opcion btn-danger"
+                            title="Anular factura"
                             onClick={() => solicitarAnulacion(c)}
                           >
                             Anular
@@ -598,7 +651,7 @@ export default function ComprasPage() {
                         <th>Referencia</th>
                         <th>Estado</th>
                         <th>Registrado por</th>
-                        <th>Acciones</th>
+                        <th className="tabla-acciones">Acciones</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -614,11 +667,12 @@ export default function ComprasPage() {
                             </span>
                           </td>
                           <td>{p.usuario_nombre || '—'}</td>
-                          <td>
+                          <td className="tabla-acciones">
                             {p.estado === 'activo' && permisos.anularPago && detalleCompra.estado !== 'anulada' ? (
                               <button
                                 type="button"
                                 className="btn btn-opcion btn-danger"
+                                title="Anular pago"
                                 onClick={() => { setPagoAnular(p); setMotivoAnulacionPago(''); }}
                               >
                                 Anular

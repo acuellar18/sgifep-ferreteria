@@ -9,16 +9,16 @@ const bcrypt = require('bcryptjs');
 const pool = require('./db');
 
 const DEPARTAMENTOS_DEFECTO = [
-  ['Secretaria', 'Secretaría y atención general'],
-  ['Catedratico', 'Área docente / catedráticos'],
+  ['Secretaría', 'Secretaría y atención general'],
+  ['Catedrático', 'Área docente / catedráticos'],
   ['Ventas', 'Ventas y atención a clientes'],
   ['Bodega', 'Manejo de inventario y bodega'],
   ['Caja', 'Caja y cobros'],
-  ['Administracion', 'Administración general']
+  ['Administración', 'Administración general']
 ];
 
 const ROLES_DEFECTO = [
-  { nombre: 'administrador', descripcion: 'Acceso total al sistema', acceso_total: 1 },
+  { nombre: 'administrador', descripcion: 'Acceso total a todos los módulos del sistema', acceso_total: 1 },
   { nombre: 'ventas', descripcion: 'Módulo de ventas', acceso_total: 0 },
   { nombre: 'bodega', descripcion: 'Módulo de inventario', acceso_total: 0 },
   { nombre: 'caja', descripcion: 'Caja y cobros', acceso_total: 0 },

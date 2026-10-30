@@ -29,6 +29,16 @@ function baseValidacion(datos = {}, { esCreacion = false } = {}) {
     throw new HttpError(400, 'La descripción no puede superar los 500 caracteres');
   }
 
+  const presentacion = typeof datos.presentacion === 'string' ? datos.presentacion.trim() : '';
+  if (presentacion.length > 100) {
+    throw new HttpError(400, 'La presentación no puede superar los 100 caracteres');
+  }
+
+  const ubicacion = typeof datos.ubicacion === 'string' ? datos.ubicacion.trim() : '';
+  if (ubicacion.length > 100) {
+    throw new HttpError(400, 'La ubicación no puede superar los 100 caracteres');
+  }
+
   let categoria_id = null;
   if (datos.categoria_id !== undefined && datos.categoria_id !== null && datos.categoria_id !== '') {
     categoria_id = Number(datos.categoria_id);
@@ -55,6 +65,8 @@ function baseValidacion(datos = {}, { esCreacion = false } = {}) {
     codigo_barras: codigoBarras || null,
     nombre,
     descripcion: descripcion || null,
+    presentacion: presentacion || null,
+    ubicacion: ubicacion || null,
     categoria_id,
     tipo,
     unidad_medida,
@@ -95,18 +107,25 @@ function validarActualizar(datos = {}) {
 function serializar(fila, { incluirCostos = true } = {}) {
   if (!fila) return null;
   const tipo = fila.tipo || 'producto';
+  const stockActual = Number(fila.stock_actual || 0);
+  const stockMinimo = Number(fila.stock_minimo || 0);
+  const esProducto = tipo === 'producto';
+  const agotado = esProducto && stockActual <= 0;
+  const stockBajo = esProducto && !agotado && stockMinimo > 0 && stockActual <= stockMinimo;
   const producto = {
     id: fila.id,
     codigo: fila.codigo,
     codigo_barras: fila.codigo_barras || null,
     nombre: fila.nombre,
     descripcion: fila.descripcion,
+    presentacion: fila.presentacion || null,
+    ubicacion: fila.ubicacion || null,
     categoria_id: fila.categoria_id,
     categoria_nombre: fila.categoria_nombre,
     tipo,
     unidad_medida: fila.unidad_medida,
-    stock_actual: Number(fila.stock_actual || 0),
-    stock_minimo: Number(fila.stock_minimo || 0),
+    stock_actual: stockActual,
+    stock_minimo: stockMinimo,
     precio_venta: Number(fila.precio_venta || 0),
     imagen: Boolean(fila.imagen),
     imagen_miniatura: Boolean(fila.imagen_miniatura),
@@ -114,7 +133,9 @@ function serializar(fila, { incluirCostos = true } = {}) {
     activo: Boolean(fila.activo),
     creado_en: fila.creado_en,
     actualizado_en: fila.actualizado_en,
-    stock_bajo: tipo === 'producto' && Number(fila.stock_actual || 0) <= Number(fila.stock_minimo || 0)
+    stock_bajo: stockBajo,
+    agotado,
+    estado_stock: esProducto ? (agotado ? 'agotado' : stockBajo ? 'stock_bajo' : 'disponible') : 'no_aplica'
   };
 
   if (incluirCostos) {

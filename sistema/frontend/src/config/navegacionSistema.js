@@ -9,8 +9,19 @@ export const RUTA_LOGIN = '/login.html';
 // mantienen su propio catálogo de destinos React para no salirse del layout.
 export const MODULOS_SISTEMA = [
   {
+    id: 'caja',
+    titulo: 'Caja',
+    to: '/caja',
+    permiso: 'consultarCaja'
+  },
+  {
+    id: 'pos',
+    titulo: 'POS / Venta',
+    to: '/pos',
+    permiso: 'consultarCobros'
+  },
+  {
     id: 'usuarios',
-    icono: '👥',
     titulo: 'Usuarios',
     subitems: [
       { to: '/', etiqueta: 'Listado de Usuarios' },
@@ -21,17 +32,16 @@ export const MODULOS_SISTEMA = [
   },
   {
     id: 'compras',
-    icono: '🛒',
     titulo: 'Compras',
     permiso: 'consultarCompras',
     subitems: [
-      { to: '/compras/facturas', etiqueta: 'Facturas de proveedor' },
-      { to: '/compras/proveedores', etiqueta: 'Proveedores' }
+      { to: '/compras/proveedores', etiqueta: 'Proveedores' },
+      { to: '/compras/facturas/nueva', etiqueta: 'Registrar compra', permiso: 'crearCompra' },
+      { to: '/compras/facturas', etiqueta: 'Facturas y pagos' }
     ]
   },
   {
     id: 'inventario',
-    icono: '📦',
     titulo: 'Inventario',
     permiso: 'consultarInventario',
     subitems: [
@@ -42,18 +52,15 @@ export const MODULOS_SISTEMA = [
   },
   {
     id: 'facturacion',
-    icono: '🧾',
     titulo: 'Facturación',
-    subitems: [
-      { to: '/facturacion', etiqueta: 'Listado de Facturas' },
-      { to: '/facturacion/clientes', etiqueta: 'Clientes' },
-      { to: '/facturacion/cobros', etiqueta: 'Cobros' },
-      { to: '/facturacion/reporte', etiqueta: 'Reporte de Facturación' }
-    ]
+    permiso: 'consultarFacturacion',
+      subitems: [
+        { to: '/facturacion/facturas', etiqueta: 'Listado de Facturas', permiso: 'consultarFacturas' },
+        { to: '/facturacion/clientes', etiqueta: 'Clientes', permiso: 'consultarClientes' }
+      ]
   },
   {
     id: 'despacho',
-    icono: '📤',
     titulo: 'Despacho',
     subitems: [
       { to: '/despacho', etiqueta: 'Listado de Despachos' },
@@ -63,40 +70,53 @@ export const MODULOS_SISTEMA = [
   },
   {
     id: 'reportes',
-    icono: '📊',
     titulo: 'Reportes',
     subitems: [
       { to: '/reportes', etiqueta: 'Reporte General' },
       { to: '/reportes/ventas', etiqueta: 'Reporte de Ventas' },
       { to: '/reportes/compras', etiqueta: 'Reporte de Compras', permiso: 'consultarReportes' },
-      { to: '/reportes/inventario', etiqueta: 'Reporte de Inventario', permiso: 'consultarReporteInventario' }
+      { to: '/reportes/inventario', etiqueta: 'Reporte de Inventario', permiso: 'consultarReporteInventario' },
+      { to: '/seguridad/auditoria', etiqueta: 'Auditoría', permiso: 'consultarAuditoria' }
     ]
+  },
+  {
+    id: 'perfil',
+    titulo: 'Mi perfil',
+    to: '/perfil'
   }
 ];
 
 export function esSubitemActivo(pathname, subitem) {
   if (!subitem.to) return false;
   if (subitem.to === '/') return pathname === '/';
+  if (subitem.to === '/compras/facturas') {
+    return pathname === subitem.to || (
+      pathname.startsWith(`${subitem.to}/`) && pathname !== '/compras/facturas/nueva'
+    );
+  }
   if (subitem.to === '/compras/proveedores') {
     return pathname === subitem.to || pathname.startsWith(`${subitem.to}/`);
   }
   return pathname === subitem.to;
 }
 
+export function esModuloActivo(pathname, modulo) {
+  if (modulo.to) return esSubitemActivo(pathname, { to: modulo.to });
+  return (modulo.subitems || []).some((subitem) => esSubitemActivo(pathname, subitem));
+}
+
 export function obtenerModuloActivo(pathname) {
-  const modulo = MODULOS_SISTEMA.find((item) =>
-    item.subitems.some((subitem) => esSubitemActivo(pathname, subitem))
-  );
+  const modulo = MODULOS_SISTEMA.find((item) => esModuloActivo(pathname, item));
   return modulo?.id || null;
 }
 
 export function obtenerTituloDocumento(pathname) {
-  if (pathname === '/compras') return 'Compras - Facturas de proveedor';
+  if (pathname === '/compras') return 'Compras - Facturas y pagos';
 
-  const modulo = MODULOS_SISTEMA.find((item) =>
-    item.subitems.some((subitem) => esSubitemActivo(pathname, subitem))
-  );
-  const subitem = modulo?.subitems.find((item) => esSubitemActivo(pathname, item));
+  const modulo = MODULOS_SISTEMA.find((item) => esModuloActivo(pathname, item));
+  if (!modulo) return 'Sistema';
+  if (modulo.to) return modulo.titulo;
 
-  return modulo && subitem ? `${modulo.titulo} - ${subitem.etiqueta}` : 'Sistema';
+  const subitem = modulo.subitems.find((item) => esSubitemActivo(pathname, item));
+  return subitem ? `${modulo.titulo} - ${subitem.etiqueta}` : 'Sistema';
 }

@@ -64,11 +64,16 @@
         height: 60px;
         min-width: 60px;
         border-radius: 50%;
-        background: #f7a567;
+        background: #fff7ed;
+        color: #16a34a;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.6rem;
+    }
+
+    .icon-circle svg {
+        width: 28px;
+        height: 28px;
     }
 
     .card-modulo h4 {
@@ -92,7 +97,7 @@
         margin-top: 10px;
         font-size: 0.76rem;
         font-weight: 700;
-        color: #f2701d;
+        color: #16a34a;
         letter-spacing: 0.3px;
     }
 
@@ -109,6 +114,64 @@
 </head>
 <body>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="ico-usuarios" viewBox="0 0 24 24">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </symbol>
+    <symbol id="ico-compras" viewBox="0 0 24 24">
+        <circle cx="8" cy="21" r="1" />
+        <circle cx="19" cy="21" r="1" />
+        <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+    </symbol>
+    <symbol id="ico-inventario" viewBox="0 0 24 24">
+        <path d="m7.5 4.27 9 5.15" />
+        <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+        <path d="m3.3 7 8.7 5 8.7-5" />
+        <path d="M12 22V12" />
+    </symbol>
+    <symbol id="ico-facturacion" viewBox="0 0 24 24">
+        <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
+        <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
+        <path d="M12 17.5v-11" />
+    </symbol>
+    <symbol id="ico-despacho" viewBox="0 0 24 24">
+        <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
+        <path d="M15 18H9" />
+        <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" />
+        <circle cx="17" cy="18" r="2" />
+        <circle cx="7" cy="18" r="2" />
+    </symbol>
+    <symbol id="ico-reportes" viewBox="0 0 24 24">
+        <path d="M3 3v18h18" />
+        <path d="M18 17V9" />
+        <path d="M13 17V5" />
+        <path d="M8 17v-3" />
+    </symbol>
+    <symbol id="ico-caja" viewBox="0 0 24 24">
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <path d="M3 9h18" />
+        <path d="M7 14h4" />
+        <circle cx="17" cy="14" r="1" />
+    </symbol>
+    <symbol id="ico-pos" viewBox="0 0 24 24">
+        <rect x="3" y="8" width="18" height="12" rx="2" />
+        <path d="M7 8V4h10v4" />
+        <path d="M8 13h8" />
+        <path d="M8 17h4" />
+    </symbol>
+    <symbol id="ico-perfil" viewBox="0 0 24 24">
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21a8 8 0 0 1 16 0" />
+    </symbol>
+    <symbol id="ico-avatar" viewBox="0 0 24 24">
+        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+    </symbol>
+</svg>
+
 <div class="layout">
     <header class="app-header">
         <div class="header-logo-box">
@@ -120,7 +183,9 @@
             <span class="header-subtitulo-blanco">PANEL DE ACCESO</span>
         </div>
         <div class="header-usuario">
-            <span class="avatar">👤</span>
+            <span class="avatar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-avatar" /></svg>
+            </span>
             <div class="header-usuario-info">
                 <span class="header-nombre" id="userInfo">Usuario</span>
                 <span class="rol-badge" id="userRol">usuario</span>
@@ -136,11 +201,28 @@
             </div>
             <nav class="drawer-nav" aria-label="Menú de módulos">
                 <a href="/modulos.html" class="drawer-item modulo-activo">
-                    <span>← Módulos Principales</span>
+                    <span>Módulos Principales</span>
+                </a>
+
+                <a href="/usuarios/caja" class="drawer-item">
+                    <span class="drawer-item-texto">
+                        <svg class="drawer-item-icono" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-caja" /></svg>
+                        <span>Caja</span>
+                    </span>
+                </a>
+
+                <a href="/usuarios/pos" class="drawer-item">
+                    <span class="drawer-item-texto">
+                        <svg class="drawer-item-icono" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-pos" /></svg>
+                        <span>POS / Venta</span>
+                    </span>
                 </a>
 
                 <button type="button" class="drawer-item" data-menu-toggle="usuarios" aria-expanded="false" aria-controls="subitems-usuarios">
-                    <span>👥 Usuarios</span>
+                    <span class="drawer-item-texto">
+                        <svg class="drawer-item-icono" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-usuarios" /></svg>
+                        <span>Usuarios</span>
+                    </span>
                     <span class="drawer-flecha">▸</span>
                 </button>
                 <div class="drawer-subitems" id="subitems-usuarios" hidden>
@@ -151,16 +233,23 @@
                 </div>
 
                 <button type="button" class="drawer-item" data-menu-toggle="compras" aria-expanded="false" aria-controls="subitems-compras">
-                    <span>🛒 Compras</span>
+                    <span class="drawer-item-texto">
+                        <svg class="drawer-item-icono" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-compras" /></svg>
+                        <span>Compras</span>
+                    </span>
                     <span class="drawer-flecha">▸</span>
                 </button>
                 <div class="drawer-subitems" id="subitems-compras" hidden>
-                    <a class="drawer-subitem" href="/usuarios/compras/facturas">Facturas de proveedor</a>
                     <a class="drawer-subitem" href="/usuarios/compras/proveedores">Proveedores</a>
+                    <a class="drawer-subitem" href="/usuarios/compras/facturas/nueva">Registrar compra</a>
+                    <a class="drawer-subitem" href="/usuarios/compras/facturas">Facturas y pagos</a>
                 </div>
 
                 <button type="button" class="drawer-item" data-menu-toggle="inventario" aria-expanded="false" aria-controls="subitems-inventario">
-                    <span>📦 Inventario</span>
+                    <span class="drawer-item-texto">
+                        <svg class="drawer-item-icono" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-inventario" /></svg>
+                        <span>Inventario</span>
+                    </span>
                     <span class="drawer-flecha">▸</span>
                 </button>
                 <div class="drawer-subitems" id="subitems-inventario" hidden>
@@ -170,18 +259,22 @@
                 </div>
 
                 <button type="button" class="drawer-item" data-menu-toggle="facturacion" aria-expanded="false" aria-controls="subitems-facturacion">
-                    <span>🧾 Facturación</span>
+                    <span class="drawer-item-texto">
+                        <svg class="drawer-item-icono" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-facturacion" /></svg>
+                        <span>Facturación</span>
+                    </span>
                     <span class="drawer-flecha">▸</span>
                 </button>
                 <div class="drawer-subitems" id="subitems-facturacion" hidden>
-                    <a class="drawer-subitem" href="/usuarios/facturacion">Listado de Facturas</a>
+                    <a class="drawer-subitem" href="/usuarios/facturacion/facturas">Listado de Facturas</a>
                     <a class="drawer-subitem" href="/usuarios/facturacion/clientes">Clientes</a>
-                    <a class="drawer-subitem" href="/usuarios/facturacion/cobros">Cobros</a>
-                    <a class="drawer-subitem" href="/usuarios/facturacion/reporte">Reporte de Facturación</a>
                 </div>
 
                 <button type="button" class="drawer-item" data-menu-toggle="despacho" aria-expanded="false" aria-controls="subitems-despacho">
-                    <span>📤 Despacho</span>
+                    <span class="drawer-item-texto">
+                        <svg class="drawer-item-icono" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-despacho" /></svg>
+                        <span>Despacho</span>
+                    </span>
                     <span class="drawer-flecha">▸</span>
                 </button>
                 <div class="drawer-subitems" id="subitems-despacho" hidden>
@@ -191,15 +284,26 @@
                 </div>
 
                 <button type="button" class="drawer-item" data-menu-toggle="reportes" aria-expanded="false" aria-controls="subitems-reportes">
-                    <span>📊 Reportes</span>
+                    <span class="drawer-item-texto">
+                        <svg class="drawer-item-icono" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-reportes" /></svg>
+                        <span>Reportes</span>
+                    </span>
                     <span class="drawer-flecha">▸</span>
                 </button>
                 <div class="drawer-subitems" id="subitems-reportes" hidden>
                     <a class="drawer-subitem" href="/usuarios/reportes">Reporte General</a>
                     <a class="drawer-subitem" href="/usuarios/reportes/ventas">Reporte de Ventas</a>
+                    <a class="drawer-subitem" href="/usuarios/seguridad/auditoria">Auditoría</a>
                     <a class="drawer-subitem" href="/usuarios/reportes/compras">Reporte de Compras</a>
                     <a class="drawer-subitem" href="/usuarios/reportes/inventario">Reporte de Inventario</a>
                 </div>
+
+                <a href="/usuarios/perfil" class="drawer-item">
+                    <span class="drawer-item-texto">
+                        <svg class="drawer-item-icono" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-perfil" /></svg>
+                        <span>Mi perfil</span>
+                    </span>
+                </a>
             </nav>
             <div class="drawer-footer">
                 <a href="/index.html" class="drawer-volver">← Volver al sitio</a>
@@ -218,6 +322,17 @@
 <script>
     const BASE_USUARIOS = '/usuarios/';
     const RUTA_LOGIN = '/login.html';
+
+    const ICONOS = {
+        caja: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-caja" /></svg>',
+        pos: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-pos" /></svg>',
+        compras: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-compras" /></svg>',
+        inventario: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-inventario" /></svg>',
+        facturacion: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-facturacion" /></svg>',
+        despacho: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-despacho" /></svg>',
+        reportes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-reportes" /></svg>',
+        usuarios: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-usuarios" /></svg>'
+    };
 
     const menuToggle = document.getElementById('btnMenuToggle');
     const sidebarLayout = document.getElementById('sidebarLayout');
@@ -293,42 +408,56 @@
         const modulos = [
             {
                 nombre: 'Compras y Abastecimiento',
-                icono: '🛒',
-                desc: 'Gestione sus facturas de proveedor y proveedores.',
+                icono: 'compras',
+                desc: 'Registre proveedores, compras, facturas y pagos.',
                 roles: ['administrador', 'admin', 'compras'],
                 url: `${BASE_USUARIOS}compras/facturas`
             },
             {
                 nombre: 'Control de Inventario',
-                icono: '📦',
+                icono: 'inventario',
                 desc: 'Administre su inventario de productos.',
                 roles: ['administrador', 'admin', 'compras', 'bodega', 'caja', 'ventas', 'reparto'],
                 url: `${BASE_USUARIOS}inventario/productos`
             },
             {
                 nombre: 'Facturación y Cobro',
-                icono: '🧾',
+                icono: 'facturacion',
                 desc: 'Facture y registre sus cobros.',
-                roles: ['administrador', 'admin', 'caja'],
-                url: `${BASE_USUARIOS}facturacion`
+                roles: ['administrador', 'admin', 'ventas', 'caja'],
+                url: `${BASE_USUARIOS}facturacion/facturas`
+            },
+            {
+                nombre: 'Caja y Turnos',
+                icono: 'caja',
+                desc: 'Abra y cierre la caja, controle el efectivo del turno.',
+                roles: ['administrador', 'admin', 'ventas', 'caja'],
+                url: `${BASE_USUARIOS}caja`
+            },
+            {
+                nombre: 'POS / Venta',
+                icono: 'pos',
+                desc: 'Punto de venta, historial y cuentas por cobrar.',
+                roles: ['administrador', 'admin', 'ventas', 'caja'],
+                url: `${BASE_USUARIOS}pos`
             },
             {
                 nombre: 'Despacho de Productos',
-                icono: '📤',
+                icono: 'despacho',
                 desc: 'Despache productos a sus clientes.',
                 roles: ['administrador', 'admin', 'reparto'],
                 url: `${BASE_USUARIOS}despacho`
             },
             {
                 nombre: 'Reportes',
-                icono: '📊',
+                icono: 'reportes',
                 desc: 'Consulte reportes y estadísticas.',
                 roles: ['administrador', 'admin', 'caja'],
                 url: `${BASE_USUARIOS}reportes`
             },
             {
                 nombre: 'Usuarios',
-                icono: '👥',
+                icono: 'usuarios',
                 desc: 'Gestione los usuarios.',
                 roles: ['administrador', 'admin', 'superadmin'],
                 url: BASE_USUARIOS
@@ -343,7 +472,7 @@
 
             container.insertAdjacentHTML('beforeend', `
                 <a class="card-modulo" href="${modulo.url}">
-                    <div class="icon-circle">${modulo.icono}</div>
+                    <div class="icon-circle">${ICONOS[modulo.icono] || ''}</div>
                     <div>
                         <h4>${modulo.nombre}</h4>
                         <p>${modulo.desc}</p>

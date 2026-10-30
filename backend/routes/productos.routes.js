@@ -9,6 +9,7 @@ router.use(autenticar, cargarPermisos);
 
 router.get('/autocompletar', requerirPermiso('inventario.productos.ver'), productoController.autocompletar);
 router.get('/categorias', requerirPermiso('inventario.productos.ver'), productoController.categorias);
+router.get('/resumen', requerirPermiso('inventario.productos.ver'), productoController.resumen);
 router.get('/', requerirPermiso('inventario.productos.ver'), productoController.listar);
 router.get('/:id/imagen/miniatura', requerirPermiso('inventario.productos.ver'), productoImagenController.miniatura);
 router.get('/:id/imagen', requerirPermiso('inventario.productos.ver'), productoImagenController.imagen);

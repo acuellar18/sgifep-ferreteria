@@ -9,6 +9,7 @@ import Modal from '../../components/Modal';
 import { useNotificacion } from '../../components/Toast';
 import { permisosCompras } from '../../utils/permisosCompras';
 import ProveedorFormModal from './ProveedorFormModal';
+import FlujoCompras from './FlujoCompras';
 
 const FILTROS_INICIALES = {
   q: '',
@@ -41,6 +42,7 @@ export default function ProveedoresPage() {
   const permisos = permisosCompras(sesion);
 
   const totalPaginas = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const hayFiltros = Object.values(filtros).some((valor) => valor !== '' && valor !== 'todos');
 
   const cargarProveedores = useCallback(async (filtrosActuales, paginaActual, ordenActual) => {
     setCargando(true);
@@ -341,7 +343,12 @@ export default function ProveedoresPage() {
   return (
     <section>
       <div className="encabezado-pagina">
-        <h2>Proveedores</h2>
+        <div>
+          <h2>Proveedores</h2>
+          <p className="reporte-detalle">
+            Paso 1: registra los datos de tus proveedores. Después podrás cargar compras y sus facturas.
+          </p>
+        </div>
         <div className="acciones-encabezado">
           {permisos.editarProveedor && (
             <button type="button" className="btn btn-primario" onClick={abrirAlta}>
@@ -350,6 +357,8 @@ export default function ProveedoresPage() {
           )}
         </div>
       </div>
+
+      <FlujoCompras pasoActivo={1} />
 
       <FiltrosCompras
         filtros={filtros}
@@ -374,7 +383,25 @@ export default function ProveedoresPage() {
       {cargando ? (
         <p className="estado">Cargando proveedores...</p>
       ) : proveedores.length === 0 ? (
-        <p className="estado">No se encontraron proveedores con los filtros aplicados.</p>
+        <div className="estado-vacio">
+          <h3>{hayFiltros ? 'No se encontraron proveedores' : 'Aún no hay proveedores registrados'}</h3>
+          <p>
+            {hayFiltros
+              ? 'Prueba con otros filtros o limpia la búsqueda.'
+              : 'Paso 1: registra tu primer proveedor para poder cargar compras y facturas.'}
+          </p>
+          <div className="estado-vacio-acciones">
+            {hayFiltros ? (
+              <button type="button" className="btn btn-secundario" onClick={limpiarFiltros}>
+                Limpiar filtros
+              </button>
+            ) : permisos.editarProveedor ? (
+              <button type="button" className="btn btn-primario" onClick={abrirAlta}>
+                + Agregar primer proveedor
+              </button>
+            ) : null}
+          </div>
+        </div>
       ) : (
         <>
           <div className="tabla-wrapper">
@@ -388,7 +415,7 @@ export default function ProveedoresPage() {
                   <th>Saldo pendiente</th>
                   <th>Estado</th>
                   <ThOrdenable columna="creado_en" ordenActual={orden} onOrdenar={cambiarOrden}>Creado</ThOrdenable>
-                  <th>Acciones</th>
+                  <th className="tabla-acciones">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -405,19 +432,30 @@ export default function ProveedoresPage() {
                       </span>
                     </td>
                     <td>{formatearFecha(p.creado_en)}</td>
-                    <td>
+                    <td className="tabla-acciones">
                       <div className="acciones-fila">
-                        <button type="button" className="btn btn-opcion" onClick={() => verFicha(p)}>
+                        <button
+                          type="button"
+                          className="btn btn-opcion"
+                          title="Ver ficha del proveedor"
+                          onClick={() => verFicha(p)}
+                        >
                           Ver ficha
                         </button>
                         {permisos.editarProveedor && (
                           <>
-                            <button type="button" className="btn btn-opcion" onClick={() => abrirEdicion(p)}>
+                            <button
+                              type="button"
+                              className="btn btn-opcion"
+                              title="Editar proveedor"
+                              onClick={() => abrirEdicion(p)}
+                            >
                               Editar
                             </button>
                             <button
                               type="button"
                               className="btn btn-opcion"
+                              title={p.activo ? 'Inactivar proveedor' : 'Activar proveedor'}
                               onClick={() => setConfirmando({ accion: 'estado', ...p })}
                             >
                               {p.activo ? 'Inactivar' : 'Activar'}
@@ -428,6 +466,7 @@ export default function ProveedoresPage() {
                           <button
                             type="button"
                             className="btn btn-opcion btn-danger"
+                            title="Eliminar proveedor"
                             onClick={() => setConfirmando({ accion: 'eliminar', ...p })}
                           >
                             Eliminar

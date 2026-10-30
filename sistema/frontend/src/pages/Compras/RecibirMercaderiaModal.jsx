@@ -167,7 +167,7 @@ export default function RecibirMercaderiaModal({ abierto, orden, proveedores, on
         </div>
 
         <div className="form-grid" style={{ marginTop: '16px', gap: '12px' }}>
-          <div className="campo"><span>Total a recibir</span> <strong style={{fontSize:'18px',color:'#ea580c'}}>{formatearMoneda(totalRecibir())}</strong></div>
+          <div className="campo"><span>Total a recibir</span> <strong style={{fontSize:'18px',color:'#16a34a'}}>{formatearMoneda(totalRecibir())}</strong></div>
           <label className="campo" style={{ gridColumn: '1 / -1' }}>
             <span>Notas</span>
             <textarea className="control" rows={2} value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Observaciones de la recepción..." />

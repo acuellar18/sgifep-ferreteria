@@ -224,8 +224,9 @@ async function main() {
     }
 
     const saldoEsperado = redondear2(Math.max(0, Number(compra.total) - sumaPagos));
+    const saldoEsperadoFinal = compra.estado === 'anulada' ? 0 : saldoEsperado;
     const estadoEsperado = estadoPagoEsperado(compra.total, sumaPagos);
-    const diferenciaSaldo = redondear2(Number(compra.saldo_pendiente) - saldoEsperado);
+    const diferenciaSaldo = redondear2(Number(compra.saldo_pendiente) - saldoEsperadoFinal);
 
     if (
       Math.abs(diferenciaSaldo) > 0.01 ||
@@ -240,7 +241,7 @@ async function main() {
         pagos_activos: sumaPagos,
         monto_guardado: Number(compra.monto_pagado),
         saldo_guardado: Number(compra.saldo_pendiente),
-        saldo_esperado: compra.estado === 'anulada' ? 0 : saldoEsperado,
+        saldo_esperado: saldoEsperadoFinal,
         estado_pago_guardado: compra.estado_pago,
         estado_pago_esperado: compra.estado === 'anulada' ? 'pagada' : estadoEsperado
       });

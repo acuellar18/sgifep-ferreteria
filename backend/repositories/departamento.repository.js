@@ -54,6 +54,13 @@ class DepartamentoRepository {
     return pool.query(`${sql} LIMIT 1`, params).then(([rows]) => rows[0] || null);
   }
 
+  // Devuelve todos los nombres con su id. Lo usa el servicio para comparar de
+  // forma normalizada (sin depender de la collation de la base de datos).
+  async listarNombres() {
+    const [rows] = await pool.query('SELECT id, nombre FROM departamentos');
+    return rows;
+  }
+
   async crear({ nombre, descripcion, activo }) {
     const [result] = await pool.query(
       'INSERT INTO departamentos (nombre, descripcion, activo) VALUES (?, ?, ?)',

@@ -11,6 +11,7 @@ class ProductoService {
       categoria: filtros.categoria,
       tipo: filtros.tipo,
       stockBajo: filtros.stockBajo,
+      estadoStock: filtros.estadoStock,
       page: filtros.page,
       pageSize: filtros.pageSize,
       sortBy: filtros.sortBy,
@@ -31,18 +32,36 @@ class ProductoService {
     return productoDto.serializar(fila, opciones);
   }
 
+  async resumen(opciones = {}) {
+    const { totales, stockBajo, agotados } = await productoRepository.resumen();
+    const productos = Number(totales.productos || 0);
+    const stockBajoTotal = Number(totales.stock_bajo || 0);
+    const agotadosTotal = Number(totales.agotados || 0);
+    return {
+      productos,
+      unidades: Number(totales.unidades || 0),
+      valor: opciones.incluirCostos ? Number(totales.valor || 0) : null,
+      valor_costo: 'promedio',
+      stock_bajo: stockBajoTotal,
+      agotados: agotadosTotal,
+      disponibles: Math.max(0, productos - stockBajoTotal - agotadosTotal),
+      productos_stock_bajo: stockBajo.map((fila) => ({
+        id: fila.id,
+        nombre: fila.nombre,
+        stock_actual: Number(fila.stock_actual || 0),
+        stock_minimo: Number(fila.stock_minimo || 0)
+      })),
+      productos_agotados: agotados.map((fila) => ({
+        id: fila.id,
+        nombre: fila.nombre,
+        stock_actual: Number(fila.stock_actual || 0),
+        stock_minimo: Number(fila.stock_minimo || 0)
+      }))
+    };
+  }
+
   async crear(datos, usuarioId = null) {
-    const dto = productoDto.validarCrear(datos);
-
-    if (await productoRepository.buscarPorCodigo(dto.codigo)) {
-      throw new HttpError(409, 'Ya existe un producto con ese código');
-    }
-    if (await productoRepository.buscarPorCodigoBarras(dto.codigo_barras)) {
-      throw new HttpError(409, 'Ya existe un producto con ese código de barras');
-    }
-
-    const id = await productoRepository.crear({ ...dto, usuario_id: usuarioId });
-    return id;
+    throw new HttpError(400, 'La creación manual de productos está deshabilitada. Los productos se crean desde el módulo de Compras al registrar una compra.');
   }
 
   async actualizar(id, datos) {
@@ -65,6 +84,13 @@ class ProductoService {
       );
     }
 
+    // No permitir modificar stock/costos desde inventario manualmente
+    delete dto.stock_actual;
+    delete dto.costo_ultimo;
+    delete dto.costo_promedio;
+    delete dto.stock_inicial;
+    delete dto.costo_inicial;
+
     await productoRepository.actualizar(id, dto);
   }
 
@@ -81,14 +107,25 @@ class ProductoService {
     if (!producto) throw new HttpError(404, 'Producto no encontrado');
 
     const dependencias = await productoRepository.contarDependencias(id);
-    if (dependencias.movimientos || dependencias.compras || dependencias.ordenes) {
+    const soloInventarioInicial =
+      dependencias.movimientos > 0 &&
+      dependencias.movimientos === dependencias.movimientos_iniciales;
+    const tieneDependenciasBloqueantes =
+      (dependencias.movimientos > 0 && !soloInventarioInicial) ||
+      dependencias.compras > 0 ||
+      dependencias.ordenes > 0 ||
+      dependencias.facturas > 0;
+
+    if (tieneDependenciasBloqueantes) {
       throw new HttpError(
         409,
-        'No se puede eliminar un producto con movimientos, compras u órdenes asociadas. Puede inactivarlo.'
+        'No se puede eliminar un producto con movimientos distintos al inventario inicial, compras, órdenes o facturas asociadas. Puede inactivarlo.'
       );
     }
 
-    const affected = await productoRepository.eliminar(id);
+    const affected = soloInventarioInicial
+      ? await productoRepository.eliminarConInventarioInicial(id)
+      : await productoRepository.eliminar(id);
     if (affected === 0) throw new HttpError(404, 'Producto no encontrado');
     await productoImagenService.eliminarArchivos(producto);
   }

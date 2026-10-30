@@ -188,13 +188,37 @@ class UsuarioRepository {
       };
     });
 
-    return { totales: { total, activos, inactivos }, porDepartamento, porRol };
+    // Listado detallado (para la vista de impresión y la exportación CSV):
+    // mismos usuarios que cumplen los filtros, sin paginar y con su
+    // departamento y sus roles.
+    let usuarios = [];
+    if (ids.length > 0) {
+      const [detalleRows] = await pool.query(
+        `SELECT u.id, u.codigo, u.nombre, u.apellido, u.username,
+                u.departamento_id, d.nombre AS departamento_nombre,
+                u.activo, u.creado_en
+         FROM usuarios u
+         LEFT JOIN departamentos d ON d.id = u.departamento_id
+         WHERE u.id IN (${ids.map(() => '?').join(',')})
+         ORDER BY u.nombre ASC, u.apellido ASC, u.id ASC`,
+        ids
+      );
+      usuarios = detalleRows.map((u) => ({
+        ...u,
+        roles: rolesPorUsuario
+          .filter((rp) => rp.usuario_id === u.id)
+          .map((rp) => rp.nombre)
+      }));
+    }
+
+    return { totales: { total, activos, inactivos }, porDepartamento, porRol, usuarios };
   }
 
   async buscarPorId(id) {
     const sql = `
-      SELECT u.id, u.codigo, u.nombre, u.apellido, u.username, u.rol,
-             u.departamento_id, u.activo, u.creado_en, u.actualizado_en,
+      SELECT u.id, u.codigo, u.nombre, u.apellido, u.username, u.correo,
+             u.rol, u.departamento_id, u.activo, u.creado_en, u.actualizado_en,
+             u.foto, u.foto_mime,
              d.nombre AS departamento_nombre,
              COALESCE(GROUP_CONCAT(DISTINCT CONCAT(r.id, '::', r.nombre) ORDER BY r.id SEPARATOR '|'), '') AS roles
       FROM usuarios u
@@ -263,6 +287,36 @@ class UsuarioRepository {
            actualizado_en = CURRENT_TIMESTAMP
        WHERE id = ?`,
       [nombre, apellido, codigo, username, password_hash, rol, departamento_id, activo, id]
+    );
+    return result.affectedRows;
+  }
+
+  async actualizarPerfil(id, datos) {
+    const { nombre, apellido, correo } = datos;
+    const [result] = await pool.query(
+      `UPDATE usuarios
+       SET nombre = ?, apellido = ?, correo = ?, actualizado_en = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [nombre, apellido || null, correo || null, id]
+    );
+    return result.affectedRows;
+  }
+
+  async obtenerFotoPerfil(id) {
+    const [rows] = await pool.query(
+      'SELECT foto, foto_mime FROM usuarios WHERE id = ?',
+      [id]
+    );
+    return rows[0] || null;
+  }
+
+  async actualizarFotoPerfil(id, datos) {
+    const { foto, foto_mime } = datos;
+    const [result] = await pool.query(
+      `UPDATE usuarios
+       SET foto = ?, foto_mime = ?, actualizado_en = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [foto || null, foto_mime || null, id]
     );
     return result.affectedRows;
   }

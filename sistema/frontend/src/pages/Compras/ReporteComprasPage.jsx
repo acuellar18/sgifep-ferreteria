@@ -190,7 +190,7 @@ export default function ReporteComprasPage() {
     datasets: [{
       label: 'Total comprado',
       data: comprasPorMes.map((mes) => Number(mes.total || 0)),
-      backgroundColor: '#ea580c',
+      backgroundColor: '#16a34a',
       borderRadius: 6,
       maxBarThickness: 54
     }]
@@ -230,14 +230,14 @@ export default function ReporteComprasPage() {
 
   function exportarCSVReporte() {
     const filas = [
-      { Seccion: 'Resumen', Referencia: 'Total comprado', Cantidad: '', Total: totalComprado, Saldo: '', Vencimiento: '', Estado: '' },
-      { Seccion: 'Resumen', Referencia: 'Facturas registradas', Cantidad: Number(resumen.num_compras), Total: '', Saldo: '', Vencimiento: '', Estado: '' },
-      { Seccion: 'Resumen', Referencia: 'Promedio por factura', Cantidad: '', Total: Number(resumen.promedio_compra), Saldo: '', Vencimiento: '', Estado: '' },
-      { Seccion: 'Resumen', Referencia: 'Saldo por pagar', Cantidad: '', Total: '', Saldo: Number(resumen.total_por_pagar), Vencimiento: '', Estado: '' }
+      { Sección: 'Resumen', Referencia: 'Total comprado', Cantidad: '', Total: totalComprado, Saldo: '', Vencimiento: '', Estado: '' },
+      { Sección: 'Resumen', Referencia: 'Facturas registradas', Cantidad: Number(resumen.num_compras), Total: '', Saldo: '', Vencimiento: '', Estado: '' },
+      { Sección: 'Resumen', Referencia: 'Promedio por factura', Cantidad: '', Total: Number(resumen.promedio_compra), Saldo: '', Vencimiento: '', Estado: '' },
+      { Sección: 'Resumen', Referencia: 'Saldo por pagar', Cantidad: '', Total: '', Saldo: Number(resumen.total_por_pagar), Vencimiento: '', Estado: '' }
     ];
 
     comprasPorMes.forEach((mes) => filas.push({
-      Seccion: 'Compras por mes',
+      Sección: 'Compras por mes',
       Referencia: mes.mes,
       Cantidad: Number(mes.cantidad),
       Total: Number(mes.total),
@@ -247,7 +247,7 @@ export default function ReporteComprasPage() {
     }));
 
     topProveedores.forEach((proveedor) => filas.push({
-      Seccion: 'Proveedores',
+      Sección: 'Proveedores',
       Referencia: proveedor.nombre,
       Cantidad: Number(proveedor.num_compras),
       Total: Number(proveedor.total_comprado),
@@ -257,7 +257,7 @@ export default function ReporteComprasPage() {
     }));
 
     productosMasComprados.forEach((producto) => filas.push({
-      Seccion: 'Productos',
+      Sección: 'Productos',
       Referencia: `${producto.codigo} - ${producto.nombre}`,
       Cantidad: Number(producto.cantidad_total),
       Total: Number(producto.total_comprado),
@@ -267,7 +267,7 @@ export default function ReporteComprasPage() {
     }));
 
     cuentasPorPagar.forEach((cuenta) => filas.push({
-      Seccion: 'Cuentas por pagar',
+      Sección: 'Cuentas por pagar',
       Referencia: `${cuenta.numero} - ${cuenta.proveedor_nombre}`,
       Cantidad: '',
       Total: Number(cuenta.total),
@@ -285,7 +285,7 @@ export default function ReporteComprasPage() {
     const wb = XLSX.utils.book_new();
     const wsFiltros = XLSX.utils.json_to_sheet([{
       Proveedor: nombreProveedor(filtrosAplicados.proveedor),
-      Categoria: nombreCategoria(filtrosAplicados.categoria),
+      Categoría: nombreCategoria(filtrosAplicados.categoria),
       Desde: filtrosAplicados.startDate || 'Inicio',
       Hasta: filtrosAplicados.endDate || 'Hoy'
     }]);
@@ -310,12 +310,12 @@ export default function ReporteComprasPage() {
     );
     XLSX.utils.book_append_sheet(
       wb,
-      XLSX.utils.json_to_sheet(productosMasComprados.map((producto) => ({ Codigo: producto.codigo, Producto: producto.nombre, Cantidad: producto.cantidad_total, Total: formatearMoneda(producto.total_comprado), CostoPromedio: formatearMoneda(producto.costo_promedio) }))),
+      XLSX.utils.json_to_sheet(productosMasComprados.map((producto) => ({ Código: producto.codigo, Producto: producto.nombre, Cantidad: producto.cantidad_total, Total: formatearMoneda(producto.total_comprado), 'Costo promedio': formatearMoneda(producto.costo_promedio) }))),
       'Productos'
     );
     XLSX.utils.book_append_sheet(
       wb,
-      XLSX.utils.json_to_sheet(cuentasPorPagar.map((cuenta) => ({ Factura: cuenta.numero, Proveedor: cuenta.proveedor_nombre, Fecha: cuenta.fecha, Vencimiento: cuenta.fecha_vencimiento, Total: formatearMoneda(cuenta.total), Saldo: formatearMoneda(cuenta.saldo_pendiente), Estado: cuenta.estado_vencimiento, Dias: cuenta.dias_restantes }))),
+      XLSX.utils.json_to_sheet(cuentasPorPagar.map((cuenta) => ({ Factura: cuenta.numero, Proveedor: cuenta.proveedor_nombre, Fecha: cuenta.fecha, Vencimiento: cuenta.fecha_vencimiento, Total: formatearMoneda(cuenta.total), Saldo: formatearMoneda(cuenta.saldo_pendiente), Estado: cuenta.estado_vencimiento, Días: cuenta.dias_restantes }))),
       'Cuentas por pagar'
     );
 

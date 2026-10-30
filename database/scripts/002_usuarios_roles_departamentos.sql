@@ -2,6 +2,9 @@
 -- Módulo de Usuarios, Roles y Departamentos (SGIFEP - Ferretería El Puente)
 -- Ejecutar una sola vez contra la base de datos del backend (backend/.env -> DB_NAME).
 -- No rompe la tabla `usuarios` existente: solo agrega columnas y tablas nuevas.
+-- Importar con: mysql --default-character-set=utf8mb4 -u root -p sgifep_db < 002_usuarios_roles_departamentos.sql
+
+SET NAMES utf8mb4;
 
 CREATE TABLE IF NOT EXISTS departamentos (
     id INT AUTO_INCREMENT PRIMARY KEY,

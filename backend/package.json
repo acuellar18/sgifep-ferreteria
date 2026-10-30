@@ -15,7 +15,13 @@
     "probar-reportes-inventario": "node scripts/probar-reportes-inventario.js",
     "probar-inventario": "node scripts/probar-inventario.js",
     "probar-categorias": "node scripts/probar-categorias.js",
-    "probar-productos": "node scripts/probar-productos.js"
+    "probar-productos": "node scripts/probar-productos.js",
+    "probar-movimientos": "node scripts/probar-movimientos.js",
+    "probar-clientes": "node scripts/probar-clientes.js",
+    "probar-facturas": "node scripts/probar-facturas.js",
+    "probar-caja": "node scripts/probar-caja.js",
+    "probar-pos": "node scripts/probar-pos.js",
+    "probar-perfil": "node scripts/probar-perfil.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -25,6 +31,7 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.4.0",
     "mysql2": "^3.11.0",
+    "nodemailer": "^10.2.1",
     "sharp": "^0.33.5"
   }
 }

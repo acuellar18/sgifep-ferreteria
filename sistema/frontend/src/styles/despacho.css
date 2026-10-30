@@ -1,0 +1,15 @@
+/* Estilos Despacho — modal, tablas, filtros, badges */
+.despacho-page .tarjeta { border-radius: 12px; }
+.modal-overlay { background: rgba(20,20,20,0.55); }
+.modal { border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+.modal-body { padding: 16px 20px; max-height: 70vh; overflow-y: auto; }
+.modal-header { border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; margin-bottom: 12px; }
+.modal-footer { border-top: 1px solid #e5e7eb; padding-top: 12px; margin-top: 12px; display: flex; justify-content: flex-end; gap: 10px; }
+.formulario-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 900px) { .formulario-grid-3 { grid-template-columns: 1fr; } }
+.badge { font-size: 12px; padding: 4px 8px; border-radius: 8px; font-weight: 600; text-transform: capitalize; }
+.badge.bg-success { background: #dcfce7; color: #16a34a; }
+.badge.bg-primary { background: #dbeafe; color: #2563eb; }
+.badge.bg-warning { background: #fef3c7; color: #92400e; }
+.badge.bg-secondary { background: #f3f4f6; color: #4b5563; }
+.badge.bg-danger { background: #fee2e2; color: #dc2626; }

@@ -227,7 +227,7 @@
     </div>
 </div>
 
-<!-- Modal Restablecer Contraseña -->
+<!-- Modal Solicitar Restablecer Contraseña -->
 <div class="modal fade" id="resetModal" tabindex="-1" aria-labelledby="resetModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content p-3">
@@ -235,25 +235,18 @@
         <h5 class="modal-title fw-bold" id="resetModalLabel">Restablecer Contraseña</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <form onsubmit="restablecerPassword(event)">
+      <form onsubmit="solicitarRestablecer(event)">
         <div class="modal-body">
-            <p class="text-muted small mb-3">Ingresa tu usuario y la nueva contraseña para actualizar el acceso.</p>
+            <p class="text-muted small mb-3">Ingresa tu usuario o correo electrónico. Te enviaremos instrucciones.</p>
             <div class="field-group">
-                <label for="resetUsuario">Usuario</label>
-                <input type="text" id="resetUsuario" class="input-pill" placeholder="Ej: admin" style="padding-right: 18px;" required>
-            </div>
-            <div class="field-group">
-                <label for="resetPassword">Nueva Contraseña</label>
-                <div class="password-wrapper">
-                    <input type="password" id="resetPassword" class="input-pill" placeholder="Mínimo 6 caracteres" required>
-                    <i class="bi bi-eye-slash toggle-password-icon" id="iconResetPass" onclick="togglePassword('resetPassword', 'iconResetPass')"></i>
-                </div>
+                <label for="resetIdentificador">Usuario o Correo</label>
+                <input type="text" id="resetIdentificador" class="input-pill" placeholder="Ej: admin o admin@ferreteria.com" required>
             </div>
             <div id="reset-msg" class="mt-2 small text-center"></div>
         </div>
         <div class="modal-footer border-0 pt-0">
             <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn-login-pill w-auto px-4 mt-0">Guardar Cambios</button>
+            <button type="submit" class="btn-login-pill w-auto px-4 mt-0">Enviar instrucciones</button>
         </div>
       </form>
     </div>
@@ -337,36 +330,28 @@
         }
     }
 
-    async function restablecerPassword(event) {
+    async function solicitarRestablecer(event) {
         event.preventDefault();
         const resetMsg = document.getElementById('reset-msg');
-        const username = document.getElementById('resetUsuario').value.trim();
-        const newPassword = document.getElementById('resetPassword').value.trim();
+        const identificador = document.getElementById('resetIdentificador').value.trim();
 
         resetMsg.style.color = '#d85d00';
-        resetMsg.innerText = '⏳ Actualizando contraseña...';
+        resetMsg.innerText = '⏳ Enviando instrucciones...';
 
         try {
-            const res = await fetch(`${API_BASE}/api/reset-password`, {
+            const res = await fetch(`${API_BASE}/api/reset-password/solicitar`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, newPassword })
+                body: JSON.stringify({ usuario: identificador, email: identificador })
             });
-
             const data = await res.json();
-
             if (res.ok && data.success) {
                 resetMsg.style.color = '#2e7d32';
-                resetMsg.innerText = '✅ Contraseña actualizada con éxito. Ya puedes iniciar sesión.';
-                setTimeout(() => {
-                    const modalEl = document.getElementById('resetModal');
-                    const modal = bootstrap.Modal.getInstance(modalEl);
-                    if (modal) modal.hide();
-                    resetMsg.innerText = '';
-                }, 2000);
+                resetMsg.innerText = '✅ Si el correo existe, recibirás instrucciones. Revisa tu correo (y spam) en minutos.';
+                document.getElementById('resetIdentificador').value = '';
             } else {
                 resetMsg.style.color = '#c0392b';
-                resetMsg.innerText = data.mensaje || 'No se pudo actualizar la contraseña';
+                resetMsg.innerText = data.mensaje || 'No se pudo enviar';
             }
         } catch (err) {
             resetMsg.style.color = '#c0392b';

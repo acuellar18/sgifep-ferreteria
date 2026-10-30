@@ -1,0 +1,138 @@
+.barcode-scanner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.barcode-pestanas {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  background: #f1f1f1;
+  border: 1px solid var(--color-borde, #e3e3e3);
+}
+
+.barcode-pestana {
+  border: 0;
+  border-radius: 7px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-texto-suave, #666666);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.barcode-pestana:hover:not(:disabled) {
+  color: var(--color-texto, #1c1c1c);
+  background: #ffffff;
+}
+
+.barcode-pestana.activa {
+  color: #ffffff;
+  background: var(--color-acento, #16a34a);
+}
+
+.barcode-pestana:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.barcode-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.barcode-controles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.barcode-selector-camara {
+  max-width: 260px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.barcode-video {
+  width: 100%;
+  min-height: 160px;
+  border-radius: 10px;
+  background: #000000;
+  overflow: hidden;
+}
+
+.barcode-video video {
+  width: 100% !important;
+  max-height: 260px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.barcode-video img {
+  max-width: 100%;
+}
+
+.barcode-ayuda {
+  margin: 0;
+  color: var(--color-texto-suave, #666666);
+  font-size: 12px;
+}
+
+.barcode-error {
+  margin: 0;
+  color: var(--color-peligro, #c62828);
+  font-size: 12px;
+}
+
+.barcode-exito {
+  margin: 0;
+  color: var(--color-exito, #2e7d32);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.barcode-archivo-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-texto, #1c1c1c);
+}
+
+.barcode-archivo-label input[type='file'] {
+  width: 100%;
+  padding: 8px;
+  border: 1px dashed var(--color-borde, #d8d8d8);
+  border-radius: 8px;
+  background: #fafafa;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.barcode-manual {
+  flex-direction: row;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.barcode-manual .campo {
+  flex: 1 1 200px;
+}
+
+.barcode-archivo-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}

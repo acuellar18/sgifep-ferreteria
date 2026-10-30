@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import FiltrosCompras from '../../components/FiltrosCompras';
+import MenuAcciones from '../../components/MenuAcciones';
 import Paginacion from '../../components/Paginacion';
 import ThOrdenable from '../../components/ThOrdenable';
 import { useNotificacion } from '../../components/Toast';
@@ -22,7 +24,7 @@ export default function CategoriasPage() {
   const [filtros, setFiltros] = useState(FILTROS_INICIALES);
   const [pagina, setPagina] = useState(1);
   const [total, setTotal] = useState(0);
-  const [orden, setOrden] = useState({ sortBy: 'nombre', sortDir: 'asc' });
+  const [orden, setOrden] = useState({ sortBy: 'codigo', sortDir: 'asc' });
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -127,6 +129,7 @@ export default function CategoriasPage() {
           <p className="reporte-detalle">Agrupa los productos del inventario y consulta cuántos tienen asociados.</p>
         </div>
         <div className="acciones-encabezado">
+          <span className="inventario-conteo">{total} {total === 1 ? 'categoría' : 'categorías'}</span>
           {permisos.gestionarCategorias && (
             <button type="button" className="btn btn-primario" onClick={abrirAlta}>
               + Agregar categoría
@@ -180,7 +183,19 @@ export default function CategoriasPage() {
                     <td><span className="inventario-categoria-codigo">{categoria.codigo}</span></td>
                     <td><strong>{categoria.nombre}</strong></td>
                     <td><span className="inventario-categoria-descripcion">{categoria.descripcion || '—'}</span></td>
-                    <td className="reporte-numero">{categoria.productos}</td>
+                    <td className="reporte-numero">
+                      {categoria.productos > 0 ? (
+                        <Link
+                          to={`/inventario/productos?categoria=${categoria.id}`}
+                          className="inventario-conteo-enlace"
+                          title={`Ver productos de ${categoria.nombre}`}
+                        >
+                          {categoria.productos}
+                        </Link>
+                      ) : (
+                        categoria.productos
+                      )}
+                    </td>
                     <td>
                       <span className={`chip ${categoria.activo ? 'chip-ok' : 'chip-peligro'}`}>
                         {categoria.activo ? 'Activa' : 'Inactiva'}
@@ -188,28 +203,26 @@ export default function CategoriasPage() {
                     </td>
                     <td>{formatearFecha(categoria.creado_en)}</td>
                     {permisos.gestionarCategorias && (
-                      <td>
-                        <div className="acciones-fila">
-                          <button type="button" className="btn btn-opcion" onClick={() => abrirEdicion(categoria)}>
-                            Editar
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-opcion"
-                            onClick={() => setConfirmando({ accion: 'estado', ...categoria })}
-                          >
-                            {categoria.activo ? 'Inactivar' : 'Activar'}
-                          </button>
-                          {categoria.productos === 0 && (
-                            <button
-                              type="button"
-                              className="btn btn-opcion btn-danger"
-                              onClick={() => setConfirmando({ accion: 'eliminar', ...categoria })}
-                            >
-                              Eliminar
-                            </button>
-                          )}
-                        </div>
+                      <td className="tabla-acciones">
+                        <MenuAcciones
+                          acciones={[
+                            { etiqueta: 'Editar', onClick: () => abrirEdicion(categoria) },
+                            {
+                              etiqueta: categoria.activo ? 'Inactivar' : 'Activar',
+                              onClick: () => setConfirmando({ accion: 'estado', ...categoria })
+                            },
+                            {
+                              etiqueta: 'Eliminar',
+                              peligro: true,
+                              deshabilitado: categoria.productos > 0,
+                              titulo: categoria.productos > 0
+                                ? 'Solo se puede eliminar una categoría sin productos asociados'
+                                : 'Eliminar categoría',
+                              onClick: () => setConfirmando({ accion: 'eliminar', ...categoria })
+                            }
+                          ]}
+                          etiqueta={`Acciones de ${categoria.nombre}`}
+                        />
                       </td>
                     )}
                   </tr>
@@ -234,8 +247,10 @@ export default function CategoriasPage() {
         titulo={confirmando?.accion === 'eliminar' ? 'Eliminar categoría' : 'Cambiar estado'}
         mensaje={
           confirmando?.accion === 'eliminar'
-            ? `¿Seguro que desea eliminar la categoría "${confirmando?.nombre}"? Esta acción no se puede deshacer.`
-            : `¿Desea ${confirmando?.activo ? 'inactivar' : 'activar'} la categoría "${confirmando?.nombre}"?`
+            ? `¿Seguro que desea eliminar la categoría "${confirmando?.nombre}"? Solo es posible si no tiene productos asociados. Esta acción no se puede deshacer.`
+            : confirmando?.activo && confirmando?.productos > 0
+              ? `¿Desea inactivar la categoría "${confirmando?.nombre}"? Tiene ${confirmando.productos} ${confirmando.productos === 1 ? 'producto asociado' : 'productos asociados'}; no se eliminarán, pero la categoría dejará de estar disponible para nuevas asignaciones.`
+              : `¿Desea ${confirmando?.activo ? 'inactivar' : 'activar'} la categoría "${confirmando?.nombre}"?`
         }
         confirmarTexto={confirmando?.accion === 'eliminar' ? 'Eliminar' : 'Confirmar'}
         onConfirmar={confirmarAccion}

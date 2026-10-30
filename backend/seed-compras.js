@@ -101,6 +101,15 @@ const PRODUCTOS = [
   { codigo: 'ELE-006', nombre: 'Tablero Carga 12 Circuitos', descripcion: 'Tablero principal residencial', categoria: 'Material Eléctrico', unidad: 'UNI', stock_min: 10, costo: 320.00, precio: 480.00 }
 ];
 
+// Existencias iniciales del demo. La mayoría queda por encima del mínimo;
+// unas pocas se dejan bajas o agotadas para poder probar las alertas.
+const STOCK_INICIAL = {
+  'PIN-004': 40,
+  'HER-005': 30,
+  'HEL-003': 4,
+  'ELE-003': 0
+};
+
 const ASOCIACIONES = [
   { proveedor: 'Cementos Progreso S.A.', productos: ['CEM-001', 'CEM-002', 'CON-001'] },
   { proveedor: 'Tuberías y Conexiones del Sur', productos: ['TUB-001', 'TUB-002', 'TUB-003', 'CON-002', 'CON-003', 'CON-004'] },
@@ -150,7 +159,7 @@ async function insertarProveedores(conn) {
   }
 }
 
-async function insertarProductos(conn) {
+async function insertarProductos(conn, usuarioId) {
   const [categorias] = await conn.query('SELECT id, nombre FROM categorias');
   const catMap = new Map(categorias.map((c) => [c.nombre, c.id]));
 
@@ -167,14 +176,32 @@ async function insertarProductos(conn) {
     );
     if (existentes.length) continue;
 
-    await conn.query(
+    const [result] = await conn.query(
       `INSERT INTO productos
         (codigo, nombre, descripcion, categoria_id, unidad_medida, stock_minimo,
          costo_ultimo, costo_promedio, precio_venta, activo, stock_actual)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0)`,
       [p.codigo, p.nombre, p.descripcion, categoriaId, p.unidad, p.stock_min, p.costo, p.costo, p.precio]
     );
-    console.log(`  + ${p.nombre} (${p.codigo})`);
+
+    const stockInicial = STOCK_INICIAL[p.codigo] ?? Math.max(p.stock_min * 3, 10);
+    if (stockInicial > 0) {
+      await conn.query(
+        `INSERT INTO movimientos_inventario
+          (producto_id, tipo, origen, cantidad, costo_unitario, notas, motivo, usuario_id)
+         VALUES (?, 'entrada', 'inventario_inicial', ?, ?, ?, ?, ?)`,
+        [
+          result.insertId,
+          stockInicial,
+          p.costo,
+          'Existencia inicial del demo',
+          'Inventario inicial demo',
+          usuarioId
+        ]
+      );
+    }
+
+    console.log(`  + ${p.nombre} (${p.codigo}) · stock ${stockInicial}`);
   }
 }
 
@@ -399,7 +426,7 @@ async function runSeedCompras() {
     await connection.beginTransaction();
 
     await insertarProveedores(connection);
-    await insertarProductos(connection);
+    await insertarProductos(connection, usuarioId);
     await asociarProductosProveedor(connection);
 
     console.log('\n4. Creando compras de prueba...');

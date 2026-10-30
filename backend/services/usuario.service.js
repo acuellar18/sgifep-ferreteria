@@ -155,7 +155,8 @@ class UsuarioService {
     return {
       totales: reporte.totales,
       porDepartamento: reporte.porDepartamento,
-      porRol: reporte.porRol.map((r) => ({ ...r, superadmin: r.acceso_total }))
+      porRol: reporte.porRol.map((r) => ({ ...r, superadmin: r.acceso_total })),
+      usuarios: reporte.usuarios || []
     };
   }
 

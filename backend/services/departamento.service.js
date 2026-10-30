@@ -2,6 +2,17 @@ const { HttpError } = require('../utils/http-error');
 const departamentoRepository = require('../repositories/departamento.repository');
 const departamentoDto = require('../dtos/departamento.dto');
 
+// Normaliza un nombre para comparar duplicados sin distinguir mayúsculas,
+// tildes ni espacios repetidos. No depende de la collation de la base de datos.
+function normalizarNombre(valor) {
+  return String(valor || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // Capa de negocio de DEPARTAMENTOS: valida con DTO y delega el SQL.
 class DepartamentoService {
   async listar(filtros = {}) {
@@ -21,9 +32,7 @@ class DepartamentoService {
 
   async crear(datos) {
     const dto = departamentoDto.validar(datos);
-    if (await departamentoRepository.buscarPorNombre(dto.nombre)) {
-      throw new HttpError(409, 'Ya existe un departamento con ese nombre');
-    }
+    await this.validarNombreUnico(dto.nombre);
     const nuevoId = await departamentoRepository.crear(dto);
     return departamentoDto.serializar(await departamentoRepository.buscarPorId(nuevoId));
   }
@@ -32,11 +41,22 @@ class DepartamentoService {
     const dto = departamentoDto.validar(datos);
     const existe = await departamentoRepository.buscarPorId(id);
     if (!existe) throw new HttpError(404, 'Departamento no encontrado');
-    if (await departamentoRepository.buscarPorNombre(dto.nombre, id)) {
-      throw new HttpError(409, 'Ya existe un departamento con ese nombre');
-    }
+    await this.validarNombreUnico(dto.nombre, id);
     await departamentoRepository.actualizar(id, dto);
     return departamentoDto.serializar(await departamentoRepository.buscarPorId(id));
+  }
+
+  // Compara el nombre normalizado contra todos los existentes (excepto el que
+  // se está editando). Así se evita "Administración"/"Administracion"/etc.
+  async validarNombreUnico(nombre, excluirId = null) {
+    const objetivo = normalizarNombre(nombre);
+    const existentes = await departamentoRepository.listarNombres();
+    const duplicado = existentes.find(
+      (d) => Number(d.id) !== Number(excluirId) && normalizarNombre(d.nombre) === objetivo
+    );
+    if (duplicado) {
+      throw new HttpError(409, 'Ya existe un departamento con ese nombre');
+    }
   }
 
   async cambiarEstado(id, activo) {

@@ -1,4 +1,5 @@
 const { HttpError } = require('../utils/http-error');
+const { validarPassword } = require('../utils/password');
 
 // DTOs de USUARIO: validación de entrada y serialización de salida.
 // Nunca se expone password_hash; los roles se devuelven como arreglo de
@@ -58,12 +59,16 @@ function validarCrear(datos = {}) {
   if (!password) {
     throw new HttpError(400, 'La contraseña es requerida');
   }
+  validarPassword(password, { username: dto.username, nombre: dto.nombre });
   return { ...dto, password };
 }
 
 function validarActualizar(datos = {}) {
   const dto = baseValidacion(datos);
   const password = typeof datos.password === 'string' ? datos.password : '';
+  if (password) {
+    validarPassword(password, { username: dto.username, nombre: dto.nombre });
+  }
   return { ...dto, password: password || null };
 }
 
@@ -75,6 +80,8 @@ function serializar(fila) {
     nombre: fila.nombre,
     apellido: fila.apellido,
     username: fila.username,
+    correo: fila.correo || null,
+    tiene_foto: Boolean(fila.foto),
     departamento_id: fila.departamento_id,
     departamento_nombre: fila.departamento_nombre,
     activo: Boolean(fila.activo),
@@ -88,11 +95,22 @@ function serializarLista(filas) {
   return filas.map(serializar);
 }
 
+function serializarPerfil(fila) {
+  const base = serializar(fila);
+  if (!base) return null;
+  return {
+    ...base,
+    correo: fila.correo || null,
+    tiene_foto: Boolean(fila.foto)
+  };
+}
+
 module.exports = {
   parseRoles,
   validarCrear,
   validarActualizar,
   validarRolesEntrada,
   serializar,
-  serializarLista
+  serializarLista,
+  serializarPerfil
 };

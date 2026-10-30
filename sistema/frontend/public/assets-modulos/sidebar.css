@@ -2,15 +2,15 @@
   --altura-header: 84px;
   --ancho-sidebar: 270px;
   --ancho-sidebar-movil: 240px;
-  --color-primario: #ea580c;
-  --color-primario-oscuro: #c2410c;
-  --color-primario-claro: #d97706;
-  --color-primario-suave: #fff7ed;
+  --color-primario: #16a34a;
+  --color-primario-oscuro: #15803d;
+  --color-primario-claro: #bbf7d0;
+  --color-primario-suave: #dcfce7;
   --color-superficie: #ffffff;
   --color-texto: #1f2937;
   --color-texto-suave: #6b7280;
   --color-borde: #e5e7eb;
-  --color-acento-linea: #f2701d;
+  --color-acento-linea: #16a34a;
   --radio: 10px;
 }
 
@@ -115,6 +115,19 @@
   justify-content: center;
   font-size: 1.2rem;
   flex-shrink: 0;
+}
+
+.avatar svg {
+  width: 20px;
+  height: 20px;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
 }
 
 .header-usuario-info {
@@ -250,6 +263,17 @@
 .drawer-item.modulo-activo {
   background: var(--color-primario-suave);
   color: var(--color-primario);
+}
+
+.drawer-item-texto {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.drawer-item-icono {
+  flex-shrink: 0;
 }
 
 .drawer-flecha {

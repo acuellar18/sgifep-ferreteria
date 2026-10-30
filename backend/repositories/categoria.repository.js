@@ -27,7 +27,7 @@ class CategoriaRepository {
     );
     const total = Number(conteoRows[0]?.total) || 0;
 
-    const columnaOrden = COLUMNAS_ORDENABLES[sortBy] || 'c.nombre';
+    const columnaOrden = COLUMNAS_ORDENABLES[sortBy] || 'c.id';
     const direccionOrden = String(sortDir).toLowerCase() === 'desc' ? 'DESC' : 'ASC';
     const limite = Math.max(1, Math.min(Number(pageSize) || 10, 100));
     const paginaActual = Math.max(1, Number(page) || 1);

@@ -25,6 +25,11 @@ module.exports = {
     res.json({ success: true, data });
   }),
 
+  resumen: manejarAsync(async (req, res) => {
+    const data = await productoService.resumen(opcionesCostos(req));
+    res.json({ success: true, data });
+  }),
+
   crear: manejarAsync(async (req, res) => {
     const id = await productoService.crear(req.body, req.usuario.id);
     res.status(201).json({ success: true, mensaje: 'Producto creado correctamente', data: { id } });

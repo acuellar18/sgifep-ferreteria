@@ -183,7 +183,7 @@ export default function UsuariosPage() {
   // Exporta el listado actual (la página visible, ya filtrada) a CSV.
   function exportarCsv() {
     const filas = usuarios.map((usuario) => ({
-      Codigo: usuario.codigo || '',
+      Código: usuario.codigo || '',
       Nombre: `${usuario.nombre} ${usuario.apellido || ''}`.trim(),
       Usuario: usuario.username || '',
       Departamento: usuario.departamento_nombre || '',

@@ -19,10 +19,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --color-primario: #ea580c;          /* naranja institucional */
-  --color-primario-oscuro: #c2410c;
-  --color-primario-claro: #d97706;
-  --color-primario-suave: #fff7ed;
+  --color-primario: #16a34a;          /* naranja institucional */
+  --color-primario-oscuro: #15803d;
+  --color-primario-claro: #bbf7d0;
+  --color-primario-suave: #dcfce7;
   --color-fondo: #f8f9fa;             /* gris claro neutro */
   --color-superficie: #ffffff;
   --color-texto: #1f2937;
@@ -32,7 +32,7 @@
   --color-ok-fondo: #dcfce7;
   --color-peligro: #dc2626;
   --color-peligro-fondo: #fee2e2;
-  --color-acento-linea: #f2701d;      /* borde inferior del header */
+  --color-acento-linea: #16a34a;      /* borde inferior del header */
   --radio: 10px;
   --sombra: 0 1px 3px rgba(0, 0, 0, 0.08);
   --sombra-media: 0 10px 25px rgba(0, 0, 0, 0.09);
@@ -299,11 +299,16 @@ h1, h2, h3, h4 {
   width: 62px;
   height: 62px;
   border-radius: 50%;
-  background: #f7a567;
+  background: #dcfce7;
+  color: var(--color-primario);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.7rem;
+}
+
+.en-construccion-icono svg {
+  width: 32px;
+  height: 32px;
 }
 
 .en-construccion h3 {

@@ -39,6 +39,7 @@ function serializar(datos = {}) {
       unidades: numero(datos.totales?.unidades, 3),
       valor: numero(datos.totales?.valor),
       stock_bajo: Number(datos.totales?.stock_bajo || 0),
+      agotados: Number(datos.totales?.agotados || 0),
       sin_movimiento: Number(datos.totales?.sin_movimiento || 0)
     },
     categorias: (datos.categorias || []).map(serializarCategoria),

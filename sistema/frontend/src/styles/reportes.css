@@ -214,7 +214,7 @@
 }
 
 .reporte-kpi-pendiente {
-  border-color: #fed7aa;
+  border-color: #bbf7d0;
   background: #fffaf5;
 }
 
@@ -392,8 +392,8 @@
 }
 
 .reporte-badge-hoy {
-  background: #ffedd5;
-  color: #c2410c;
+  background: #f0fdf4;
+  color: #15803d;
 }
 
 .reporte-badge-proxima {
@@ -535,5 +535,150 @@
     border: 1px solid #999;
     color: #111 !important;
     background: transparent !important;
+  }
+}
+
+.reporte-ventas .reporte-filtros,
+.auditoria .reporte-filtros {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr)) auto;
+  align-items: end;
+  gap: 14px;
+}
+
+.reporte-ventas .reporte-filtros-acciones,
+.auditoria .reporte-filtros-acciones {
+  display: flex;
+  gap: 8px;
+}
+
+.reporte-ventas-encabezado {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.reporte-ventas-encabezado h2 {
+  margin: 0 0 6px;
+  font-size: 26px;
+}
+
+.reporte-ventas-encabezado p {
+  margin: 0;
+  color: var(--color-texto-suave);
+}
+
+.reporte-resumen {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.reporte-resumen article {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 14px;
+  box-shadow: var(--sombra);
+}
+
+.reporte-resumen span {
+  color: var(--color-texto-suave);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.reporte-resumen strong {
+  font-size: 22px;
+  color: var(--color-texto);
+}
+
+.reporte-resumen small {
+  color: var(--color-texto-suave);
+  font-size: 12px;
+}
+
+.reporte-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.reporte-grid .reporte-panel {
+  margin: 0;
+}
+
+.reporte-barras {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.reporte-barra-texto {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.reporte-barra-fondo {
+  height: 10px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  overflow: hidden;
+}
+
+.reporte-barra-fondo > div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #16a34a, #f59e0b);
+}
+
+.reporte-barra small {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-texto-suave);
+  font-size: 11px;
+}
+
+.auditoria code {
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 12px;
+}
+
+@media (max-width: 1000px) {
+  .reporte-ventas .reporte-filtros,
+  .auditoria .reporte-filtros {
+    grid-template-columns: repeat(2, minmax(150px, 1fr));
+  }
+
+  .reporte-resumen {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reporte-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .reporte-ventas .reporte-filtros,
+  .auditoria .reporte-filtros,
+  .reporte-resumen {
+    grid-template-columns: 1fr;
   }
 }

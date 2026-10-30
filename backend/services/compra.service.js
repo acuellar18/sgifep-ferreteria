@@ -11,6 +11,10 @@ const configuracionRepository = require('../repositories/configuracion-empresa.r
 const configuracionDto = require('../dtos/configuracion-empresa.dto');
 const compraDto = require('../dtos/compra.dto');
 
+function generarCodigoProducto() {
+  return `P-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+}
+
 class CompraService {
   async listar(filtros = {}) {
     const { rows, total, page, pageSize } = await compraRepository.listar({
@@ -198,18 +202,8 @@ class CompraService {
       dto.fecha_vencimiento = fecha.toISOString().split('T')[0];
     }
 
-    // Calcular totales
+    // Calcular totales - precios de compra sin IVA
     const { subtotal, iva, total } = compraDto.calcularTotales(dto.detalles);
-
-    // Validar productos existen y están activos
-    const productosIds = [...new Set(dto.detalles.map(d => d.producto_id))];
-    const productosPorId = new Map();
-    for (const pid of productosIds) {
-      const prod = await productoRepository.buscarPorId(pid);
-      if (!prod) throw new HttpError(404, `Producto ID ${pid} no encontrado`);
-      if (!prod.activo) throw new HttpError(400, `El producto "${prod.nombre}" está inactivo`);
-      productosPorId.set(Number(pid), prod);
-    }
 
     // Verificar orden de compra si se proporciona
     if (dto.orden_compra_id) {
@@ -246,29 +240,110 @@ class CompraService {
         usuario_id: usuarioId
       });
 
-      // 2. Crear detalles
-      await compraRepository.crearDetalles(connection, compraId, dto.detalles);
+      // 2. Procesar detalles: crear/actualizar productos desde compra
+      const detallesProcesados = [];
+      for (let i = 0; i < dto.detalles.length; i++) {
+        const d = dto.detalles[i];
+        let productoId = d.producto_id;
+        let precioVenta = d.precio_venta;
 
-      // 3. Registrar la entrada de inventario. Los servicios no mueven stock.
-      for (const d of dto.detalles) {
-        const producto = productosPorId.get(Number(d.producto_id));
-        if (producto?.tipo !== 'servicio') {
-          await productoRepository.registrarMovimiento(connection, {
-            producto_id: d.producto_id,
-            tipo: 'entrada',
-            origen: 'compra',
-            referencia_tipo: 'compras',
-            referencia_id: compraId,
-            cantidad: d.cantidad,
-            costo_unitario: d.costo_unitario,
-            notas: `Entrada por compra ${numero}`,
-            usuario_id: usuarioId
-          });
+        // Si no hay producto_id, crear producto automáticamente
+        if (!productoId) {
+          const nombreProducto = d.producto_nombre;
+          if (!nombreProducto) {
+            throw new HttpError(400, `Línea ${i + 1}: Falta nombre del producto`);
+          }
+          if (precioVenta === null || precioVenta === undefined || !Number.isFinite(precioVenta) || precioVenta < d.precio_compra) {
+            throw new HttpError(400, `Línea ${i + 1}: Debe indicar precio de venta >= precio de compra`);
+          }
+
+          // Buscar producto por nombre exacto
+          const [existentes] = await connection.query(
+            'SELECT id FROM productos WHERE LOWER(TRIM(nombre)) = LOWER(TRIM(?)) LIMIT 1',
+            [nombreProducto]
+          );
+          if (existentes.length > 0) {
+            productoId = existentes[0].id;
+          } else {
+            const codigo = generarCodigoProducto();
+            const [resProd] = await connection.query(
+              `INSERT INTO productos (codigo, nombre, tipo, unidad_medida, stock_actual, stock_minimo, costo_ultimo, costo_promedio, precio_venta, activo, proveedor_id)
+               VALUES (?, ?, 'producto', 'UNI', 0, 0, 0, 0, ?, 1, ?)`,
+              [codigo, nombreProducto, precioVenta, dto.proveedor_id]
+            );
+            productoId = resProd.insertId;
+          }
+        } else {
+          const [prodRows] = await connection.query(
+            'SELECT id, tipo, precio_venta FROM productos WHERE id = ?',
+            [productoId]
+          );
+          if (prodRows.length === 0) throw new HttpError(404, `Producto ID ${productoId} no encontrado`);
+          if (prodRows[0].tipo === 'servicio') {
+            throw new HttpError(400, 'Los servicios no se manejan por inventario desde compras');
+          }
         }
+
+        if (precioVenta === null || precioVenta === undefined || !Number.isFinite(precioVenta)) {
+          if (d.margen !== null && d.margen !== undefined && Number.isFinite(Number(d.margen))) {
+            precioVenta = Number(d.precio_compra) * (1 + Number(d.margen) / 100);
+            precioVenta = Math.round(precioVenta * 100) / 100;
+          } else {
+            const [prodRows2] = await connection.query('SELECT precio_venta FROM productos WHERE id = ?', [productoId]);
+            precioVenta = prodRows2.length > 0 ? Number(prodRows2[0].precio_venta || 0) : Number(d.precio_compra);
+          }
+        }
+        if (!Number.isFinite(precioVenta) || precioVenta < Number(d.precio_compra)) {
+          throw new HttpError(400, `Línea ${i + 1}: El precio de venta no puede ser menor al precio de compra`);
+        }
+
+        detallesProcesados.push({
+          producto_id: productoId,
+          cantidad: Number(d.cantidad),
+          precio_compra: Number(d.precio_compra),
+          precio_venta: Number(precioVenta)
+        });
+      }
+
+      // Crear detalles
+      await compraRepository.crearDetalles(connection, compraId, detallesProcesados);
+
+      // 3. Actualizar inventario: crear/mover stock y actualizar precios (el trigger actualiza stock/costos)
+      for (const dp of detallesProcesados) {
+        const [prodRows] = await connection.query(
+          'SELECT id, tipo FROM productos WHERE id = ? FOR UPDATE',
+          [dp.producto_id]
+        );
+        if (prodRows.length === 0) continue;
+        if (prodRows[0].tipo === 'servicio') continue;
+
+        // Registrar movimiento de entrada (único mecanismo - el trigger actualiza stock/costos)
+        await productoRepository.registrarMovimiento(connection, {
+          producto_id: dp.producto_id,
+          tipo: 'entrada',
+          origen: 'compra',
+          referencia_tipo: 'compras',
+          referencia_id: compraId,
+          cantidad: dp.cantidad,
+          costo_unitario: dp.precio_compra,
+          notas: `Entrada por compra ${numero}`,
+          usuario_id: usuarioId
+        });
+
+        // Actualizar proveedor_id y precio_venta con valores de ÚLTIMA compra
+        await connection.query(
+          `UPDATE productos
+           SET proveedor_id = ?,
+               precio_venta = ?,
+               actualizado_en = CURRENT_TIMESTAMP
+           WHERE id = ?`,
+          [dto.proveedor_id, dp.precio_venta, dp.producto_id]
+        );
+
         await proveedorRepository.actualizarCostoProductoProveedor(
-          d.producto_id,
+          dp.producto_id,
           dto.proveedor_id,
-          d.costo_unitario,
+          dp.precio_compra,
           connection
         );
       }
@@ -288,7 +363,7 @@ class CompraService {
 
       // 5. Si hay orden de compra, actualizar cantidades recibidas y estado
       if (dto.orden_compra_id) {
-        await this.actualizarOrdenDesdeCompra(connection, dto.orden_compra_id, dto.detalles);
+        await this.actualizarOrdenDesdeCompra(connection, dto.orden_compra_id, detallesProcesados);
       }
 
       await connection.commit();
@@ -400,31 +475,24 @@ class CompraService {
     }
 
     const metodo = ['efectivo', 'transferencia', 'cheque', 'otro'].includes(datos.metodo) ? datos.metodo : 'efectivo';
-    const referencia = typeof datos.referencia === 'string' ? datos.referencia.trim() : '';
-    const notas = typeof datos.notas === 'string' ? datos.notas.trim() : '';
+    const referencia = typeof datos.referencia === 'string' ? datos.referencia.trim() : null;
+    const notas = typeof datos.notas === 'string' ? datos.notas.trim() : null;
 
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
-      await connection.query('SET @usuario_id = ?', [usuarioId]);
-
-      // El trigger de pagos recalcula monto pagado, saldo y estado de la compra.
       await compraRepository.registrarPago(connection, {
         compra_id: compraId,
         fecha,
         monto,
         metodo,
-        referencia: referencia || null,
-        notas: notas || null,
+        referencia,
+        notas,
         usuario_id: usuarioId
       });
-
       await connection.commit();
     } catch (err) {
       await connection.rollback();
-      if (err.sqlState === '45000') {
-        throw new HttpError(400, err.sqlMessage || err.message);
-      }
       throw err;
     } finally {
       connection.release();
@@ -432,35 +500,23 @@ class CompraService {
   }
 
   async eliminarPago(pagoId, usuarioId, motivo) {
-    const [pagos] = await pool.query(
-      `SELECT pp.id, pp.estado, c.estado AS estado_compra
-       FROM pagos_compra pp
-       JOIN compras c ON c.id = pp.compra_id
-       WHERE pp.id = ?`, [pagoId]);
-    if (!pagos.length) throw new HttpError(404, 'Pago no encontrado');
-    if (pagos[0].estado === 'anulado') throw new HttpError(400, 'El pago ya está anulado');
-    if (pagos[0].estado_compra === 'anulada') {
-      throw new HttpError(400, 'No se pueden modificar pagos de una compra anulada');
+    if (!motivo || !motivo.trim()) {
+      throw new HttpError(400, 'El motivo de anulación del pago es requerido');
+    }
+    const pago = await compraRepository.obtenerPagoActivo(pagoId);
+    if (!pago) throw new HttpError(404, 'Pago no encontrado o ya fue anulado');
+    if (pago.compra_estado === 'anulada') {
+      throw new HttpError(400, 'No se pueden anular pagos de una compra anulada');
     }
 
-    const motivoAnulacion = String(motivo || '').trim() || 'Anulación de pago';
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
-      await connection.query('SET @usuario_id = ?', [usuarioId]);
-      await connection.query(
-        `UPDATE pagos_compra
-         SET estado = 'anulado', anulado_en = CURRENT_TIMESTAMP, anulado_por = ?,
-             anulacion_motivo = ?
-         WHERE id = ? AND estado = 'activo'`,
-        [usuarioId, motivoAnulacion, pagoId]
-      );
+      await compraRepository.anularPago(connection, pagoId, usuarioId, motivo.trim());
+      await compraRepository.actualizarSaldos(connection, pago.compra_id);
       await connection.commit();
     } catch (err) {
       await connection.rollback();
-      if (err.sqlState === '45000') {
-        throw new HttpError(400, err.sqlMessage || err.message);
-      }
       throw err;
     } finally {
       connection.release();

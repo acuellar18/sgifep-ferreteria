@@ -139,19 +139,19 @@ export default function ReportePage() {
     const { totales, porDepartamento, porRol } = reporte;
     const filas = [
       {
-        Seccion: 'TOTALES',
+        Sección: 'TOTALES',
         Nombre: 'General',
         Detalle: `${totales.total} usuarios (${totales.activos} activos, ${totales.inactivos} inactivos)`,
         Activos: Number(totales.activos)
       },
       ...porDepartamento.map((d) => ({
-        Seccion: 'POR DEPARTAMENTO',
+        Sección: 'POR DEPARTAMENTO',
         Nombre: d.nombre,
         Detalle: '',
         Activos: Number(d.total_activos)
       })),
       ...porRol.map((r) => ({
-        Seccion: 'POR ROL',
+        Sección: 'POR ROL',
         Nombre: r.nombre,
         Detalle: r.acceso_total ? 'Acceso total' : '',
         Activos: Number(r.total_activos)

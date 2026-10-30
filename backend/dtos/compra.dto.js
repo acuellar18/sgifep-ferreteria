@@ -42,17 +42,26 @@ function baseValidacion(datos = {}) {
 
   for (let i = 0; i < detalles.length; i++) {
     const d = detalles[i];
-    const producto_id = Number(d.producto_id);
-    if (!producto_id || !Number.isInteger(producto_id)) {
-      throw new HttpError(400, `Línea ${i + 1}: Falta seleccionar un producto`);
-    }
+    const producto_id = d.producto_id !== undefined && d.producto_id !== null && d.producto_id !== ''
+      ? Number(d.producto_id)
+      : (d.id !== undefined && d.id !== null && d.id !== '' ? Number(d.id) : null);
+
+    // Permitir producto nuevo inline (sin producto_id) - se validará en servicio
     const cantidad = Number(d.cantidad);
     if (!Number.isFinite(cantidad) || cantidad <= 0) {
       throw new HttpError(400, `Línea ${i + 1}: La cantidad debe ser mayor a 0`);
     }
-    const costo_unitario = Number(d.costo_unitario);
-    if (!Number.isFinite(costo_unitario) || costo_unitario < 0) {
-      throw new HttpError(400, `Línea ${i + 1}: El costo unitario no puede ser negativo`);
+    const precio_compra = Number(d.precio_compra !== undefined ? d.precio_compra : d.costo_unitario);
+    if (!Number.isFinite(precio_compra) || precio_compra < 0) {
+      throw new HttpError(400, `Línea ${i + 1}: El precio de compra no puede ser negativo`);
+    }
+    const precio_venta = d.precio_venta !== undefined ? Number(d.precio_venta) : null;
+    if (precio_venta !== null && (!Number.isFinite(precio_venta) || precio_venta < 0)) {
+      throw new HttpError(400, `Línea ${i + 1}: El precio de venta no puede ser negativo`);
+    }
+    // Validación: precio de venta no sea menor al de compra (advertencia/requisito)
+    if (precio_venta !== null && Number.isFinite(precio_venta) && precio_venta < precio_compra) {
+      throw new HttpError(400, `Línea ${i + 1}: El precio de venta no puede ser menor al precio de compra`);
     }
   }
 
@@ -67,9 +76,15 @@ function baseValidacion(datos = {}) {
     notas: notas || null,
     adjunto_factura: adjunto_factura || null,
     detalles: detalles.map(d => ({
-      producto_id: Number(d.producto_id),
+      producto_id: d.producto_id !== undefined && d.producto_id !== null && d.producto_id !== ''
+        ? Number(d.producto_id)
+        : null,
+      producto_nombre: typeof d.producto_nombre === 'string' ? d.producto_nombre.trim() : (typeof d.nombre === 'string' ? d.nombre.trim() : null),
+      codigo: typeof d.codigo === 'string' ? d.codigo.trim() : null,
       cantidad: Number(d.cantidad),
-      costo_unitario: Number(d.costo_unitario)
+      precio_compra: Number(d.precio_compra !== undefined ? d.precio_compra : d.costo_unitario),
+      precio_venta: d.precio_venta !== undefined ? Number(d.precio_venta) : null,
+      margen: d.margen !== undefined ? Number(d.margen) : null
     }))
   };
 }
@@ -169,6 +184,8 @@ function serializarDetalle(fila, detalles = [], pagos = []) {
       unidad_medida: d.unidad_medida,
       cantidad: Number(d.cantidad || 0),
       costo_unitario: Number(d.costo_unitario || 0),
+      precio_compra: Number(d.costo_unitario || 0),
+      precio_venta: Number(d.precio_venta || 0),
       subtotal: Number(d.subtotal || 0)
     })),
     pagos: pagos.map(p => ({
@@ -191,7 +208,9 @@ function serializarDetalle(fila, detalles = [], pagos = []) {
 function calcularTotales(detalles) {
   let subtotal = 0;
   for (const d of detalles) {
-    const st = d.cantidad * d.costo_unitario;
+    const cantidad = Number(d.cantidad || 0);
+    const costo = Number(d.precio_compra !== undefined ? d.precio_compra : d.costo_unitario || 0);
+    const st = cantidad * costo;
     subtotal += st;
   }
   subtotal = redondear2(subtotal);

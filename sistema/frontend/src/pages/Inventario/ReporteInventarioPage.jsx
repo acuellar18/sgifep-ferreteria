@@ -87,25 +87,25 @@ export default function ReporteInventarioPage() {
 
   function exportarCSVReporte() {
     const filas = [
-      { Seccion: 'Resumen', Concepto: 'Valor del inventario', Cantidad: '', Detalle: formatearMoneda(totales.valor) },
-      { Seccion: 'Resumen', Concepto: 'Productos activos', Cantidad: totales.productos, Detalle: '' },
-      { Seccion: 'Resumen', Concepto: 'Unidades en existencia', Cantidad: formatearNumero(totales.unidades, 2), Detalle: '' },
-      { Seccion: 'Resumen', Concepto: 'Productos con stock bajo', Cantidad: totales.stock_bajo, Detalle: '' },
-      { Seccion: 'Resumen', Concepto: 'Productos sin movimiento', Cantidad: totales.sin_movimiento, Detalle: `${datos.dias_sin_movimiento} días` },
+      { Sección: 'Resumen', Concepto: 'Valor del inventario', Cantidad: '', Detalle: formatearMoneda(totales.valor) },
+      { Sección: 'Resumen', Concepto: 'Productos activos', Cantidad: totales.productos, Detalle: '' },
+      { Sección: 'Resumen', Concepto: 'Unidades en existencia', Cantidad: formatearNumero(totales.unidades, 2), Detalle: '' },
+      { Sección: 'Resumen', Concepto: 'Productos con stock bajo', Cantidad: totales.stock_bajo, Detalle: '' },
+      { Sección: 'Resumen', Concepto: 'Productos sin movimiento', Cantidad: totales.sin_movimiento, Detalle: `${datos.dias_sin_movimiento} días` },
       ...datos.categorias.map((item) => ({
-        Seccion: 'Categorías',
+        Sección: 'Categorías',
         Concepto: item.nombre,
         Cantidad: item.productos,
         Detalle: `${formatearNumero(item.unidades, 2)} unidades · ${formatearMoneda(item.valor)}`
       })),
       ...datos.stock_bajo.map((item) => ({
-        Seccion: 'Stock bajo',
+        Sección: 'Stock bajo',
         Concepto: `${item.codigo} · ${item.nombre}`,
         Cantidad: formatearNumero(item.stock_actual, 2),
         Detalle: `Mínimo ${formatearNumero(item.stock_minimo, 2)} · Faltan ${formatearNumero(item.faltante, 2)}`
       })),
       ...datos.sin_movimiento.map((item) => ({
-        Seccion: 'Sin movimiento',
+        Sección: 'Sin movimiento',
         Concepto: `${item.codigo} · ${item.nombre}`,
         Cantidad: formatearNumero(item.stock_actual, 2),
         Detalle: `${item.dias_sin_movimiento} días · Último: ${formatearFecha(item.ultimo_movimiento)}`
@@ -121,7 +121,7 @@ export default function ReporteInventarioPage() {
     const wb = XLSX.utils.book_new();
 
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([{
-      Categoria: nombreCategoriaActual(),
+      Categoría: nombreCategoriaActual(),
       Productos: totales.productos,
       Unidades: totales.unidades,
       Valor: totales.valor,
@@ -131,29 +131,29 @@ export default function ReporteInventarioPage() {
     }]), 'Resumen');
 
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(datos.categorias.map((item) => ({
-      Categoria: item.nombre,
+      Categoría: item.nombre,
       Productos: item.productos,
       Unidades: item.unidades,
       Valor: item.valor
-    }))), 'Categorias');
+    }))), 'Categorías');
 
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(datos.stock_bajo.map((item) => ({
-      Codigo: item.codigo,
+      Código: item.codigo,
       Producto: item.nombre,
-      Categoria: item.categoria_nombre,
+      Categoría: item.categoria_nombre,
       Existencia: item.stock_actual,
-      Minimo: item.stock_minimo,
+      Mínimo: item.stock_minimo,
       Faltante: item.faltante,
       Valor: item.valor
     }))), 'Stock bajo');
 
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(datos.sin_movimiento.map((item) => ({
-      Codigo: item.codigo,
+      Código: item.codigo,
       Producto: item.nombre,
-      Categoria: item.categoria_nombre,
+      Categoría: item.categoria_nombre,
       Existencia: item.stock_actual,
-      UltimoMovimiento: item.ultimo_movimiento || '',
-      Dias: item.dias_sin_movimiento,
+      'Último movimiento': item.ultimo_movimiento || '',
+      Días: item.dias_sin_movimiento,
       Valor: item.valor
     }))), 'Sin movimiento');
 

@@ -53,6 +53,7 @@ async function main() {
   const sufijo = Date.now();
   const codigoProducto = `PROD-${sufijo}`;
   const codigoServicio = `SERV-${sufijo}`;
+  const codigoMovimiento = `MOV-${sufijo}`;
   const codigoBarras = `750${sufijo}`;
   const nombreProducto = `Producto prueba ${sufijo}`;
   const nombreServicio = `Servicio prueba ${sufijo}`;
@@ -61,6 +62,7 @@ async function main() {
   let categoriaServicioId = null;
   let productoId = null;
   let servicioId = null;
+  let productoMovimientoId = null;
   let proveedorId = null;
   let compraId = null;
 
@@ -125,6 +127,24 @@ async function main() {
     check('registra el stock inicial', Number(detalle.body?.data?.stock_actual) === 5, JSON.stringify(detalle.body?.data));
     check('registra el costo inicial', Number(detalle.body?.data?.costo_ultimo) === 10, JSON.stringify(detalle.body?.data));
     check('el producto no está en stock bajo', detalle.body?.data?.stock_bajo === false, JSON.stringify(detalle.body?.data));
+
+    const resumenAdmin = await api('/api/productos/resumen', 'administrador');
+    check(
+      'el resumen calcula productos, unidades y valor',
+      resumenAdmin.status === 200 &&
+        Number(resumenAdmin.body?.data?.productos) >= 1 &&
+        Number(resumenAdmin.body?.data?.unidades) >= 5 &&
+        typeof resumenAdmin.body?.data?.valor === 'number',
+      JSON.stringify(resumenAdmin.body?.data)
+    );
+
+    const resumenCaja = await api('/api/productos/resumen', 'caja');
+    check(
+      'el resumen oculta el valor a caja',
+      resumenCaja.status === 200 && resumenCaja.body?.data?.valor === null,
+      JSON.stringify(resumenCaja.body?.data)
+    );
+
 
     const [movimientoInicial] = await db.pool.query(
       `SELECT tipo, origen, cantidad, costo_unitario, saldo_resultante, motivo
@@ -307,8 +327,38 @@ async function main() {
     const eliminarAjeno = await api(`/api/productos/${productoId}`, 'compras', 'DELETE');
     check('eliminar producto denegado para compras', eliminarAjeno.status === 403, `status ${eliminarAjeno.status}`);
 
-    const eliminarConMovimientos = await api(`/api/productos/${productoId}`, 'administrador', 'DELETE');
-    check('bloquea eliminar producto con movimientos', eliminarConMovimientos.status === 409, JSON.stringify(eliminarConMovimientos.body));
+    const eliminarConInicial = await api(`/api/productos/${productoId}`, 'administrador', 'DELETE');
+    check('elimina producto con solo inventario inicial', eliminarConInicial.status === 200, JSON.stringify(eliminarConInicial.body));
+
+    const detalleEliminado = await api(`/api/productos/${productoId}`, 'administrador');
+    check('el producto eliminado ya no existe', detalleEliminado.status === 404, `status ${detalleEliminado.status}`);
+
+    const eliminarServicioConCompra = await api(`/api/productos/${servicioId}`, 'administrador', 'DELETE');
+    check('bloquea eliminar producto con compras', eliminarServicioConCompra.status === 409, JSON.stringify(eliminarServicioConCompra.body));
+
+    const crearProductoMovimiento = await api('/api/productos', 'administrador', 'POST', {
+      codigo: codigoMovimiento,
+      nombre: `Producto movimiento ${sufijo}`,
+      tipo: 'producto',
+      unidad_medida: 'UNI',
+      stock_minimo: 0,
+      precio_venta: 1,
+      stock_inicial: 0,
+      activo: true
+    });
+    check('crea producto sin inventario inicial para prueba de borrado', crearProductoMovimiento.status === 201, JSON.stringify(crearProductoMovimiento.body));
+    productoMovimientoId = crearProductoMovimiento.body?.data?.id;
+
+    const registrarMovimiento = await api('/api/movimientos-inventario', 'administrador', 'POST', {
+      producto_id: productoMovimientoId,
+      tipo: 'entrada',
+      cantidad: 1,
+      motivo: 'otro'
+    });
+    check('registra movimiento distinto al inicial', registrarMovimiento.status === 201, JSON.stringify(registrarMovimiento.body));
+
+    const eliminarConMovimiento = await api(`/api/productos/${productoMovimientoId}`, 'administrador', 'DELETE');
+    check('bloquea eliminar producto con movimientos distintos al inicial', eliminarConMovimiento.status === 409, JSON.stringify(eliminarConMovimiento.body));
 
     const estadoInvalido = await api(`/api/productos/${servicioId}/estado`, 'administrador', 'PATCH', { activo: 2 });
     check('rechaza estado inválido', estadoInvalido.status === 400, `status ${estadoInvalido.status}`);
@@ -331,6 +381,10 @@ async function main() {
     if (productoId) {
       await db.pool.query('DELETE FROM movimientos_inventario WHERE producto_id = ?', [productoId]);
       await db.pool.query('DELETE FROM productos WHERE id = ?', [productoId]);
+    }
+    if (productoMovimientoId) {
+      await db.pool.query('DELETE FROM movimientos_inventario WHERE producto_id = ?', [productoMovimientoId]);
+      await db.pool.query('DELETE FROM productos WHERE id = ?', [productoMovimientoId]);
     }
     if (servicioId) {
       await db.pool.query('DELETE FROM movimientos_inventario WHERE producto_id = ?', [servicioId]);

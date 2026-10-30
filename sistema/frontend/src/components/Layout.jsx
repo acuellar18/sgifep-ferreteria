@@ -1,7 +1,11 @@
 import logoImg from '../assets/logo.png';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import api from '../services/api';
+import IconoModulo from './IconoModulo';
+import { permisosCaja } from '../utils/permisosCaja';
 import { permisosCompras } from '../utils/permisosCompras';
+import { permisosFacturacion } from '../utils/permisosFacturacion';
 import { permisosInventario } from '../utils/permisosInventario';
 import {
   MODULOS_SISTEMA,
@@ -37,20 +41,27 @@ function esEscritorio() {
 }
 
 export default function Layout() {
-  const [sesion] = useState(leerSesion);
+  const [sesion, setSesion] = useState(leerSesion);
   const [menuAbierto, setMenuAbierto] = useState(esEscritorio);
   const [modulosExpandidos, setModulosExpandidos] = useState(leerExpandidos);
+  const [fotoPerfil, setFotoPerfil] = useState('');
+  const [revisionFoto, setRevisionFoto] = useState(0);
   const location = useLocation();
   const moduloActivo = obtenerModuloActivo(location.pathname);
   const refModuloActivo = useRef(null);
 
-  const permisos = { ...permisosCompras(sesion), ...permisosInventario(sesion) };
+  const permisos = {
+    ...permisosCaja(sesion),
+    ...permisosCompras(sesion),
+    ...permisosInventario(sesion),
+    ...permisosFacturacion(sesion)
+  };
   const modulosVisibles = MODULOS_SISTEMA.filter(
     (modulo) => !modulo.permiso || permisos[modulo.permiso]
   );
 
   function subitemsVisibles(modulo) {
-    return modulo.subitems.filter(
+    return (modulo.subitems || []).filter(
       (subitem) => !subitem.permiso || permisos[subitem.permiso]
     );
   }
@@ -73,12 +84,7 @@ export default function Layout() {
   useEffect(() => {
     if (!moduloActivo) return;
 
-    setModulosExpandidos((previos) => {
-      if (previos.has(moduloActivo)) return previos;
-      const siguientes = new Set(previos);
-      siguientes.add(moduloActivo);
-      return siguientes;
-    });
+    setModulosExpandidos(new Set([moduloActivo]));
 
     refModuloActivo.current?.scrollIntoView({ block: 'nearest' });
   }, [moduloActivo]);
@@ -86,6 +92,41 @@ export default function Layout() {
   useEffect(() => {
     document.title = `SGIFEP - ${obtenerTituloDocumento(location.pathname)}`;
   }, [location.pathname]);
+
+  useEffect(() => {
+    const refrescarSesion = () => setSesion(leerSesion());
+    window.addEventListener('sgifep:sesion', refrescarSesion);
+    return () => window.removeEventListener('sgifep:sesion', refrescarSesion);
+  }, []);
+
+  useEffect(() => {
+    let activo = true;
+    let objectUrl = '';
+    setFotoPerfil('');
+
+    if (!sesion?.token) return undefined;
+
+    api.get('/perfil/foto', { params: { v: Date.now() }, responseType: 'blob' })
+      .then((blob) => {
+        if (!activo) return;
+        objectUrl = URL.createObjectURL(blob);
+        setFotoPerfil(objectUrl);
+      })
+      .catch(() => {
+        if (activo) setFotoPerfil('');
+      });
+
+    return () => {
+      activo = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [sesion?.token, revisionFoto]);
+
+  useEffect(() => {
+    const refrescarFoto = () => setRevisionFoto((valor) => valor + 1);
+    window.addEventListener('sgifep:perfil', refrescarFoto);
+    return () => window.removeEventListener('sgifep:perfil', refrescarFoto);
+  }, []);
 
   useEffect(() => {
     const manejarTecla = (e) => {
@@ -108,15 +149,9 @@ export default function Layout() {
   function alternarModulo(id) {
     if (id === moduloActivo) return;
 
-    setModulosExpandidos((previos) => {
-      const siguientes = new Set(previos);
-      if (siguientes.has(id)) {
-        siguientes.delete(id);
-      } else {
-        siguientes.add(id);
-      }
-      return siguientes;
-    });
+    setModulosExpandidos((previos) => (
+      previos.has(id) ? new Set() : new Set([id])
+    ));
   }
 
   return (
@@ -140,7 +175,17 @@ export default function Layout() {
           <span className="header-subtitulo-blanco">PANEL DE ACCESO</span>
         </div>
         <div className="header-usuario">
-          <span className="avatar">👤</span>
+          <span className="avatar">
+            {fotoPerfil ? (
+              <img
+                src={fotoPerfil}
+                alt={`Foto de ${sesion.nombre || sesion.username}`}
+                onError={() => setFotoPerfil('')}
+              />
+            ) : (
+              <IconoModulo id="avatar" tamano={20} />
+            )}
+          </span>
           <div className="header-usuario-info">
             <span className="header-nombre">{sesion.nombre || sesion.username}</span>
             <span className="rol-badge">
@@ -167,11 +212,27 @@ export default function Layout() {
               className="drawer-item drawer-volver-modulos"
               title="Volver al panel de módulos"
             >
-              ← Módulos Principales
+              Módulos Principales
             </a>
             {modulosVisibles.map((modulo) => {
-              const expandido =
-                modulo.id === moduloActivo || modulosExpandidos.has(modulo.id);
+              if (modulo.to) {
+                return (
+                  <Link
+                    key={modulo.id}
+                    ref={modulo.id === moduloActivo ? refModuloActivo : null}
+                    to={modulo.to}
+                    className={`drawer-item${modulo.id === moduloActivo ? ' modulo-activo' : ''}`}
+                    onClick={cerrarMenuSiMovil}
+                  >
+                    <span className="drawer-item-texto">
+                      <IconoModulo id={modulo.id} className="drawer-item-icono" />
+                      <span>{modulo.titulo}</span>
+                    </span>
+                  </Link>
+                );
+              }
+
+              const expandido = modulosExpandidos.has(modulo.id);
 
               return (
                 <Fragment key={modulo.id}>
@@ -183,7 +244,10 @@ export default function Layout() {
                     aria-controls={`subitems-${modulo.id}`}
                     onClick={() => alternarModulo(modulo.id)}
                   >
-                    <span>{modulo.icono} {modulo.titulo}</span>
+                    <span className="drawer-item-texto">
+                      <IconoModulo id={modulo.id} className="drawer-item-icono" />
+                      <span>{modulo.titulo}</span>
+                    </span>
                     <span className={`drawer-flecha${expandido ? ' abierto' : ''}`}>▸</span>
                   </button>
                   {expandido && (

@@ -32,7 +32,11 @@ class ReporteInventarioRepository {
          COUNT(*) AS productos,
          COALESCE(SUM(p.stock_actual), 0) AS unidades,
          COALESCE(SUM(p.stock_actual * p.costo_promedio), 0) AS valor,
-         COALESCE(SUM(CASE WHEN p.stock_actual <= p.stock_minimo THEN 1 ELSE 0 END), 0) AS stock_bajo,
+         COALESCE(SUM(
+           CASE WHEN p.stock_minimo > 0 AND p.stock_actual > 0 AND p.stock_actual <= p.stock_minimo
+                THEN 1 ELSE 0 END
+         ), 0) AS stock_bajo,
+         COALESCE(SUM(CASE WHEN p.stock_actual <= 0 THEN 1 ELSE 0 END), 0) AS agotados,
          COALESCE(SUM(
            CASE WHEN COALESCE(um.ultimo_movimiento, p.creado_en) < DATE_SUB(NOW(), INTERVAL ? DAY)
                 THEN 1 ELSE 0 END
@@ -75,7 +79,8 @@ class ReporteInventarioRepository {
          (p.stock_actual * p.costo_promedio) AS valor
        FROM productos p
        LEFT JOIN categorias c ON c.id = p.categoria_id
-       WHERE p.activo = 1 AND p.tipo = 'producto' AND p.stock_actual <= p.stock_minimo${categoria.sql}
+       WHERE p.activo = 1 AND p.tipo = 'producto'
+         AND p.stock_minimo > 0 AND p.stock_actual > 0 AND p.stock_actual <= p.stock_minimo${categoria.sql}
        ORDER BY faltante DESC, p.nombre ASC
        LIMIT 200`,
       categoria.params

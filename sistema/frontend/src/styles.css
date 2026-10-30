@@ -1,16 +1,16 @@
 /* ============================================================
    SGIFEP · Módulo de Usuarios — línea gráfica del panel de control
    Encabezado superior negro/antracita + border naranja, menú drawer,
-   paleta institucional NARANJA (#ea580c / #d97706), sin tonos azules.
+   paleta institucional NARANJA (#16a34a / #bbf7d0), sin tonos azules.
    ============================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --color-primario: #ea580c;          /* naranja institucional */
-  --color-primario-oscuro: #c2410c;
-  --color-primario-claro: #d97706;
-  --color-primario-suave: #fff7ed;
+  --color-primario: #16a34a;          /* naranja institucional */
+  --color-primario-oscuro: #15803d;
+  --color-primario-claro: #bbf7d0;
+  --color-primario-suave: #dcfce7;
   --color-fondo: #f8f9fa;             /* gris claro neutro */
   --color-superficie: #ffffff;
   --color-texto: #1f2937;
@@ -20,7 +20,7 @@
   --color-ok-fondo: #dcfce7;
   --color-peligro: #dc2626;
   --color-peligro-fondo: #fee2e2;
-  --color-acento-linea: #f2701d;      /* borde inferior del header */
+  --color-acento-linea: #16a34a;      /* borde inferior del header */
   --radio: 10px;
   --sombra: 0 1px 3px rgba(0, 0, 0, 0.08);
   --sombra-media: 0 10px 25px rgba(0, 0, 0, 0.09);
@@ -83,6 +83,10 @@ h1, h2, h3, h4 {
   margin: 0;
   color: var(--color-texto-suave);
   line-height: 1.6;
+}
+
+.modulo-construccion-tarjeta .btn {
+  text-decoration: none;
 }
 
 /* ============================================================
@@ -227,8 +231,117 @@ h1, h2, h3, h4 {
 
 .acciones-fila {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Columna de acciones: se alinea a la derecha y no parte los botones en
+   varias líneas. Si la tabla no cabe, el contenedor .tabla-wrapper scrollea. */
+.tabla-acciones {
+  width: 1%;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tabla-acciones .acciones-fila {
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+}
+
+.acciones-fila .btn-opcion {
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.tabla-acciones .btn-opcion {
+  padding: 4px 8px;
+}
+
+.btn-opcion.btn-danger {
+  color: var(--color-peligro);
+  border-color: var(--color-peligro-fondo);
+  background: transparent;
+}
+
+.btn-opcion.btn-danger:hover:not(:disabled) {
+  background: var(--color-peligro);
+  border-color: var(--color-peligro);
+  color: #ffffff;
+}
+
+.menu-acciones {
+  position: relative;
+  display: inline-flex;
+}
+
+.menu-acciones-toggle {
+  min-width: 32px;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.08em;
+}
+
+.menu-acciones-lista {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  min-width: 168px;
+  padding: 5px;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 10px;
+  box-shadow: var(--sombra-media);
+}
+
+.menu-acciones-derecha {
+  right: 0;
+}
+
+.menu-acciones-izquierda {
+  left: 0;
+}
+
+.menu-acciones-flotante {
+  position: fixed;
+  z-index: 1200;
+  right: auto;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.menu-acciones-item {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-texto);
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu-acciones-item:hover:not(:disabled) {
+  background: var(--color-primario-suave);
+  color: var(--color-primario-oscuro);
+}
+
+.menu-acciones-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.menu-acciones-item-peligro {
+  color: var(--color-peligro);
+}
+
+.menu-acciones-item-peligro:hover:not(:disabled) {
+  background: var(--color-peligro-fondo);
+  color: var(--color-peligro);
 }
 
 /* ============================================================
@@ -294,9 +407,9 @@ h1, h2, h3, h4 {
 }
 
 .alerta-info {
-  background: #fff7ed;
+  background: #dcfce7;
   color: #9a3412;
-  border: 1px solid #fed7aa;
+  border: 1px solid #bbf7d0;
 }
 
 .estado {
@@ -585,7 +698,172 @@ textarea.control {
 .acciones-encabezado {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ============================================================
+   FLUJO DE COMPRAS (guía de pasos)
+   ============================================================ */
+
+.flujo-compras {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  box-shadow: var(--sombra);
+}
+
+.flujo-compras-titulo {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-texto-suave);
+}
+
+.flujo-compras-pasos {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.flujo-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.flujo-paso {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.flujo-paso:hover {
+  background: var(--color-primario-suave);
+  border-color: #bbf7d0;
+}
+
+.flujo-paso-activo {
+  background: var(--color-primario-suave);
+  border-color: var(--color-primario);
+}
+
+.flujo-numero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  color: var(--color-texto-suave);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.flujo-paso-activo .flujo-numero {
+  background: var(--color-primario);
+  color: #ffffff;
+}
+
+.flujo-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.flujo-texto strong {
+  font-size: 13px;
+}
+
+.flujo-texto small {
+  color: var(--color-texto-suave);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.flujo-paso-bloqueado {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.flujo-flecha {
+  flex: 0 0 auto;
+  color: var(--color-texto-suave);
+}
+
+.estado-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 20px;
+  text-align: center;
+  background: var(--color-superficie);
+  border: 1px dashed var(--color-borde);
+  border-radius: 12px;
+}
+
+.estado-vacio h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.estado-vacio p {
+  max-width: 560px;
+  margin: 0;
+  color: var(--color-texto-suave);
+  font-size: 14px;
+}
+
+.estado-vacio-acciones {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.ayuda-campo {
+  margin: 8px 0 0;
+  color: var(--color-texto-suave);
+  font-size: 12px;
+}
+
+.ayuda-campo a {
+  color: var(--color-primario);
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .flujo-flecha {
+    display: none;
+  }
+
+  .flujo-item {
+    flex-basis: 100%;
+  }
 }
 
 .reporte-detalle {
@@ -843,4 +1121,97 @@ textarea.control {
 
 .toast-cerrar:hover {
   opacity: 1;
+}
+
+/* NUEVA COMPRA Y PRODUCTOS */
+.compra-nueva .pagina-cabecera h1{margin:0;font-size:24px}.compra-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;align-items:start}.compra-col{display:flex;flex-direction:column;gap:16px}.tarjeta-sombra{box-shadow:var(--sombra-media);border-radius:12px}.tarjeta-cabecera-flex{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.formulario-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}.campo-completo{grid-column:1/-1}.ayuda-texto{margin:0 16px 10px;color:var(--color-texto-suave);font-size:13px}.btn-agregar-linea{border-color:var(--color-primario);color:var(--color-primario)}.btn-agregar-linea:hover{background:var(--color-primario-suave)}.tabla-compras-contenedor{margin:0 16px 16px}.tabla-compras thead th{background:#f9fafb;font-weight:600}.control-tabla{padding:6px 8px;font-size:13px}.col-subtotal{text-align:right;font-weight:600}.btn-icono-eliminar{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;border:1px solid var(--color-borde);background:var(--color-superficie);color:var(--color-texto-suave);cursor:pointer}.btn-icono-eliminar:hover:not(:disabled){border-color:var(--color-peligro);color:var(--color-peligro);background:var(--color-peligro-fondo)}.btn-icono-eliminar:disabled{opacity:.4;cursor:not-allowed}.texto-nuevo{color:var(--color-primario);display:block}.texto-suave{color:var(--color-texto-suave);display:block}.tarjeta-totales{position:sticky;top:16px}.totales-lista{display:flex;flex-direction:column;gap:10px;padding:0 16px 12px}.totales-fila{display:flex;align-items:center;justify-content:space-between}.totales-separador{height:1px;background:var(--color-borde)}.totales-total{font-size:18px;font-weight:700}.acciones-compra{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px}.costo-indicador{font-size:12px}.costo-indicador.subio{color:var(--color-peligro)}.costo-indicador.bajo{color:var(--color-ok)}.filtros-productos{margin-bottom:16px}.filtros-grid-responsive{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;padding:12px}.tabla-productos thead th{background:#f9fafb}.etiqueta-info{background:#e0f2fe;color:#075985}.etiqueta-advertencia{background:#fef3c7;color:#92400e}.estado-vacio-inline{display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px;text-align:center}.estado-vacio-inline span{color:var(--color-texto-suave)}.boton-link{background:none;border:none;padding:0;color:var(--color-primario);font:inherit;cursor:pointer;text-align:left}.boton-link:hover{text-decoration:underline}@media (max-width:1200px){.compra-grid{grid-template-columns:1fr}.tarjeta-totales{position:static}.formulario-grid-3{grid-template-columns:repeat(2,minmax(0,1fr))}.filtros-grid-responsive{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (max-width:720px){.formulario-grid-3{grid-template-columns:1fr}.filtros-grid-responsive{grid-template-columns:1fr}.acciones-compra{justify-content:stretch}.acciones-compra .btn{width:100%}}
+
+/* Cabecera de página compartida (Compras e Inventario). */
+.pagina-cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.pagina-cabecera h1 {
+  margin: 0 0 4px;
+  font-size: 24px;
+}
+
+.pagina-cabecera p {
+  margin: 0;
+  color: var(--color-texto-suave);
+  font-size: 14px;
+}
+
+.pagina-acciones {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Rejilla base de formularios (Compras e Inventario). Sin `display: grid`
+   los campos se apilaban en una sola columna aunque la clase -3 existiera. */
+.formulario-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.formulario-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Evita que la tabla del detalle ensanche la columna izquierda y empuje
+   el panel de resumen fuera del área visible. */
+.compra-grid {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+}
+
+.compra-col {
+  min-width: 0;
+}
+
+.tabla-compras-contenedor {
+  overflow-x: auto;
+}
+
+.tabla-compras {
+  min-width: 680px;
+}
+
+.tabla-compras .control-tabla {
+  width: 100%;
+  min-width: 0;
+}
+
+/* El encabezado es sticky (84px); el resumen debe quedar debajo de él. */
+.tarjeta-totales {
+  position: sticky;
+  top: calc(var(--altura-header) + 16px);
+}
+
+@media (max-width: 1200px) {
+  .compra-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .formulario-grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tarjeta-totales {
+    position: static;
+  }
+}
+
+@media (max-width: 720px) {
+  .formulario-grid,
+  .formulario-grid-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

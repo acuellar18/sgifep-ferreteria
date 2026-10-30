@@ -41,7 +41,7 @@ export function etiquetaEstadoPago(estado) {
 }
 
 export function etiquetaEstado(estado) {
-  return { recibida: 'Recibida', anulada: 'Anulada' }[estado] || estado || '—';
+  return { recibida: 'Recibida', emitida: 'Emitida', anulada: 'Anulada' }[estado] || estado || '—';
 }
 
 export function rutaApiBase() {
