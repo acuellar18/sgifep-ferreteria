@@ -18,6 +18,7 @@ import ImpresionListaComprasPage from './pages/Compras/ImpresionListaComprasPage
 import ReporteComprasPage from './pages/Compras/ReporteComprasPage';
 import ReporteInventarioPage from './pages/Inventario/ReporteInventarioPage';
 import ReporteVentasPage from './pages/Reportes/ReporteVentasPage';
+import ReporteGeneralPage from './pages/Reportes/ReporteGeneralPage';
 import AuditoriaPage from './pages/Seguridad/AuditoriaPage';
 import CategoriasPage from './pages/Inventario/CategoriasPage';
 import ProductosPage from './pages/Inventario/ProductosPage';
@@ -117,7 +118,7 @@ export default function App() {
             <Route path="/reportes/despachos" element={<RequierePermiso permiso="consultarReporteDespachos"><ReporteDespachosPage /></RequierePermiso>} />
 <Route path="/despacho/reporte" element={<Navigate to="/reportes/despachos" replace />} />
 
-            <Route path="/reportes" element={<ModuloEnConstruccionPage titulo="Reportes" descripcion="El módulo de Reportes centralizará los indicadores generales del sistema." />} />
+            <Route path="/reportes" element={<RequierePermiso permiso="consultarReporteGeneral"><ReporteGeneralPage /></RequierePermiso>} />
             <Route path="/reportes/ventas" element={<RequierePermiso permiso="consultarReporteFacturacion"><ReporteVentasPage /></RequierePermiso>} />
             <Route path="/reportes/compras" element={<RequierePermiso permiso="consultarReportes"><ReporteComprasPage /></RequierePermiso>} />
             <Route path="/reportes/inventario" element={<RequierePermiso permiso="consultarReporteInventario"><ReporteInventarioPage /></RequierePermiso>} />

@@ -66,6 +66,7 @@ app.use('/api/despachos', require('./routes/despachos.routes'));
 app.use('/api/configuracion-empresa', require('./routes/configuracion-empresa.routes'));
 app.use('/api/reportes-inventario', require('./routes/reporte-inventario.routes'));
 app.use('/api/reportes-ventas', require('./routes/reporte-ventas.routes'));
+app.use('/api/reportes', require('./routes/reporte-general.routes'));
 
 // ---------- SPA / catch-all ----------
 
