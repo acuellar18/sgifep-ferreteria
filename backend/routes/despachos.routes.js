@@ -6,6 +6,7 @@ const despachoController = require('../controllers/despacho.controller');
 router.use(autenticar);
 
 router.get('/', requerirRoles(['administrador', 'compras', 'bodega', 'caja', 'ventas', 'reparto']), despachoController.listar);
+router.get('/disponibles', requerirRoles(['administrador', 'compras', 'bodega', 'caja', 'ventas', 'reparto']), despachoController.disponibles);
 router.get('/:id', requerirRoles(['administrador', 'compras', 'bodega', 'caja', 'ventas', 'reparto']), despachoController.detalle);
 router.post('/', requerirRoles(['administrador', 'compras', 'bodega']), despachoController.crear);
 router.put('/:id', requerirRoles(['administrador', 'compras', 'bodega']), despachoController.actualizarDatos);

@@ -13,6 +13,11 @@ module.exports = {
     res.json({ success: true, data });
   }),
 
+  disponibles: manejarAsync(async (req, res) => {
+    const data = await despachoService.disponiblesParaRuta(req.query);
+    res.json({ success: true, data });
+  }),
+
   crear: manejarAsync(async (req, res) => {
     const data = await despachoService.crear(req.body, req.usuario?.id);
     res.status(201).json({ success: true, mensaje: 'Despacho registrado', data });
