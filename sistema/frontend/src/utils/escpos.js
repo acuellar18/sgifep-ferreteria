@@ -1,3 +1,5 @@
+import { datosNegocio } from '../config/negocio';
+
 const CLAVE_CONFIG = 'sgifep.impresora';
 
 let puerto = null;
@@ -65,19 +67,40 @@ function recortar(texto, maximo) {
   return valor.length > maximo ? `${valor.slice(0, Math.max(0, maximo - 1))}…` : valor;
 }
 
+function envolverLineas(texto, ancho) {
+  const palabras = String(texto ?? '').split(/\s+/).filter(Boolean);
+  const resultado = [];
+  let actual = '';
+
+  for (const palabra of palabras) {
+    const candidato = actual ? `${actual} ${palabra}` : palabra;
+    if (candidato.length <= ancho) {
+      actual = candidato;
+    } else {
+      if (actual) resultado.push(actual);
+      actual = palabra;
+    }
+  }
+  if (actual) resultado.push(actual);
+  return resultado;
+}
+
 export function construirTicket(venta, empresa = {}) {
   const { ancho } = leerConfigImpresora();
   const lineas = [];
-  const negocio = empresa || {};
+  const negocio = datosNegocio(empresa);
 
-  lineas.push(centrar(negocio.nombre || 'Ferretería El Puente', ancho));
+  lineas.push(centrar(negocio.nombre, ancho));
   if (negocio.nit) lineas.push(centrar(`NIT: ${negocio.nit}`, ancho));
   if (negocio.direccion) lineas.push(centrar(negocio.direccion, ancho));
   if (negocio.telefono) lineas.push(centrar(`Tel: ${negocio.telefono}`, ancho));
   lineas.push(separador(ancho));
 
   lineas.push(linea('Ticket', venta.numero, ancho));
-  if (venta.factura_numero) lineas.push(linea('Factura', venta.factura_numero, ancho));
+  if (venta.factura_numero) {
+    const numeroComprobante = String(venta.factura_numero).replace(/^FAC-/, 'CMP-');
+    lineas.push(linea('Comprobante', numeroComprobante, ancho));
+  }
   lineas.push(linea('Fecha', formatearFechaHora(venta.creado_en), ancho));
   lineas.push(linea('Cajero', venta.usuario_nombre || '', ancho));
   lineas.push(linea('Cliente', recortar(venta.cliente_nombre || 'Consumidor Final', ancho - 8), ancho));
@@ -112,7 +135,12 @@ export function construirTicket(venta, empresa = {}) {
   }
   lineas.push('');
   lineas.push(centrar('¡Gracias por su compra!', ancho));
-  lineas.push(centrar('Documento no fiscal', ancho));
+  for (const texto of envolverLineas('Comprobante de venta interno · No válido como factura', ancho)) {
+    lineas.push(centrar(texto, ancho));
+  }
+  for (const texto of envolverLineas('Sistema SGIFEP · Desarrollado por Anthony Cuellar', ancho)) {
+    lineas.push(centrar(texto, ancho));
+  }
   lineas.push('');
   lineas.push('');
   lineas.push('');

@@ -245,6 +245,9 @@ export default function ProductosPage() {
                 </div>
                 <div className="inventario-producto-card-cuerpo">
                   <h3 className="producto-card-nombre">{producto.nombre}</h3>
+                  <p className="inventario-producto-card-categoria">
+                    {producto.proveedor_nombre ? `Proveedor: ${producto.proveedor_nombre}` : 'Sin proveedor'}
+                  </p>
                 </div>
               </div>
             );

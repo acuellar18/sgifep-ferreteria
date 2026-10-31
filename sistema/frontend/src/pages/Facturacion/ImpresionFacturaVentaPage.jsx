@@ -2,40 +2,43 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../../services/api';
 import PrintLayout from '../../components/print/PrintLayout';
+import { datosNegocio } from '../../config/negocio';
 import {
   etiquetaEstadoPago,
   formatearFecha,
   formatearFechaHora,
   formatearMoneda,
-  formatearNumero
+  formatearNumero,
+  formatearNumeroComprobante
 } from '../../utils/formatos';
 
 const FILAS_POR_PAGINA = 18;
 
 function CabeceraEmpresa({ empresa, factura }) {
+  const negocio = datosNegocio(empresa);
   return (
     <header className="print-encabezado">
       <div className="print-empresa">
-        {empresa?.logo_url && (
-          <img src={empresa.logo_url} alt={empresa.nombre || 'Logo'} className="print-logo" />
+        {negocio.logo_url && (
+          <img src={negocio.logo_url} alt={negocio.nombre || 'Logo'} className="print-logo" />
         )}
         <div>
-          <h1>{empresa?.nombre || 'Ferretería El Puente'}</h1>
-          {empresa?.nit && <p>NIT: {empresa.nit}</p>}
-          {empresa?.direccion && <p>{empresa.direccion}</p>}
-          {(empresa?.telefono || empresa?.correo) && (
+          <h1>{negocio.nombre}</h1>
+          {negocio.nit && <p>NIT: {negocio.nit}</p>}
+          {negocio.direccion && <p>{negocio.direccion}</p>}
+          {(negocio.telefono || negocio.correo) && (
             <p>
-              {empresa.telefono || ''}
-              {empresa.telefono && empresa.correo ? ' · ' : ''}
-              {empresa.correo || ''}
+              {negocio.telefono || ''}
+              {negocio.telefono && negocio.correo ? ' · ' : ''}
+              {negocio.correo || ''}
             </p>
           )}
         </div>
       </div>
       <div className="print-documento-titulo">
-        <span className="print-etiqueta">DOCUMENTO</span>
-        <strong>Factura de venta</strong>
-        <span className="print-numero">{factura.numero}</span>
+        <span className="print-etiqueta">COMPROBANTE</span>
+        <strong>Comprobante de venta</strong>
+        <span className="print-numero">{formatearNumeroComprobante(factura.numero)}</span>
       </div>
     </header>
   );
@@ -142,9 +145,10 @@ export default function ImpresionFacturaVentaPage() {
   }, [id]);
 
   if (error) return <div className="print-error">{error}</div>;
-  if (!datos) return <div className="print-error">Cargando factura...</div>;
+  if (!datos) return <div className="print-error">Cargando comprobante...</div>;
 
   const { empresa, factura } = datos;
+  const numeroComprobante = formatearNumeroComprobante(factura.numero);
   const detalles = factura.detalles || [];
   const bloques = [];
   for (let i = 0; i < detalles.length; i += FILAS_POR_PAGINA) {
@@ -171,7 +175,7 @@ export default function ImpresionFacturaVentaPage() {
                 {factura.cliente_direccion && <p>{factura.cliente_direccion}</p>}
               </div>
               <div>
-                <h3>Datos de la factura</h3>
+                <h3>Datos del comprobante</h3>
                 <p><span>Fecha:</span> {formatearFecha(factura.fecha)}</p>
                 <p><span>Condición:</span> {factura.condicion === 'credito' ? 'Crédito' : 'Contado'}</p>
                 <p><span>Vence:</span> {formatearFecha(factura.fecha_vencimiento)}</p>
@@ -188,7 +192,7 @@ export default function ImpresionFacturaVentaPage() {
         ) : (
           <div className="print-continuacion">
             <strong>{empresa?.nombre}</strong>
-            <span>Factura de venta {factura.numero}</span>
+            <span>Comprobante de venta {formatearNumeroComprobante(factura.numero)}</span>
           </div>
         )}
 
@@ -217,6 +221,10 @@ export default function ImpresionFacturaVentaPage() {
               <span>Emitida por {factura.usuario_nombre || '—'}</span>
               <span>Generado el {formatearFechaHora(new Date())}</span>
             </div>
+            <div className="print-nota-interna">
+              <p>Comprobante de venta interno · No válido como factura</p>
+              <p>Sistema SGIFEP · Desarrollado por Anthony Cuellar</p>
+            </div>
             <PieFirma />
           </>
         )}
@@ -227,9 +235,9 @@ export default function ImpresionFacturaVentaPage() {
   return (
     <PrintLayout
       empresa={empresa}
-      titulo={`Factura de venta ${factura.numero}`}
+      titulo={`Comprobante de venta ${numeroComprobante}`}
       subtitulo={factura.cliente_nombre}
-      nombreArchivo={`factura-${factura.numero}.pdf`}
+      nombreArchivo={`comprobante-${numeroComprobante}.pdf`}
       paginas={paginas}
     />
   );

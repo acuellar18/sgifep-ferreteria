@@ -32,7 +32,6 @@ import CajaPage from './pages/Caja/CajaPage';
 import PerfilPage from './pages/Perfil/PerfilPage';
 import ModuloEnConstruccionPage from './pages/Modulos/ModuloEnConstruccionPage';
 import ListadoDespachosPage from './pages/Despacho/ListadoDespachosPage';
-import ReporteDespachosPage from './pages/Reportes/ReporteDespachosPage';
 import RutasEntregasPage from './pages/Despacho/RutasEntregasPage';
 
 // basename = '/usuarios' -> las rutas internas quedan bajo /usuarios/*.
@@ -113,10 +112,11 @@ export default function App() {
             <Route path="/facturacion/clientes" element={<RequierePermiso permiso="consultarClientes"><ClientesPage /></RequierePermiso>} />
             <Route path="/facturacion/cobros" element={<Navigate to="/pos" replace />} />
 
-            <Route path="/despacho" element={<ListadoDespachosPage />} />
+                        <Route path="/despacho" element={<ListadoDespachosPage />} />
             <Route path="/despacho/rutas-entregas" element={<RutasEntregasPage />} />
-            <Route path="/reportes/despachos" element={<RequierePermiso permiso="consultarReporteDespachos"><ReporteDespachosPage /></RequierePermiso>} />
-<Route path="/despacho/reporte" element={<Navigate to="/reportes/despachos" replace />} />
+            {/* Reporte de Despachos eliminado: redirigir enlaces viejos al listado */}
+            <Route path="/despacho/reporte" element={<Navigate to="/despacho" replace />} />
+            <Route path="/reportes/despachos" element={<Navigate to="/despacho" replace />} />
 
             <Route path="/reportes" element={<RequierePermiso permiso="consultarReporteGeneral"><ReporteGeneralPage /></RequierePermiso>} />
             <Route path="/reportes/ventas" element={<RequierePermiso permiso="consultarReporteFacturacion"><ReporteVentasPage /></RequierePermiso>} />

@@ -1,4 +1,10 @@
-import { formatearFechaHora, formatearMoneda, formatearNumero } from '../../utils/formatos';
+import { datosNegocio } from '../../config/negocio';
+import {
+  formatearFechaHora,
+  formatearMoneda,
+  formatearNumero,
+  formatearNumeroComprobante
+} from '../../utils/formatos';
 
 const ETIQUETAS_METODO = {
   efectivo: 'Efectivo',
@@ -10,14 +16,14 @@ export default function PosTicket({ venta, empresa }) {
   if (!venta) return null;
 
   const anulada = venta.estado === 'anulada';
-  const negocio = empresa || {};
+  const negocio = datosNegocio(empresa);
 
   return (
     <div className={`pos-ticket-print${anulada ? ' pos-ticket-anulado' : ''}`}>
       {anulada && <div className="pos-ticket-marca">ANULADA</div>}
 
       <div className="pos-ticket-cabecera">
-        <strong className="pos-ticket-negocio">{negocio.nombre || 'Ferretería El Puente'}</strong>
+        <strong className="pos-ticket-negocio">{negocio.nombre}</strong>
         {negocio.nit && <span>NIT: {negocio.nit}</span>}
         {negocio.direccion && <span>{negocio.direccion}</span>}
         {negocio.telefono && <span>Tel: {negocio.telefono}</span>}
@@ -27,7 +33,7 @@ export default function PosTicket({ venta, empresa }) {
 
       <div className="pos-ticket-datos">
         <div><span>Ticket</span><strong>{venta.numero}</strong></div>
-        <div><span>Factura</span><strong>{venta.factura_numero || '—'}</strong></div>
+        <div><span>Comprobante</span><strong>{formatearNumeroComprobante(venta.factura_numero)}</strong></div>
         <div><span>Fecha</span><strong>{formatearFechaHora(venta.creado_en)}</strong></div>
         <div><span>Cajero</span><strong>{venta.usuario_nombre || '—'}</strong></div>
         <div><span>Caja</span><strong>#{venta.caja_id}</strong></div>
@@ -107,7 +113,8 @@ export default function PosTicket({ venta, empresa }) {
 
       <div className="pos-ticket-separador" />
       <p className="pos-ticket-gracias">¡Gracias por su compra!</p>
-      <p className="pos-ticket-nota">Documento no fiscal</p>
+      <p className="pos-ticket-nota">Comprobante de venta interno · No válido como factura</p>
+      <p className="pos-ticket-credito">Sistema SGIFEP · Desarrollado por Anthony Cuellar</p>
     </div>
   );
 }

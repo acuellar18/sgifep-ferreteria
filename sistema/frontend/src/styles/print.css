@@ -297,6 +297,24 @@ body.print-body {
   font-size: 8pt;
 }
 
+.print-nota-interna {
+  margin-top: 4mm;
+  text-align: center;
+  color: #6b7280;
+  font-size: 8pt;
+  line-height: 1.4;
+}
+
+.print-nota-interna p {
+  margin: 0;
+}
+
+.print-nota-interna p + p {
+  margin-top: 1mm;
+  color: #9ca3af;
+  font-size: 7pt;
+}
+
 .print-firmas {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

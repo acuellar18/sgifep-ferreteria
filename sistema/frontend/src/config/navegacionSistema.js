@@ -59,13 +59,12 @@ export const MODULOS_SISTEMA = [
         { to: '/facturacion/clientes', etiqueta: 'Clientes', permiso: 'consultarClientes' }
       ]
   },
-  {
+    {
     id: 'despacho',
     titulo: 'Despacho',
     subitems: [
       { to: '/despacho', etiqueta: 'Listado de Despachos' },
-      { to: '/despacho/rutas-entregas', etiqueta: 'Rutas y Entregas' },
-      { to: '/despacho/reporte', etiqueta: 'Reporte de Despachos' }
+      { to: '/despacho/rutas-entregas', etiqueta: 'Rutas y Entregas' }
     ]
   },
   {
