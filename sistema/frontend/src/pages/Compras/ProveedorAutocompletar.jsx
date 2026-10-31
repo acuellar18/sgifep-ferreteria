@@ -25,6 +25,11 @@ export default function ProveedorAutocompletar({
   }, []);
 
   function manejarFocus() {
+    if (valor.trim().length === 0) {
+      onBuscar('');
+      setMostrar(true);
+      return;
+    }
     if (valor.length >= 2 && sugerencias.length > 0) setMostrar(true);
   }
 

@@ -149,10 +149,10 @@ export default function NuevaCompraPage() {
   }
 
   async function buscarProveedores(q) {
-    if (!q || q.length < 2) { setProveedoresSugeridos([]); return; }
+    if (q && q.length < 2) { setProveedoresSugeridos([]); return; }
     try {
-      const res = await api.get('/proveedores', { params: { q, estado: 'activo', pageSize: 10 } });
-      setProveedoresSugeridos(res.data);
+      const res = await api.get('/proveedores', { params: { q: q || '', estado: 'activo', pageSize: 50 } });
+      setProveedoresSugeridos(res.data || []);
     } catch (err) { console.error(err); }
   }
 
