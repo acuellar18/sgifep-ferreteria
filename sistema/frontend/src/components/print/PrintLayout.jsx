@@ -10,6 +10,7 @@ export default function PrintLayout({
   titulo,
   subtitulo,
   orientacion = 'portrait',
+  tamano = 'A4',
   paginas,
   children,
   nombreArchivo = 'documento'
@@ -27,8 +28,8 @@ export default function PrintLayout({
   }, [nombreArchivo]);
 
   return (
-    <div className={`print-documento print-${orientacion}`}>
-      <style>{`@page { size: A4 ${orientacion}; margin: 0; }`}</style>
+    <div className={`print-documento print-${orientacion} print-tamano-${tamano.toLowerCase()}`}>
+      <style>{`@page { size: ${tamano} ${orientacion}; margin: 0; }`}</style>
       <div className="print-toolbar no-print">
         <div>
           <strong>{titulo}</strong>

@@ -1189,10 +1189,150 @@ textarea.control {
   min-width: 0;
 }
 
-/* El encabezado es sticky (84px); el resumen debe quedar debajo de él. */
-.tarjeta-totales {
+/* Columna derecha: el resumen + botones quedan fijos debajo del header. Para
+   que sticky funcione la columna debe estirarse a toda la altura de la fila
+   del grid (sin `align-self: stretch` el elemento se queda pegado a su propio
+   contenido y no toma altura suficiente para desplazarse). */
+.compra-col-resumen {
+  min-width: 0;
+  align-self: stretch;
+}
+
+.compra-resumen-sticky {
   position: sticky;
   top: calc(var(--altura-header) + 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* La tarjeta de totales ya no es sticky por sí misma (lo es su contenedor). */
+.tarjeta-totales {
+  position: static;
+}
+
+/* Botones lado a lado; en pantallas angostas se apilan, siempre visibles. */
+.acciones-compra {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.acciones-compra .btn {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.acciones-compra .btn-secundario {
+  flex-grow: 0;
+}
+
+/* ---------------------------------------------------------------- */
+/* Tarea 5: campos obligatorios, mensajes de error y estados          */
+/* ---------------------------------------------------------------- */
+.requerido {
+  color: var(--color-peligro);
+  font-weight: 800;
+}
+
+.campo-error {
+  display: block;
+  margin-top: 5px;
+  color: var(--color-peligro);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.campo-invalido .control,
+.control-invalido {
+  border-color: var(--color-peligro) !important;
+  background: var(--color-peligro-fondo);
+}
+
+.fila-linea-invalida td {
+  background: var(--color-peligro-fondo) !important;
+}
+
+.fila-linea-error td {
+  padding: 2px 10px 10px;
+  color: var(--color-peligro);
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--color-superficie);
+}
+
+.linea-error-flotante {
+  position: absolute;
+  top: -7px;
+  right: 6px;
+  z-index: 2;
+  margin: 0;
+  padding: 1px 6px;
+  background: var(--color-peligro);
+  color: #fff;
+  border-radius: 4px;
+  font-size: 10.5px;
+}
+
+/* Lista de requisitos del resumen (por qué el botón está deshabilitado). */
+.resumen-requisitos {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 2px;
+}
+
+.resumen-requisito {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--color-texto-suave);
+  line-height: 1.35;
+}
+
+.resumen-requisito-icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.resumen-requisito.ok {
+  color: var(--color-texto);
+}
+
+.resumen-requisito.ok .resumen-requisito-icono {
+  background: var(--color-ok-fondo);
+  color: var(--color-ok);
+}
+
+/* Indicador de carga en los botones de guardar. */
+.spinner-chico {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  margin-right: 6px;
+  vertical-align: -2px;
+  border: 2px solid rgba(128, 128, 128, 0.35);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: compra-girar 0.6s linear infinite;
+}
+
+@keyframes compra-girar {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 1200px) {
@@ -1204,8 +1344,30 @@ textarea.control {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .tarjeta-totales {
+  .compra-resumen-sticky {
     position: static;
+  }
+
+  /* En una sola columna los botones quedan visibles: barra fija inferior. */
+  .acciones-compra {
+    position: sticky;
+    bottom: 0;
+    z-index: 30;
+    justify-content: stretch;
+    margin-top: 4px;
+    padding: 12px;
+    background: var(--color-superficie);
+    border: 1px solid var(--color-borde);
+    border-radius: 12px;
+    box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.08);
+  }
+
+  .acciones-compra .btn {
+    flex: 1 1 100%;
+  }
+
+  .acciones-compra .btn-secundario {
+    flex-grow: 1;
   }
 }
 

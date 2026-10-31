@@ -7,6 +7,7 @@ import Layout from './components/Layout';
 import { ToastProvider } from './components/Toast';
 import UsuariosPage from './pages/Usuarios/UsuariosPage';
 import ReportePage from './pages/Usuarios/ReportePage';
+import ImpresionReporteUsuariosPage from './pages/Usuarios/ImpresionReporteUsuariosPage';
 import RolesPage from './pages/Roles/RolesPage';
 import DepartamentosPage from './pages/Departamentos/DepartamentosPage';
 import ProveedoresPage from './pages/Compras/ProveedoresPage';
@@ -72,6 +73,10 @@ export default function App() {
           <Route
             path="/facturacion/facturas/:id/imprimir"
             element={<RequierePermiso permiso="consultarFacturas"><ImpresionFacturaVentaPage /></RequierePermiso>}
+          />
+          <Route
+            path="/reporte/imprimir"
+            element={<ImpresionReporteUsuariosPage />}
           />
 
           <Route element={<Layout />}>

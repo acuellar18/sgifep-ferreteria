@@ -7,6 +7,18 @@ import { useNotificacion } from '../../components/Toast';
 
 const FORM_VACIO = { nombre: '', descripcion: '', activo: true };
 
+// Compara nombres sin distinguir mayúsculas, tildes ni espacios repetidos,
+// igual que el backend: impide "Administración" vs "Administracion" vs
+// "administra cion" en el mismo formulario sin depender del servidor.
+function normalizarComparable(texto) {
+  return String(texto || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export default function DepartamentosPage() {
   const [departamentos, setDepartamentos] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -78,6 +90,19 @@ export default function DepartamentosPage() {
       descripcion: form.descripcion.trim() || null,
       activo: form.activo
     };
+
+    // Validación local de duplicados (sin tildes ni mayúsculas): se compara
+    // contra el catálogo ya cargado, excluyendo el departamento en edición.
+    const objetivo = normalizarComparable(payload.nombre);
+    const duplicado = departamentos.find(
+      (d) => Number(d.id) !== Number(editando?.id) && normalizarComparable(d.nombre) === objetivo
+    );
+    if (duplicado) {
+      setGuardando(false);
+      setError(`Ya existe un departamento con el nombre "${duplicado.nombre}"`);
+      return;
+    }
+
     try {
       if (editando) {
         await api.put(`/departamentos/${editando.id}`, payload);

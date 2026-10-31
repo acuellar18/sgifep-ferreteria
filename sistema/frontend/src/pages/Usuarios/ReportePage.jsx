@@ -133,31 +133,72 @@ export default function ReportePage() {
     }
   }
 
-  // Exporta ambos bloques del reporte (con los filtros ya aplicados) a CSV.
+  // Exporta todos los bloques del reporte (con los filtros ya aplicados) a
+  // CSV con UTF-8 + BOM (exportarCSV) para que Excel muestre bien las tildes.
   function exportarCsv() {
     if (!reporte) return;
-    const { totales, porDepartamento, porRol } = reporte;
-    const filas = [
-      {
-        Sección: 'TOTALES',
-        Nombre: 'General',
-        Detalle: `${totales.total} usuarios (${totales.activos} activos, ${totales.inactivos} inactivos)`,
-        Activos: Number(totales.activos)
-      },
-      ...porDepartamento.map((d) => ({
+    const { totales, porDepartamento, porRol, usuarios } = reporte;
+    const filas = [];
+    filas.push({
+      Sección: 'TOTALES',
+      Código: '',
+      Nombre: 'General',
+      Departamento: '',
+      Rol: '',
+      Estado: `${totales.activos} activos / ${totales.inactivos} inactivos`,
+      Fecha: '',
+      Activos: Number(totales.activos)
+    });
+    porDepartamento.forEach((d) => {
+      filas.push({
         Sección: 'POR DEPARTAMENTO',
+        Código: '',
         Nombre: d.nombre,
-        Detalle: '',
+        Departamento: '',
+        Rol: '',
+        Estado: '',
+        Fecha: '',
         Activos: Number(d.total_activos)
-      })),
-      ...porRol.map((r) => ({
+      });
+    });
+    porRol.forEach((r) => {
+      filas.push({
         Sección: 'POR ROL',
+        Código: '',
         Nombre: r.nombre,
-        Detalle: r.acceso_total ? 'Acceso total' : '',
+        Departamento: '',
+        Rol: r.acceso_total ? 'Acceso total' : '',
+        Estado: '',
+        Fecha: '',
         Activos: Number(r.total_activos)
-      }))
-    ];
+      });
+    });
+    (usuarios || []).forEach((u) => {
+      filas.push({
+        Sección: 'USUARIO',
+        Código: u.codigo || '',
+        Nombre: `${u.nombre || ''} ${u.apellido || ''}`.trim(),
+        Departamento: u.departamento_nombre || '',
+        Rol: (u.roles || []).join(' | '),
+        Estado: u.activo ? 'Activo' : 'Inactivo',
+        Fecha: String(u.creado_en || '').slice(0, 10),
+        Activos: ''
+      });
+    });
     exportarCSV(filas, `reporte_usuarios_${new Date().toISOString().slice(0, 10)}.csv`);
+  }
+
+  // Abre la vista de impresión dedicada (tamaño carta, "Página X de Y") en
+  // una pestaña nueva, conservando los filtros ya aplicados en la URL.
+  function abrirImpresion() {
+    const params = new URLSearchParams();
+    for (const [clave, valor] of Object.entries(filtros)) {
+      if (valor !== '' && valor !== 'todos' && valor !== null && valor !== undefined) {
+        params.set(clave, valor);
+      }
+    }
+    const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+    window.open(`${base}/reporte/imprimir?${params.toString()}`, '_blank', 'noopener');
   }
 
   return (
@@ -165,7 +206,7 @@ export default function ReportePage() {
       <div className="encabezado-pagina">
         <h2>Reporte de usuarios</h2>
         <div className="acciones-encabezado">
-          <button type="button" className="btn btn-secundario" onClick={() => window.print()}>
+          <button type="button" className="btn btn-secundario" onClick={abrirImpresion}>
             Imprimir
           </button>
           <button type="button" className="btn btn-primario" onClick={exportarCsv} disabled={!reporte}>

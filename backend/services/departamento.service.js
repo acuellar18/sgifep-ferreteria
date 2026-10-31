@@ -33,8 +33,18 @@ class DepartamentoService {
   async crear(datos) {
     const dto = departamentoDto.validar(datos);
     await this.validarNombreUnico(dto.nombre);
-    const nuevoId = await departamentoRepository.crear(dto);
-    return departamentoDto.serializar(await departamentoRepository.buscarPorId(nuevoId));
+    try {
+      const nuevoId = await departamentoRepository.crear(dto);
+      return departamentoDto.serializar(await departamentoRepository.buscarPorId(nuevoId));
+    } catch (err) {
+      // El índice UNIQUE (collation insensible a tildes/mayúsculas) es la
+      // segunda barrera: cubre la condición de carrera entre la validación
+      // previa y la inserción, y devuelve el mismo 409 amigable.
+      if (err.code === 'ER_DUP_ENTRY') {
+        throw new HttpError(409, 'Ya existe un departamento con ese nombre');
+      }
+      throw err;
+    }
   }
 
   async actualizar(id, datos) {
@@ -42,7 +52,14 @@ class DepartamentoService {
     const existe = await departamentoRepository.buscarPorId(id);
     if (!existe) throw new HttpError(404, 'Departamento no encontrado');
     await this.validarNombreUnico(dto.nombre, id);
-    await departamentoRepository.actualizar(id, dto);
+    try {
+      await departamentoRepository.actualizar(id, dto);
+    } catch (err) {
+      if (err.code === 'ER_DUP_ENTRY') {
+        throw new HttpError(409, 'Ya existe un departamento con ese nombre');
+      }
+      throw err;
+    }
     return departamentoDto.serializar(await departamentoRepository.buscarPorId(id));
   }
 
