@@ -53,6 +53,7 @@
   max-width: 100px;
   object-fit: contain;
   display: block;
+  filter: hue-rotate(120deg) saturate(1.2) brightness(0.9);
 }
 
 .menu-toggle {
@@ -143,8 +144,8 @@
 }
 
 .rol-badge {
-  background: #f7a567;
-  color: #141414;
+  background: var(--color-primario-oscuro);
+  color: #ffffff;
   font-size: 0.68rem;
   font-weight: 700;
   padding: 2px 10px;
