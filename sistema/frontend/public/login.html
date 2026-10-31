@@ -70,7 +70,7 @@
     }
 
     .back-link:hover {
-        color: #d85d00;
+        color: #15803d;
         text-decoration: underline;
     }
 
@@ -78,6 +78,7 @@
         max-width: 140px;
         height: auto;
         margin-bottom: 25px;
+        filter: hue-rotate(120deg) saturate(1.2) brightness(0.9);
     }
 
     .login-form {
@@ -115,7 +116,7 @@
     }
 
     .input-pill:focus {
-        border-color: #d85d00;
+        border-color: #15803d;
     }
 
     /* Ícono del ojito */
@@ -131,12 +132,12 @@
     }
 
     .toggle-password-icon:hover {
-        color: #d85d00;
+        color: #15803d;
     }
 
     .btn-login-pill {
         width: 100%;
-        background-color: #d85d00;
+        background-color: #15803d;
         color: #ffffff;
         border: none;
         border-radius: 25px;
@@ -145,12 +146,12 @@
         font-size: 0.95rem;
         cursor: pointer;
         margin-top: 10px;
-        box-shadow: 0 4px 12px rgba(216, 93, 0, 0.3);
+        box-shadow: 0 4px 12px rgba(21, 128, 61, 0.3);
         transition: background-color 0.2s;
     }
 
     .btn-login-pill:hover {
-        background-color: #c05200;
+        background-color: #16a34a;
     }
 
     .forgot-password {
@@ -292,7 +293,7 @@
         const usuarioInput = document.getElementById('usuario').value.trim();
         const passwordInput = document.getElementById('password').value.trim();
 
-        errorMsg.style.color = '#d85d00';
+        errorMsg.style.color = '#15803d';
         errorMsg.innerText = '⏳ Cargando...';
 
         try {
@@ -335,7 +336,7 @@
         const resetMsg = document.getElementById('reset-msg');
         const identificador = document.getElementById('resetIdentificador').value.trim();
 
-        resetMsg.style.color = '#d85d00';
+        resetMsg.style.color = '#15803d';
         resetMsg.innerText = '⏳ Enviando instrucciones...';
 
         try {
