@@ -10,6 +10,32 @@ module.exports = {
     res.json({ success: true, ...data });
   }),
 
+  // Registro público: mesas de trabajo limitadas por IP (5 solicitudes/hora)
+  registrarse: manejarAsync(async (req, res) => {
+    const ip = req.ip || req.connection.remoteAddress || 'unknown';
+    const now = Date.now();
+    const limitMs = 60 * 60 * 1000;
+    const maxIntents = 5;
+    const key = 'registro:' + ip;
+    const attempts = (global.__registroRateLimit = global.__registroRateLimit || {});
+    const history = (attempts[key] || []).filter(t => now - t < limitMs);
+    if (history.length >= maxIntents) {
+      return res.status(429).json({ success: false, mensaje: 'Demasiadas solicitudes. Intenta más tarde.' });
+    }
+    history.push(now);
+    attempts[key] = history;
+
+    const data = await authService.registrarse(req.body, {
+      ip,
+      userAgent: req.get('user-agent')
+    });
+    res.status(201).json({
+      success: true,
+      mensaje: '✅ Solicitud enviada. Tu cuenta quedará activa cuando un administrador la habilite.',
+      data
+    });
+  }),
+
   // Rate limit simple por IP para recuperación (3 intentos / 15 min)
   solicitarRestablecer: manejarAsync(async (req, res) => {
     const ip = req.ip || req.connection.remoteAddress || 'unknown';

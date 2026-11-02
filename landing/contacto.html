@@ -37,50 +37,49 @@
     </div>
 </nav>
 
-<section class="page-hero-simple">
-    <div class="container">
-        <h1 class="display-6">Contáctanos</h1>
-        <p>Escribinos y te respondemos a la brevedad.</p>
-    </div>
-</section>
-
-<section class="py-5">
+<!-- Sección con fondo de imagen en tonos verdes -->
+<section class="contacto-bg">
     <div class="container py-3">
         <div class="contacto-card">
-            <div class="row g-0">
+            <div class="row g-0 align-items-center">
+
+                <!-- Columna izquierda: título + información -->
                 <div class="col-lg-5">
                     <div class="contacto-info-modern">
-                        <h2 class="h4 mb-4">Información</h2>
+                        <h1 class="display-6 fw-bold mb-4">Contáctanos</h1>
                         <p>San Lucas Tolimán, Sololá</p>
                         <p>(+502) 5606-9373</p>
                         <p><a href="mailto:ferreteriapuente07@gmail.com">ferreteriapuente07@gmail.com</a></p>
                         <p class="hours mb-0">Lunes a viernes: 8:00am – 5:00pm<br>Sábado: 8:00am – 12:30pm</p>
                     </div>
                 </div>
+
+                <!-- Columna derecha: formulario -->
                 <div class="col-lg-7">
                     <div class="contacto-form-modern">
-                        <h3 class="h5 mb-4" style="color:var(--navy)">Envíanos un mensaje</h3>
+                        <h3 class="h4 mb-4">Envíanos un mensaje</h3>
                         <form id="contactForm">
                             <div class="field-modern">
                                 <label>Nombre</label>
-                                <input type="text" placeholder="Nombre completo" required>
+                                <input type="text" name="Nombre" placeholder="Nombre completo" required>
                             </div>
                             <div class="field-modern">
                                 <label>Correo electrónico</label>
-                                <input type="email" placeholder="Correo electrónico" required>
+                                <input type="email" name="email" placeholder="Correo electrónico" required>
                             </div>
                             <div class="field-modern">
                                 <label>Asunto</label>
-                                <input type="text" placeholder="Deje su asunto aquí" required>
+                                <input type="text" name="Asunto" placeholder="Deje su asunto aquí" required>
                             </div>
                             <div class="field-modern">
                                 <label>Mensaje</label>
-                                <textarea rows="4" placeholder="Deje su mensaje aquí" required></textarea>
+                                <textarea rows="4" name="Mensaje" placeholder="Deje su mensaje aquí" required></textarea>
                             </div>
                             <button type="submit" class="btn btn-amber w-100">Enviar mensaje</button>
                         </form>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
@@ -108,7 +107,7 @@
             </div>
             <div class="col-6 col-md-3">
                 <h6 class="text-white mb-3">Contacto</h6>
-                <p class="small mb-1"><a href="tel:+5025606-9373">+(502) 5606-9373</a></p>
+                <p class="small mb-1"><a href="tel:+50256069373">+(502) 5606-9373</a></p>
                 <p class="small"><a href="mailto:ferreteriapuente07@gmail.com">ferreteriapuente07@gmail.com</a></p>
             </div>
             <div class="col-6 col-md-4">
@@ -132,13 +131,40 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script type="module" src="/src/login.js"></script>
 <script>
-    document.getElementById('contactForm').addEventListener('submit', function(e) {
+    const form = document.getElementById('contactForm');
+
+    form.addEventListener('submit', async function (e) {
         e.preventDefault();
-        document.getElementById('successModal').style.display = 'flex';
+        const btn = form.querySelector('button[type="submit"]');
+        const textoOriginal = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Enviando...';
+
+        try {
+            const datos = Object.fromEntries(new FormData(form).entries());
+            const res = await fetch('/api/contacto', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datos)
+            });
+            if (!res.ok) {
+                let detalle = '';
+                try { detalle = (await res.json()).mensaje || ''; } catch { /* sin cuerpo */ }
+                throw new Error(detalle);
+            }
+            document.getElementById('successModal').style.display = 'flex';
+            form.reset();
+        } catch (err) {
+            alert(err.message || 'No se pudo enviar el mensaje. Intenta de nuevo o escríbenos por WhatsApp.');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = textoOriginal;
+        }
     });
+
     function closeModal() {
         document.getElementById('successModal').style.display = 'none';
-        document.getElementById('contactForm').reset();
+        form.reset();
     }
 </script>
 </body>

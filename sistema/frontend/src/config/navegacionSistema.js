@@ -23,6 +23,7 @@ export const MODULOS_SISTEMA = [
   {
     id: 'usuarios',
     titulo: 'Usuarios',
+    permiso: 'administrarUsuarios',
     subitems: [
       { to: '/', etiqueta: 'Listado de Usuarios' },
       { to: '/reporte', etiqueta: 'Reporte de Usuarios' },
@@ -62,6 +63,7 @@ export const MODULOS_SISTEMA = [
     {
     id: 'despacho',
     titulo: 'Despacho',
+    permiso: 'consultarDespacho',
     subitems: [
       { to: '/despacho', etiqueta: 'Listado de Despachos' },
       { to: '/despacho/rutas-entregas', etiqueta: 'Rutas y Entregas' }
@@ -71,8 +73,8 @@ export const MODULOS_SISTEMA = [
     id: 'reportes',
     titulo: 'Reportes',
     subitems: [
-      { to: '/reportes', etiqueta: 'Reporte General' },
-      { to: '/reportes/ventas', etiqueta: 'Reporte de Ventas' },
+      { to: '/reportes', etiqueta: 'Reporte General', permiso: 'consultarReporteGeneral' },
+      { to: '/reportes/ventas', etiqueta: 'Reporte de Ventas', permiso: 'consultarReporteFacturacion' },
       { to: '/reportes/compras', etiqueta: 'Reporte de Compras', permiso: 'consultarReportes' },
       { to: '/reportes/inventario', etiqueta: 'Reporte de Inventario', permiso: 'consultarReporteInventario' },
       { to: '/seguridad/auditoria', etiqueta: 'Auditoría', permiso: 'consultarAuditoria' }

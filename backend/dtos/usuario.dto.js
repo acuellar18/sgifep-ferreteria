@@ -72,6 +72,36 @@ function validarActualizar(datos = {}) {
   return { ...dto, password: password || null };
 }
 
+// Registro público: crea la cuenta INACTIVA y sin roles; un administrador
+// debe activarla (y asignar roles) antes del primer ingreso.
+function validarRegistroPublico(datos = {}) {
+  const nombre = typeof datos.nombre === 'string' ? datos.nombre.trim() : '';
+  const apellido = typeof datos.apellido === 'string' ? datos.apellido.trim() : '';
+  let username = typeof datos.username === 'string' ? datos.username.trim() : '';
+  const email = typeof datos.email === 'string' ? datos.email.trim().toLowerCase() : '';
+  const password = typeof datos.password === 'string' ? datos.password : '';
+
+  if (!nombre || nombre.length < 2) throw new HttpError(400, 'El nombre es requerido (mínimo 2 letras)');
+  if (nombre.length > 80) throw new HttpError(400, 'El nombre es demasiado largo');
+  if (apellido.length > 80) throw new HttpError(400, 'El apellido es demasiado largo');
+
+  if (!username) throw new HttpError(400, 'El nombre de usuario es requerido');
+  if (!/^[A-Za-z0-9._-]{3,30}$/.test(username)) {
+    throw new HttpError(400, 'El usuario debe tener 3-30 caracteres y solo puede usar letras, números, punto, guion o guion bajo (sin espacios)');
+  }
+  username = username.toLowerCase();
+
+  if (!email) throw new HttpError(400, 'El correo es requerido');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 160) {
+    throw new HttpError(400, 'El correo no es válido');
+  }
+
+  if (!password) throw new HttpError(400, 'La contraseña es requerida');
+  validarPassword(password, { username, nombre });
+
+  return { nombre, apellido: apellido || null, username, email, password };
+}
+
 function serializar(fila) {
   if (!fila) return null;
   return {
@@ -109,6 +139,7 @@ module.exports = {
   parseRoles,
   validarCrear,
   validarActualizar,
+  validarRegistroPublico,
   validarRolesEntrada,
   serializar,
   serializarLista,
