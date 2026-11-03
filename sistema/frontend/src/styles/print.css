@@ -36,7 +36,17 @@ body.print-body {
 
 .print-toolbar-acciones {
   display: flex;
+  align-items: center;
   gap: 8px;
+}
+
+.print-toolbar-error {
+  max-width: 320px;
+  padding: 6px 10px;
+  background: #7f1d1d;
+  border-radius: 4px;
+  color: #fecaca;
+  font-size: 12px;
 }
 
 .print-hojas {
@@ -385,6 +395,11 @@ body.print-body {
   body.print-body,
   .print-documento {
     background: #fff !important;
+  }
+
+  .print-documento,
+  .print-documento * {
+    visibility: visible !important;
   }
 
   .print-documento {
