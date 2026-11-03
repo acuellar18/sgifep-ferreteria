@@ -901,7 +901,6 @@ body.landing {
     max-width: 130px;
     object-fit: contain;
     display: inline-block;
-    filter: hue-rotate(120deg) saturate(1.2) brightness(0.9);
 }
 
 .landing-modern .brand-text { font-size: 0.72rem; letter-spacing: 0.5px; color: var(--negro); line-height: 1.2; }

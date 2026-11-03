@@ -272,9 +272,6 @@ export default function Layout() {
               );
             })}
           </nav>
-          <div className="drawer-footer">
-            <a href="/index.html" className="drawer-volver">← Volver al sitio</a>
-          </div>
         </aside>
 
         <div className="contenido">
