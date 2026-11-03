@@ -322,7 +322,7 @@ export default function ReporteComprasPage() {
     XLSX.writeFile(wb, `reporte_compras_${fechaLocal(new Date())}.xlsx`);
   }
 
-async function exportarPDF() {
+async function construirPdfDocumento() {
     const doc = new jsPDF();
     const AP = 210;
 
@@ -434,61 +434,31 @@ async function exportarPDF() {
     const ahora = new Date();
     doc.text(`Generado el ${ahora.toLocaleDateString('es-GT')}, ${ahora.toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })}`, 14, fy);
 
-doc.save(`reporte_compras_${fechaLocal(new Date())}.pdf`);
+    return doc;
   }
 
-function imprimirReporte() {
-    const f = `${filtrosAplicados.startDate || 'inicio'} a ${filtrosAplicados.endDate || 'hoy'}`;
-    const rData = resumen;
-    const resumenHtml = `<tr><td>Total comprado</td><td class="num">${formatearMoneda(totalComprado)}</td></tr>
-<tr><td>Facturas registradas</td><td class="num">${rData.num_compras}</td></tr>
-<tr><td>Promedio por factura</td><td class="num">${formatearMoneda(rData.promedio_compra)}</td></tr>
-<tr><td>Saldo por pagar</td><td class="num">${formatearMoneda(rData.total_por_pagar)}</td></tr>`;
-    const meses = comprasPorMes.map(m => `<tr><td>${m.mes}</td><td class="num">${m.cantidad}</td><td class="num">${formatearMoneda(m.total)}</td></tr>`).join('');
-    const prods = productosMasComprados.map(p => `<tr><td>${p.codigo}</td><td>${p.nombre}</td><td class="num">${p.cantidad_total.toLocaleString('es-GT')}</td><td class="num">${formatearMoneda(p.total_comprado)}</td><td class="num">${formatearMoneda(p.costo_promedio)}</td></tr>`).join('');
-    const cuentas = cuentasPorPagar.map(c => `<tr><td>${c.numero}</td><td>${c.proveedor_nombre}</td><td>${c.fecha}</td><td>${c.fecha_vencimiento}</td><td class="num">${formatearMoneda(c.total)}</td><td class="num">${formatearMoneda(c.saldo_pendiente)}</td><td class="num">${c.dias_restantes}</td></tr>`).join('');
-    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Reporte de Compras</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter','Segoe UI',Tahoma,sans-serif;color:#111827;background:#fff;padding:12mm}
-.print-encabezado{display:flex;align-items:flex-start;justify-content:space-between;gap:12mm;padding-bottom:5mm;border-bottom:2px solid #16a34a}
-.print-empresa h1{margin:0 0 1.5mm;font-size:16pt;color:#111827}
-.print-empresa p{margin:0.8mm 0;font-size:9pt;color:#374151}
-.print-documento-titulo{min-width:52mm;padding:3mm 5mm;text-align:right;border:1px solid #d1d5db;border-radius:3px}
-.print-etiqueta{display:block;color:#16a34a;font-size:7.5pt;font-weight:700;letter-spacing:0.08em}
-.print-documento-titulo strong{display:block;margin:1mm 0;font-size:13pt}
-.print-numero{font-size:10pt;font-weight:600}
-.print-filtros{margin:4mm 0 0;padding:2mm 3mm;background:#f8f9fa;border-left:3px solid #16a34a;font-size:8.5pt}
-h2.print-seccion{margin:5mm 0 2mm;color:#16a34a;font-size:9.5pt;text-transform:uppercase;letter-spacing:0.04em}
-.print-tabla{width:100%;border-collapse:collapse;font-size:8.8pt}
-.print-tabla th{padding:2mm;background:#141414;color:#fff;text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:0.03em}
-.print-tabla td{padding:1.8mm 2mm;border-bottom:1px solid #e5e7eb}
-.print-tabla tbody tr:nth-child(even) td{background:#f8f9fa}
-.print-tabla .num{text-align:right;white-space:nowrap}
-.print-meta{display:flex;justify-content:space-between;margin-top:6mm;color:#6b7280;font-size:8pt}
-@media print{@page{margin:0}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-</style></head><body>
-<div class="print-encabezado"><div><h1>Ferretería El Puente</h1><p>SGIFEP — Sistema de Gestión Integral</p></div>
-<div class="print-documento-titulo"><span class="print-etiqueta">REPORTE</span><strong>Compras</strong><span class="print-numero">${f}</span></div></div>
-<div class="print-filtros"><strong>Filtros:</strong> ${f}</div>
-<h2 class="print-seccion">Resumen</h2>
-<table class="print-tabla"><thead><tr><th>Indicador</th><th class="num">Valor</th></tr></thead><tbody>${resumenHtml}</tbody></table>
-<h2 class="print-seccion">Compras por mes</h2>
-<table class="print-tabla"><thead><tr><th>Mes</th><th class="num">Compras</th><th class="num">Total</th></tr></thead><tbody>${meses}</tbody></table>
-<h2 class="print-seccion">Productos m&aacute;s comprados</h2>
-<table class="print-tabla"><thead><tr><th>C&oacute;digo</th><th>Producto</th><th class="num">Cantidad</th><th class="num">Total</th><th class="num">Costo prom.</th></tr></thead><tbody>${prods}</tbody></table>
-<h2 class="print-seccion">Cuentas por pagar</h2>
-<table class="print-tabla"><thead><tr><th>Factura</th><th>Proveedor</th><th>Fecha</th><th>Vence</th><th class="num">Total</th><th class="num">Saldo</th><th class="num">D&iacute;as</th></tr></thead><tbody>${cuentas}</tbody></table>
-<div class="print-meta"><span>Registros: ${comprasPorMes.length} meses</span><span>Generado el ${new Date().toLocaleString('es-GT')}</span></div>
-</body></html>`;
-    try {
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const w = window.open(url, '_blank');
-      if (w) setTimeout(() => URL.revokeObjectURL(url), 1000);
-      else notificar.error('Permite la ventana emergente');
-    } catch { notificar.error('No se pudo abrir la ventana'); }
+  async function exportarPDF() {
+    const doc = await construirPdfDocumento();
+    if (!doc) return;
+    doc.save(`reporte_compras_${fechaLocal(new Date())}.pdf`);
   }
+
+async function imprimirReporte() {
+    try {
+      const doc = await construirPdfDocumento();
+      if (!doc) return;
+      const url = URL.createObjectURL(doc.output('blob'));
+      const ventana = window.open(url, '_blank');
+      if (ventana) setTimeout(() => URL.revokeObjectURL(url), 60000);
+      else {
+        URL.revokeObjectURL(url);
+        notificar.error('Permite la ventana emergente para imprimir');
+      }
+    } catch {
+      notificar.error('No se pudo abrir la ventana de impresión');
+    }
+  }
+
 
   return (
     <section className="reporte-compras">

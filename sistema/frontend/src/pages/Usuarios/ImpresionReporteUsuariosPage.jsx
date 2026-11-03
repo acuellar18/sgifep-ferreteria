@@ -205,7 +205,13 @@ export default function ImpresionReporteUsuariosPage() {
       api.get('/roles?estado=activo')
     ])
       .then(([reporte, departamentos, roles]) => {
-        if (activo) setDatos({ reporte, departamentos, roles });
+        if (activo) {
+          setDatos({
+            reporte: reporte.data,
+            departamentos: departamentos.data,
+            roles: roles.data
+          });
+        }
       })
       .catch((err) => {
         if (activo) setError(err.message);
@@ -289,62 +295,70 @@ export default function ImpresionReporteUsuariosPage() {
   }, [datos, filtros]);
 
   if (error) return <div className="print-error">{error}</div>;
-  if (!datos || !paginas) return <div className="print-error">Preparando reporte para imprimir...</div>;
 
   return (
     <>
-      {/* Regla de medición: fuera de la vista (no-print), misma tipografía. */}
-      <div className="print-rep-regla no-print" aria-hidden="true">
-        <div ref={refBloque0} className="print-rep-stack">
-          <EncabezadoPortada />
-          <MetaBloque filtros={filtros} departamentos={datos.departamentos} roles={datos.roles} />
-          <Resumen totales={datos.reporte.totales} />
-          <TablaDepartamento porDepartamento={datos.reporte.porDepartamento} />
-          <TablaRol porRol={datos.reporte.porRol} />
-          <h3 className="print-rep-titulo-listado">Listado detallado de usuarios</h3>
+      {/* Regla de medición: fuera de la vista (no-print), misma tipografía.
+          Debe montarse siempre para que useLayoutEffect pueda medir alturas y
+          calcular la paginación; si se oculta con un return temprano los refs
+          quedan nulos y la vista se queda en "Preparando...". */}
+      {datos && (
+        <div className="print-rep-regla no-print" aria-hidden="true">
+          <div ref={refBloque0} className="print-rep-stack">
+            <EncabezadoPortada />
+            <MetaBloque filtros={filtros} departamentos={datos.departamentos} roles={datos.roles} />
+            <Resumen totales={datos.reporte.totales} />
+            <TablaDepartamento porDepartamento={datos.reporte.porDepartamento} />
+            <TablaRol porRol={datos.reporte.porRol} />
+            <h3 className="print-rep-titulo-listado">Listado detallado de usuarios</h3>
+            <table className="print-tabla print-rep-tabla-detalle">
+              <thead ref={refTheadDetalle}>
+                <tr>
+                  <th>Código</th>
+                  <th>Nombre completo</th>
+                  <th>Departamento</th>
+                  <th>Rol</th>
+                  <th>Estado</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+            </table>
+          </div>
+          <div ref={refBloqueN} className="print-rep-stack">
+            <Continuacion />
+            <h3 className="print-rep-titulo-listado">Listado detallado de usuarios</h3>
+          </div>
           <table className="print-tabla print-rep-tabla-detalle">
-            <thead ref={refTheadDetalle}>
-              <tr>
-                <th>Código</th>
-                <th>Nombre completo</th>
-                <th>Departamento</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th>Fecha</th>
+            <tbody>
+              <tr ref={refFila}>
+                <td>COD-000</td>
+                <td>Usuario Ejemplo Apellido</td>
+                <td>Ventas</td>
+                <td>caja, ventas</td>
+                <td>Activo</td>
+                <td>01/01/2026</td>
               </tr>
-            </thead>
+            </tbody>
           </table>
+          <footer className="print-pie" ref={refPie}>
+            <span>Reporte de usuarios</span>
+            <span>Página 1 de 1</span>
+          </footer>
         </div>
-        <div ref={refBloqueN} className="print-rep-stack">
-          <Continuacion />
-          <h3 className="print-rep-titulo-listado">Listado detallado de usuarios</h3>
-        </div>
-        <table className="print-tabla print-rep-tabla-detalle">
-          <tbody>
-            <tr ref={refFila}>
-              <td>COD-000</td>
-              <td>Usuario Ejemplo Apellido</td>
-              <td>Ventas</td>
-              <td>caja, ventas</td>
-              <td>Activo</td>
-              <td>01/01/2026</td>
-            </tr>
-          </tbody>
-        </table>
-        <footer className="print-pie" ref={refPie}>
-          <span>Reporte de usuarios</span>
-          <span>Página 1 de 1</span>
-        </footer>
-      </div>
+      )}
 
-      <PrintLayout
-        titulo="Reporte de usuarios"
-        subtitulo="Ferretería El Puente · SGIFEP"
-        orientacion="portrait"
-        tamano="letter"
-        paginas={paginas}
-        nombreArchivo="Reporte de usuarios"
-      />
+      {paginas ? (
+        <PrintLayout
+          titulo="Reporte de usuarios"
+          subtitulo="Ferretería El Puente · SGIFEP"
+          orientacion="portrait"
+          tamano="letter"
+          paginas={paginas}
+          nombreArchivo="Reporte de usuarios"
+        />
+      ) : (
+        <div className="print-error">Preparando reporte para imprimir...</div>
+      )}
     </>
   );
 }

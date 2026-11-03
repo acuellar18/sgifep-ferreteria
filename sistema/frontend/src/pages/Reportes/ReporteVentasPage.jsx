@@ -172,7 +172,7 @@ export default function ReporteVentasPage() {
     notificar.exito('Reporte exportado en Excel');
   }
 
-  async function exportarPdf() {
+  async function construirPdfDocumento() {
     const doc = new jsPDF();
     const AP = 210;
 
@@ -249,6 +249,12 @@ export default function ReporteVentasPage() {
     const ahora = new Date();
     doc.text(`Generado el ${ahora.toLocaleDateString('es-GT')}, ${ahora.toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })}`, 14, fy);
 
+    return doc;
+  }
+
+  async function exportarPdf() {
+    const doc = await construirPdfDocumento();
+    if (!doc) return;
     doc.save(`reporte-ventas-${aplicados.desde}-${aplicados.hasta}.pdf`);
     notificar.exito('Reporte exportado en PDF');
   }
@@ -269,47 +275,22 @@ export default function ReporteVentasPage() {
     }
   }
 
-function imprimirReporte() {
-    const resumen = filasResumen().map(r => `<tr><td>${r.Indicador}</td><td class="num">${formatearMoneda(r.Valor)}</td></tr>`).join('');
-    const filas = data.por_dia.map(d => `<tr><td>${d.fecha}</td><td class="num">${d.ventas_count}</td><td class="num">${formatearMoneda(d.total)}</td><td class="num">${formatearMoneda(d.efectivo)}</td><td class="num">${formatearMoneda(d.tarjeta)}</td><td class="num">${formatearMoneda(d.transferencia)}</td></tr>`).join('');
-    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Reporte de Ventas</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter','Segoe UI',Tahoma,sans-serif;color:#111827;background:#fff;padding:12mm}
-.print-encabezado{display:flex;align-items:flex-start;justify-content:space-between;gap:12mm;padding-bottom:5mm;border-bottom:2px solid #16a34a}
-.print-empresa h1{margin:0 0 1.5mm;font-size:16pt;color:#111827}
-.print-empresa p{margin:0.8mm 0;font-size:9pt;color:#374151}
-.print-documento-titulo{min-width:52mm;padding:3mm 5mm;text-align:right;border:1px solid #d1d5db;border-radius:3px}
-.print-etiqueta{display:block;color:#16a34a;font-size:7.5pt;font-weight:700;letter-spacing:0.08em}
-.print-documento-titulo strong{display:block;margin:1mm 0;font-size:13pt}
-.print-numero{font-size:10pt;font-weight:600}
-.print-filtros{margin:4mm 0 0;padding:2mm 3mm;background:#f8f9fa;border-left:3px solid #16a34a;font-size:8.5pt}
-h2.print-seccion{margin:5mm 0 2mm;color:#16a34a;font-size:9.5pt;text-transform:uppercase;letter-spacing:0.04em}
-.print-tabla{width:100%;border-collapse:collapse;font-size:8.8pt}
-.print-tabla th{padding:2mm;background:#141414;color:#fff;text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:0.03em}
-.print-tabla td{padding:1.8mm 2mm;border-bottom:1px solid #e5e7eb}
-.print-tabla tbody tr:nth-child(even) td{background:#f8f9fa}
-.print-tabla .num{text-align:right;white-space:nowrap}
-.print-meta{display:flex;justify-content:space-between;margin-top:6mm;color:#6b7280;font-size:8pt}
-@media print{@page{margin:0}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-</style></head><body>
-<div class="print-encabezado"><div><h1>Ferretería El Puente</h1><p>SGIFEP — Sistema de Gestión Integral</p></div>
-<div class="print-documento-titulo"><span class="print-etiqueta">REPORTE</span><strong>Ventas</strong><span class="print-numero">Del ${aplicados.desde} al ${aplicados.hasta}</span></div></div>
-<div class="print-filtros"><strong>Filtros:</strong> Del ${aplicados.desde} al ${aplicados.hasta}</div>
-<h2 class="print-seccion">Resumen</h2>
-<table class="print-tabla"><thead><tr><th>Indicador</th><th class="num">Valor</th></tr></thead><tbody>${resumen}</tbody></table>
-<h2 class="print-seccion">Ventas por d&iacute;a</h2>
-<table class="print-tabla"><thead><tr><th>Fecha</th><th class="num">Ventas</th><th class="num">Total</th><th class="num">Efectivo</th><th class="num">Tarjeta</th><th class="num">Transferencia</th></tr></thead><tbody>${filas}</tbody></table>
-<div class="print-meta"><span>Registros: ${data.por_dia.length} d&iacute;as</span><span>Generado el ${new Date().toLocaleString('es-GT')}</span></div>
-</body></html>`;
+async function imprimirReporte() {
     try {
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const w = window.open(url, '_blank');
-      if (w) setTimeout(() => URL.revokeObjectURL(url), 1000);
-      else notificar.error('Permite la ventana emergente');
-    } catch { notificar.error('No se pudo abrir la ventana'); }
+      const doc = await construirPdfDocumento();
+      if (!doc) return;
+      const url = URL.createObjectURL(doc.output('blob'));
+      const ventana = window.open(url, '_blank');
+      if (ventana) setTimeout(() => URL.revokeObjectURL(url), 60000);
+      else {
+        URL.revokeObjectURL(url);
+        notificar.error('Permite la ventana emergente para imprimir');
+      }
+    } catch {
+      notificar.error('No se pudo abrir la ventana de impresión');
+    }
   }
+
 
   return (
     <section className="reporte-ventas">

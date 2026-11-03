@@ -476,7 +476,7 @@ body.print-body {
   justify-content: space-between;
   gap: 12mm;
   padding-bottom: 5mm;
-  border-bottom: 2px solid #ea580c;
+  border-bottom: 2px solid #16a34a;
 }
 
 .print-rep-empresa {
@@ -514,7 +514,7 @@ body.print-body {
 
 .print-rep-etiqueta {
   display: block;
-  color: #ea580c;
+  color: #16a34a;
   font-size: 7.5pt;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -531,14 +531,14 @@ body.print-body {
   justify-content: space-between;
   gap: 8mm;
   padding-bottom: 3mm;
-  border-bottom: 2px solid #ea580c;
+  border-bottom: 2px solid #16a34a;
   font-size: 9pt;
 }
 
 .print-rep-meta {
   padding: 2.5mm 3mm;
   background: #f8f9fa;
-  border-left: 3px solid #ea580c;
+  border-left: 3px solid #16a34a;
   font-size: 8.5pt;
 }
 
@@ -578,13 +578,13 @@ body.print-body {
   display: block;
   margin-top: 1mm;
   font-size: 15pt;
-  color: #ea580c;
+  color: #16a34a;
 }
 
 .print-rep-seccion h3,
 .print-rep-titulo-listado {
   margin: 0 0 2mm;
-  color: #ea580c;
+  color: #16a34a;
   font-size: 9.5pt;
   text-transform: uppercase;
   letter-spacing: 0.04em;

@@ -161,7 +161,7 @@ export default function ReporteInventarioPage() {
     notificar.exito('Excel generado correctamente');
   }
 
-async function exportarPDF() {
+async function construirPdfDocumento() {
     const doc = new jsPDF();
     const AP = 210;
 
@@ -194,19 +194,47 @@ async function exportarPDF() {
     doc.text('Inventario', tx + 5, 17);
     doc.setTextColor(107, 114, 128);
     doc.setFontSize(8);
-    doc.text(textoFiltros(), tx + 5, 23);
+    doc.text(nombreCategoriaActual(), tx + 5, 23);
 
     doc.setDrawColor(22, 163, 74);
     doc.setLineWidth(0.6);
     doc.line(12, 36, AP - 12, 36);
     doc.setLineWidth(0.1);
 
-    let y = 42;
+    // Barra de filtros: el detalle largo (incluido "sin movimiento") va aquí,
+    // en una franja de ancho completo, y no dentro del recuadro del título.
+    let y = 39;
+    doc.setFillColor(248, 249, 250);
+    doc.rect(12, y, AP - 24, 8, 'F');
+    doc.setDrawColor(22, 163, 74);
+    doc.setLineWidth(1.2);
+    doc.line(12, y, 12, y + 8);
+    doc.setLineWidth(0.1);
+    doc.setTextColor(17, 24, 39);
+    doc.setFontSize(8.5);
+    doc.text('Filtros:', 15, y + 5);
+    doc.setTextColor(55, 65, 81);
+    const lineasFiltros = doc.splitTextToSize(textoFiltros(), AP - 48);
+    doc.text(lineasFiltros, 32, y + 5);
+    y += 8 + (lineasFiltros.length - 1) * 4 + 4;
+
+    const titulo = (texto) => {
+      if (y > 258) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setTextColor(22, 163, 74);
+      doc.setFontSize(10);
+      doc.text(texto, 14, y);
+      y += 4;
+    };
+
     doc.setFontSize(10);
     doc.setTextColor(17, 24, 39);
     doc.text(`Valor del inventario: ${formatearMoneda(totales.valor)}  |  Productos: ${totales.productos}  |  Unidades: ${formatearNumero(totales.unidades, 2)}`, 14, y);
     y += 6;
 
+    titulo('Distribución por categoría');
     autoTable(doc, {
       startY: y,
       head: [['Categoría', 'Productos', 'Unidades', 'Valor']],
@@ -218,7 +246,8 @@ async function exportarPDF() {
       columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' } }
     });
 
-    y = doc.lastAutoTable.finalY + 6;
+    y = doc.lastAutoTable.finalY + 7;
+    titulo('Productos con stock bajo');
     autoTable(doc, {
       startY: y,
       head: [['Código', 'Producto', 'Existencia', 'Mínimo', 'Faltante']],
@@ -230,11 +259,12 @@ async function exportarPDF() {
       columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' } }
     });
 
-    y = doc.lastAutoTable.finalY + 6;
+    y = doc.lastAutoTable.finalY + 7;
+    titulo('Productos sin movimiento');
     autoTable(doc, {
       startY: y,
       head: [['Código', 'Producto', 'Existencia', 'Último movimiento', 'Días']],
-      body: datos.sin_movimiento.map((item) => [item.codigo, item.nombre, formatearNumero(item.stock_actual, 2), formatearFecha(item.ultimo_movimiento), item.dias_sin_movimiento]),
+      body: datos.sin_movimiento.map((item) => [item.codigo, item.nombre, formatearNumero(item.stock_actual, 2), item.ultimo_movimiento ? formatearFecha(item.ultimo_movimiento) : 'Sin movimientos', item.dias_sin_movimiento]),
       theme: 'grid',
       styles: { fontSize: 7.5, cellPadding: 1.2 },
       headStyles: { fillColor: [20, 20, 20], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7 },
@@ -242,66 +272,42 @@ async function exportarPDF() {
       columnStyles: { 2: { halign: 'right' }, 4: { halign: 'right' } }
     });
 
-    const fy = doc.lastAutoTable.finalY + 8;
+    let fy = doc.lastAutoTable ? doc.lastAutoTable.finalY + 8 : y;
+    if (fy > 286) {
+      doc.addPage();
+      fy = 20;
+    }
     doc.setFontSize(7);
     doc.setTextColor(107, 114, 128);
     const ahora = new Date();
     doc.text(`Generado el ${ahora.toLocaleDateString('es-GT')}, ${ahora.toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })}`, 14, fy);
 
-    doc.save(`reporte_inventario_${new Date().toISOString().slice(0, 10)}.pdf`);
-notificar.exito('PDF generado correctamente');
+    return doc;
   }
 
-function imprimirReporte() {
-    const cats = datos.categorias.map(c => `<tr><td>${c.nombre}</td><td class="num">${c.productos}</td><td class="num">${formatearNumero(c.unidades, 2)}</td><td class="num">${formatearMoneda(c.valor)}</td></tr>`).join('');
-    const bajos = datos.stock_bajo.map(s => `<tr><td>${s.codigo}</td><td>${s.nombre}</td><td class="num">${formatearNumero(s.stock_actual, 2)}</td><td class="num">${formatearNumero(s.stock_minimo, 2)}</td><td class="num">${formatearNumero(s.faltante, 2)}</td></tr>`).join('');
-    const sinMov = datos.sin_movimiento.map(m => `<tr><td>${m.codigo}</td><td>${m.nombre}</td><td class="num">${formatearNumero(m.stock_actual, 2)}</td><td>${formatearFecha(m.ultimo_movimiento)}</td><td class="num">${m.dias_sin_movimiento}</td></tr>`).join('');
-    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Reporte de Inventario</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter','Segoe UI',Tahoma,sans-serif;color:#111827;background:#fff;padding:12mm}
-.print-encabezado{display:flex;align-items:flex-start;justify-content:space-between;gap:12mm;padding-bottom:5mm;border-bottom:2px solid #16a34a}
-.print-empresa h1{margin:0 0 1.5mm;font-size:16pt;color:#111827}
-.print-empresa p{margin:0.8mm 0;font-size:9pt;color:#374151}
-.print-documento-titulo{min-width:52mm;padding:3mm 5mm;text-align:right;border:1px solid #d1d5db;border-radius:3px}
-.print-etiqueta{display:block;color:#16a34a;font-size:7.5pt;font-weight:700;letter-spacing:0.08em}
-.print-documento-titulo strong{display:block;margin:1mm 0;font-size:13pt}
-.print-numero{font-size:10pt;font-weight:600}
-.print-filtros{margin:4mm 0 0;padding:2mm 3mm;background:#f8f9fa;border-left:3px solid #16a34a;font-size:8.5pt}
-h2.print-seccion{margin:5mm 0 2mm;color:#16a34a;font-size:9.5pt;text-transform:uppercase;letter-spacing:0.04em}
-.print-tabla{width:100%;border-collapse:collapse;font-size:8.8pt}
-.print-tabla th{padding:2mm;background:#141414;color:#fff;text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:0.03em}
-.print-tabla td{padding:1.8mm 2mm;border-bottom:1px solid #e5e7eb}
-.print-tabla tbody tr:nth-child(even) td{background:#f8f9fa}
-.print-tabla .num{text-align:right;white-space:nowrap}
-.print-meta{display:flex;justify-content:space-between;margin-top:6mm;color:#6b7280;font-size:8pt}
-@media print{@page{margin:0}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-</style></head><body>
-<div class="print-encabezado"><div><h1>Ferretería El Puente</h1><p>SGIFEP — Sistema de Gestión Integral</p></div>
-<div class="print-documento-titulo"><span class="print-etiqueta">REPORTE</span><strong>Inventario</strong><span class="print-numero">${textoFiltros()}</span></div></div>
-<div class="print-filtros"><strong>Filtros:</strong> ${textoFiltros()}</div>
-<h2 class="print-seccion">Valor del inventario</h2>
-<table class="print-tabla"><thead><tr><th>Indicador</th><th class="num">Valor</th></tr></thead><tbody>
-<tr><td>Valor del inventario</td><td class="num">${formatearMoneda(totales.valor)}</td></tr>
-<tr><td>Productos</td><td class="num">${totales.productos}</td></tr>
-<tr><td>Unidades</td><td class="num">${formatearNumero(totales.unidades, 2)}</td></tr>
-</tbody></table>
-<h2 class="print-seccion">Categor&iacute;as</h2>
-<table class="print-tabla"><thead><tr><th>Categor&iacute;a</th><th class="num">Productos</th><th class="num">Unidades</th><th class="num">Valor</th></tr></thead><tbody>${cats}</tbody></table>
-<h2 class="print-seccion">Stock bajo</h2>
-<table class="print-tabla"><thead><tr><th>C&oacute;digo</th><th>Producto</th><th class="num">Existencia</th><th class="num">M&iacute;nimo</th><th class="num">Faltante</th></tr></thead><tbody>${bajos}</tbody></table>
-<h2 class="print-seccion">Sin movimiento</h2>
-<table class="print-tabla"><thead><tr><th>C&oacute;digo</th><th>Producto</th><th class="num">Existencia</th><th>&Uacute;ltimo movimiento</th><th class="num">D&iacute;as</th></tr></thead><tbody>${sinMov}</tbody></table>
-<div class="print-meta"><span>Registros: ${datos.categorias.length} categor&iacute;as</span><span>Generado el ${new Date().toLocaleString('es-GT')}</span></div>
-</body></html>`;
-    try {
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const w = window.open(url, '_blank');
-      if (w) setTimeout(() => URL.revokeObjectURL(url), 1000);
-      else notificar.error('Permite la ventana emergente');
-    } catch { notificar.error('No se pudo abrir la ventana'); }
+  async function exportarPDF() {
+    const doc = await construirPdfDocumento();
+    if (!doc) return;
+    doc.save(`reporte_inventario_${new Date().toISOString().slice(0, 10)}.pdf`);
+    notificar.exito('PDF generado correctamente');
   }
+
+async function imprimirReporte() {
+    try {
+      const doc = await construirPdfDocumento();
+      if (!doc) return;
+      const url = URL.createObjectURL(doc.output('blob'));
+      const ventana = window.open(url, '_blank');
+      if (ventana) setTimeout(() => URL.revokeObjectURL(url), 60000);
+      else {
+        URL.revokeObjectURL(url);
+        notificar.error('Permite la ventana emergente para imprimir');
+      }
+    } catch {
+      notificar.error('No se pudo abrir la ventana de impresión');
+    }
+  }
+
 
   return (
     <section className="reporte-compras inventario-reporte">

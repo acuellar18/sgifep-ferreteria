@@ -235,7 +235,7 @@ export default function ReporteGeneralPage() {
     notificar.exito('Excel generado');
   }
 
-  async function exportarPdf() {
+  async function construirPdfDocumento() {
     const doc = new jsPDF();
     const AP = 210;
 
@@ -391,91 +391,32 @@ export default function ReporteGeneralPage() {
     const fechaGen = ahora.toLocaleDateString('es-GT') + ', ' + ahora.toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' });
     doc.text(`Generado el ${fechaGen}`, AP - 14, y, { align: 'right' });
 
+    return doc;
+  }
+
+  async function exportarPdf() {
+    const doc = await construirPdfDocumento();
+    if (!doc) return;
     doc.save(`reporte-general-${fechaLocal(HOY)}.pdf`);
     notificar.exito('PDF descargado');
   }
 
-  function imprimir() {
-    const kpiRows = [
-      ['Ventas del día', `${data.kpis.ventas_dia.count} ventas`, formatearMoneda(data.kpis.ventas_dia.total)],
-      ['Ventas del mes', `${data.kpis.ventas_mes.count} ventas`, formatearMoneda(data.kpis.ventas_mes.total)],
-      ['Compras del mes', `${data.kpis.compras_mes.count} compras`, formatearMoneda(data.kpis.compras_mes.total)],
-      ['Utilidad estimada', '', formatearMoneda(data.kpis.utilidad_estimada)],
-      ['Productos en inventario', String(data.kpis.productos_inventario.total), ''],
-      ['Stock bajo', String(data.kpis.stock_bajo), ''],
-      ['Usuarios activos', String(data.kpis.usuarios_activos), ''],
-      ['Cuentas por pagar', `${data.kpis.cuentas_por_pagar.count} cuentas`, formatearMoneda(data.kpis.cuentas_por_pagar.total)]
-    ];
-    const html = `<!DOCTYPE html>
-<html lang="es"><head><meta charset="UTF-8"><title>Reporte General</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter','Segoe UI',Tahoma,sans-serif;color:#111827;background:#fff;padding:12mm}
-.print-encabezado{display:flex;align-items:flex-start;justify-content:space-between;gap:12mm;padding-bottom:5mm;border-bottom:2px solid #16a34a}
-.print-empresa{display:flex;align-items:flex-start;gap:5mm}
-.print-logo{max-width:42mm;max-height:20mm;object-fit:contain}
-.print-empresa h1{margin:0 0 1.5mm;font-size:16pt;color:#111827}
-.print-empresa p{margin:0.8mm 0;font-size:9pt;color:#374151}
-.print-documento-titulo{min-width:52mm;padding:3mm 5mm;text-align:right;border:1px solid #d1d5db;border-radius:3px}
-.print-etiqueta{display:block;color:#16a34a;font-size:7.5pt;font-weight:700;letter-spacing:0.08em}
-.print-documento-titulo strong{display:block;margin:1mm 0;font-size:13pt}
-.print-numero{font-size:10pt;font-weight:600}
-.print-filtros{margin:4mm 0 0;padding:2mm 3mm;background:#f8f9fa;border-left:3px solid #16a34a;font-size:8.5pt}
-h2.print-seccion{margin:5mm 0 2mm;color:#16a34a;font-size:9.5pt;text-transform:uppercase;letter-spacing:0.04em}
-.print-tabla{width:100%;border-collapse:collapse;font-size:8.8pt}
-.print-tabla th{padding:2mm;background:#141414;color:#fff;text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:0.03em}
-.print-tabla td{padding:1.8mm 2mm;border-bottom:1px solid #e5e7eb}
-.print-tabla tbody tr:nth-child(even) td{background:#f8f9fa}
-.print-tabla .num{text-align:right;white-space:nowrap}
-.print-totales{display:flex;justify-content:flex-end;gap:8mm;margin-top:5mm}
-.print-totales>div{display:flex;flex-direction:column;align-items:flex-end;min-width:38mm;padding:2mm 3mm;border:1px solid #e5e7eb;border-radius:3px;background:#f8f9fa}
-.print-totales span{color:#6b7280;font-size:7.5pt;font-weight:700;text-transform:uppercase}
-.print-totales strong{font-size:12pt;color:#111827}
-.print-meta{display:flex;justify-content:space-between;margin-top:6mm;color:#6b7280;font-size:8pt}
-@media print{@page{margin:0}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-</style></head><body>
-<div class="print-encabezado">
-  <div class="print-empresa">
-    <img src="/img/logo.png" alt="Logo" class="print-logo">
-    <div><h1>Ferretería El Puente</h1><p>SGIFEP — Sistema de Gestión Integral</p></div>
-  </div>
-  <div class="print-documento-titulo">
-    <span class="print-etiqueta">REPORTE</span>
-    <strong>Reporte General</strong>
-    <span class="print-numero">${textoPeriodo()}</span>
-  </div>
-</div>
-<div class="print-filtros"><strong>Filtros:</strong> ${textoPeriodo()}</div>
-<h2 class="print-seccion">Indicadores</h2>
-<table class="print-tabla"><thead><tr><th>Indicador</th><th>Detalle</th><th class="num">Valor</th></tr></thead><tbody>
-${kpiRows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td class="num">${r[2]}</td></tr>`).join('')}
-</tbody></table>
-${data.ultimas_ventas.length ? `<h2 class="print-seccion">Últimas ventas</h2>
-<table class="print-tabla"><thead><tr><th>No.</th><th>Cliente</th><th class="num">Total</th><th>Fecha</th></tr></thead><tbody>
-${data.ultimas_ventas.slice(0,10).map(v => `<tr><td>${v.numero}</td><td>${v.cliente}</td><td class="num">${formatearMoneda(v.total)}</td><td>${formatearFechaHora(v.creado_en)}</td></tr>`).join('')}
-</tbody></table>` : ''}
-${data.productos_stock_bajo.length ? `<h2 class="print-seccion">Productos con stock bajo</h2>
-<table class="print-tabla"><thead><tr><th>Código</th><th>Producto</th><th class="num">Stock actual</th><th class="num">Stock mínimo</th></tr></thead><tbody>
-${data.productos_stock_bajo.map(p => `<tr><td>${p.codigo}</td><td>${p.nombre}</td><td class="num">${p.stock_actual}</td><td class="num">${p.stock_minimo}</td></tr>`).join('')}
-</tbody></table>` : ''}
-<div class="print-totales">
-  <div><span>Total ventas</span><strong>${formatearMoneda(data.kpis.ventas_mes.total)}</strong></div>
-  <div><span>Total compras</span><strong>${formatearMoneda(data.kpis.compras_mes.total)}</strong></div>
-  <div><span>Ganancia estimada</span><strong>${formatearMoneda(data.kpis.utilidad_estimada)}</strong></div>
-</div>
-<div class="print-meta">
-  <span>Registros: ${kpiRows.length} indicadores</span>
-  <span>Generado el ${new Date().toLocaleString('es-GT')}</span>
-</div>
-</body></html>`;
+async function imprimir() {
     try {
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const w = window.open(url, '_blank');
-      if (w) setTimeout(() => URL.revokeObjectURL(url), 1000);
-      else notificar.error('Permite la ventana emergente');
-    } catch { notificar.error('No se pudo abrir la ventana'); }
+      const doc = await construirPdfDocumento();
+      if (!doc) return;
+      const url = URL.createObjectURL(doc.output('blob'));
+      const ventana = window.open(url, '_blank');
+      if (ventana) setTimeout(() => URL.revokeObjectURL(url), 60000);
+      else {
+        URL.revokeObjectURL(url);
+        notificar.error('Permite la ventana emergente para imprimir');
+      }
+    } catch {
+      notificar.error('No se pudo abrir la ventana de impresión');
+    }
   }
+
 
   return (
     <ErrorBoundary>
