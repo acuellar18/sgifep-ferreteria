@@ -89,6 +89,18 @@ h1, h2, h3, h4 {
   text-decoration: none;
 }
 
+/* Panel "sin permiso para este módulo" (acento naranja institucional) */
+.sin-acceso-icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  color: #ea580c;
+  background: #fdeee4;
+}
+
 /* ============================================================
    CONTROLES Y BOTONES (naranja institucional, sin azules)
    ============================================================ */

@@ -12,5 +12,11 @@ export default defineConfig({
         ubicacion: 'ubicacion.html'
       }
     }
+  },
+  server: {
+    proxy: {
+      // El formulario de contacto envía a /api/contacto (backend Express en 3000).
+      '/api': 'http://127.0.0.1:3000'
+    }
   }
 });

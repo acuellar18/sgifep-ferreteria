@@ -45,6 +45,7 @@ app.get('/', (req, res) => {
 // ---------- API REST (arquitectura MVC: rutas -> controladores -> servicios) ----------
 
 app.use('/api', require('./routes/auth.routes')); // /api/login, /api/reset-password
+app.use('/api', require('./routes/contacto.routes')); // /api/contacto (público, formulario landing)
 app.use('/api/usuarios', require('./routes/usuarios.routes'));
 app.use('/api/perfil', require('./routes/perfil.routes'));
 app.use('/api/caja', require('./routes/caja.routes'));

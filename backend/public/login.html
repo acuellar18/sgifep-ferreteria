@@ -222,9 +222,73 @@
 
             <button type="submit" class="btn-login-pill">Iniciar Sesión</button>
             <a href="#" class="forgot-password" data-bs-toggle="modal" data-bs-target="#resetModal">¿Olvidaste tu contraseña?</a>
+            <a href="#" class="forgot-password" style="color:#15803d" data-bs-toggle="modal" data-bs-target="#registroModal">¿No tienes cuenta? Regístrate</a>
             <p id="error-msg" class="mt-3 mb-0"></p>
         </form>
     </div>
+</div>
+
+<!-- Modal Registro público (solicitud de cuenta) -->
+<div class="modal fade" id="registroModal" tabindex="-1" aria-labelledby="registroModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content p-3">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold" id="registroModalLabel">Solicitar cuenta</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form onsubmit="enviarRegistro(event)">
+        <div class="modal-body">
+            <p class="text-muted small mb-3">Completa tus datos. El administrador de la ferretería revisará tu solicitud y activará tu cuenta antes de tu primer ingreso.</p>
+            <div class="row g-2">
+              <div class="col-md-6">
+                <div class="field-group">
+                  <label for="regNombre">Nombre *</label>
+                  <input type="text" id="regNombre" class="input-pill" style="padding-right: 18px;" placeholder="Ej: Mario" required>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="field-group">
+                  <label for="regApellido">Apellido</label>
+                  <input type="text" id="regApellido" class="input-pill" style="padding-right: 18px;" placeholder="Ej: Pérez López">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="field-group">
+                  <label for="regUsuario">Usuario *</label>
+                  <input type="text" id="regUsuario" class="input-pill" style="padding-right: 18px;" placeholder="Ej: mario.perez" autocomplete="off" required>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="field-group">
+                  <label for="regEmail">Correo electrónico *</label>
+                  <input type="email" id="regEmail" class="input-pill" style="padding-right: 18px;" placeholder="Ej: mario@gmail.com" required>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="field-group">
+                  <label for="regPassword">Contraseña *</label>
+                  <div class="password-wrapper">
+                    <input type="password" id="regPassword" class="input-pill" placeholder="Mín. 8, mayúscula, minúscula y número" required>
+                    <i class="bi bi-eye-slash toggle-password-icon" id="iconRegPass" onclick="togglePassword('regPassword', 'iconRegPass')"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="field-group">
+                  <label for="regPassword2">Confirmar contraseña *</label>
+                  <input type="password" id="regPassword2" class="input-pill" style="padding-right: 18px;" placeholder="Repite la contraseña" required>
+                </div>
+              </div>
+            </div>
+            <div id="registro-msg" class="mt-2 small text-center"></div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn-login-pill w-auto px-4 mt-0" id="btnRegistro">Enviar solicitud</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <!-- Modal Solicitar Restablecer Contraseña -->
@@ -356,6 +420,61 @@
         } catch (err) {
             resetMsg.style.color = '#c0392b';
             resetMsg.innerText = 'Error al conectar con el servidor';
+        }
+    }
+
+    // Registro público: crea la cuenta INACTIVA; el administrador la activa
+    // desde el módulo Usuarios antes del primer ingreso.
+    async function enviarRegistro(event) {
+        event.preventDefault();
+        const msg = document.getElementById('registro-msg');
+        const btn = document.getElementById('btnRegistro');
+        const password = document.getElementById('regPassword').value;
+        const password2 = document.getElementById('regPassword2').value;
+
+        msg.style.color = '#15803d';
+        msg.innerText = '⏳ Enviando solicitud...';
+        btn.disabled = true;
+
+        if (password !== password2) {
+            msg.style.color = '#c0392b';
+            msg.innerText = 'Las contraseñas no coinciden.';
+            btn.disabled = false;
+            return;
+        }
+        if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
+            msg.style.color = '#c0392b';
+            msg.innerText = 'La contraseña debe tener mínimo 8 caracteres, con mayúscula, minúscula y número.';
+            btn.disabled = false;
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_BASE}/api/registro`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    nombre: document.getElementById('regNombre').value.trim(),
+                    apellido: document.getElementById('regApellido').value.trim(),
+                    username: document.getElementById('regUsuario').value.trim(),
+                    email: document.getElementById('regEmail').value.trim(),
+                    password
+                })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                msg.style.color = '#15803d';
+                msg.innerHTML = '✅ <strong>¡Solicitud enviada!</strong><br>Tu cuenta quedó creada pero está <strong>pendiente de activación</strong>: un administrador de la ferretería la habilitará antes de que puedas ingresar al sistema.<br>Se te notificará al correo que registraste.';
+                ['regNombre', 'regApellido', 'regUsuario', 'regEmail', 'regPassword', 'regPassword2'].forEach(id => document.getElementById(id).value = '');
+            } else {
+                msg.style.color = '#c0392b';
+                msg.innerText = data.mensaje || 'No se pudo enviar la solicitud.';
+            }
+        } catch (err) {
+            msg.style.color = '#c0392b';
+            msg.innerText = 'Error al conectar con el servidor';
+        } finally {
+            btn.disabled = false;
         }
     }
 </script>

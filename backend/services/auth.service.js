@@ -14,6 +14,14 @@ const { validarPassword } = require('../utils/password');
 const MAX_INTENTOS = 5;
 const VENTANA_MINUTOS = 15;
 
+function escaparHtml(texto) {
+  return String(texto == null ? '' : texto)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 // Servicio de autenticación: valida credenciales, consulta roles y emite el
 // token JWT que el resto de la API exige (seguridad mediante JWT).
 class AuthService {
@@ -58,7 +66,7 @@ class AuthService {
     }
     if (!usuario.activo) {
       await this.registrarIntento(usuarioIngresado, ip, false, 'usuario_inactivo');
-      throw new HttpError(403, 'Este usuario está deshabilitado');
+      throw new HttpError(403, 'Cuenta inactiva. Un administrador debe habilitar tu acceso antes de poder ingresar.');
     }
 
     const passwordValida = await bcrypt.compare(String(password), usuario.password_hash);
@@ -177,15 +185,135 @@ class AuthService {
     return true;
   }
 
+  // ---------- Registro público (cuenta pendiente de activación) ----------
+  async registrarse(datos, contexto = {}) {
+    const usuarioDto = require('../dtos/usuario.dto');
+    const dto = usuarioDto.validarRegistroPublico(datos);
+
+    if (await usuarioRepository.buscarPorUsername(dto.username)) {
+      throw new HttpError(409, 'Ya existe una cuenta con ese nombre de usuario');
+    }
+    if (await usuarioRepository.buscarPorEmail(dto.email)) {
+      throw new HttpError(409, 'Ya existe una cuenta con ese correo electrónico');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.password, 10);
+
+    const connection = await pool.getConnection();
+    let nuevoId;
+    try {
+      await connection.beginTransaction();
+      nuevoId = await usuarioRepository.crear(connection, {
+        nombre: dto.nombre,
+        apellido: dto.apellido,
+        codigo: null, // el administrador le asigna código al activar la cuenta
+        username: dto.username,
+        password_hash: passwordHash,
+        rol: 'pendiente',
+        departamento_id: null,
+        activo: 0, // lanzará 403 en login hasta que un administrador lo active
+        email: dto.email
+      });
+      // Sin roles: quedan sin acceso hasta que el administrador asigne.
+      await connection.commit();
+    } catch (err) {
+      await connection.rollback();
+      if (err.code === 'ER_DUP_ENTRY') {
+        throw new HttpError(409, 'El usuario o correo ya están en uso');
+      }
+      throw err;
+    } finally {
+      connection.release();
+    }
+
+    await registrarAuditoria(null, {
+      username: dto.username,
+      accion: 'auth.registro.publico',
+      entidad: 'usuarios',
+      entidadId: nuevoId,
+      descripcion: 'Solicitud de registro público (cuenta creada inactiva y sin roles)',
+      ip: contexto.ip,
+      userAgent: contexto.userAgent
+    });
+
+    this.notificarNuevaSolicitud(dto).catch(() => {});
+    return { username: dto.username, pendiente: true };
+  }
+
+  // Aviso al correo de la ferretería: hay una solicitud pendiente de activar.
+  async notificarNuevaSolicitud(dto) {
+    try {
+      const nodemailer = require('nodemailer');
+      const user = process.env.SMTP_USER;
+      const pass = process.env.SMTP_PASS;
+      if (!user || !pass) return;
+
+      const port = Number(process.env.SMTP_PORT) || 465;
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port,
+        secure: port === 465,
+        auth: { user, pass }
+      });
+
+      const para = process.env.CONTACTO_EMAIL || user;
+      const remitente = process.env.MAIL_FROM || `Sistema SGIFEP <${user}>`;
+      const nombres = [dto.nombre, dto.apellido].filter(Boolean).join(' ');
+      const link = `https://mail.google.com`;
+
+      await transporter.sendMail({
+        from: remitente,
+        to: para,
+        replyTo: dto.email,
+        subject: `Solicitud de acceso al sistema: ${dto.username}`,
+        text: [
+          'Nueva solicitud de registro en el sistema SGIFEP.',
+          `Nombre: ${nombres}`,
+          `Usuario: ${dto.username}`,
+          `Correo: ${dto.email}`,
+          '',
+          'La cuenta quedó creada pero INACTIVA. Apruébala desde el módulo Usuarios:',
+          'actívala, asignale código, departamento y roles antes de su primer ingreso.'
+        ].join('\n'),
+        html: `<div style="margin:0; padding:24px; background-color:#f4f4f5; font-family:Arial,Helvetica,sans-serif;">
+                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px; margin:0 auto; background-color:#ffffff; border-radius:12px; overflow:hidden; border:1px solid #e4e4e7;">
+                   <tr>
+                     <td style="background-color:#141414; padding:18px 28px;">
+                       <p style="margin:0; color:#ffffff; font-size:15px; font-weight:bold;">SISTEMA SGIFEP</p>
+                       <p style="margin:4px 0 0; color:#ea580c; font-size:12px; text-transform:uppercase; letter-spacing:1px;">Nueva solicitud de acceso</p>
+                     </td>
+                   </tr>
+                   <tr>
+                     <td style="padding:28px; font-size:14px; color:#27272a;">
+                       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                         <tr><td style="padding:8px 0; color:#71717a; width:90px;">Nombre</td><td style="padding:8px 0; font-weight:bold;">${escaparHtml(nombres)}</td></tr>
+                         <tr><td style="padding:8px 0; color:#71717a;">Usuario</td><td style="padding:8px 0; font-weight:bold;">${escaparHtml(dto.username)}</td></tr>
+                         <tr><td style="padding:8px 0; color:#71717a;">Correo</td><td style="padding:8px 0; font-weight:bold;">${escaparHtml(dto.email)}</td></tr>
+                       </table>
+                       <div style="margin:18px 0 0; padding:16px 18px; background-color:#fef3ec; border-left:4px solid #ea580c; border-radius:6px;">
+                         La cuenta quedó creada pero <strong>INACTIVA</strong>. Apruébala desde el módulo
+                         <strong>Usuarios</strong>: actívala y asignale código, departamento y roles antes de su primer ingreso.
+                       </div>
+                     </td>
+                   </tr>
+                   <tr>
+                     <td style="padding:14px 28px; background-color:#faf7f2; border-top:1px solid #e4e4e7;">
+                       <p style="margin:0; font-size:11px; color:#a1a1aa;">Aviso automático del formulario de registro (login SGIFEP)</p>
+                     </td>
+                   </tr>
+                 </table>
+               </div>`
+      });
+    } catch (err) {
+      console.error('[registro] error enviando aviso al administrador:', err.message || err);
+    }
+  }
+
   // ---------- Recuperación por token ----------
   async solicitarRestablecer(identificador, ip = '') {
     const crypto = require('crypto');
     const nodemailer = require('nodemailer');
     const identificadorLimpio = String(identificador).trim().toLowerCase();
-
-    if (process.env.NODE_ENV === 'development' || process.env.DEBUG) {
-      console.log('[DEBUG recuperación] buscando:', identificadorLimpio, '| email en usuario:', usuario ? usuario[0]?.email : 'N/A');
-    }
 
     // Buscar por username o correo (respuesta fija, no filtra)
     let usuario;
@@ -194,14 +322,13 @@ class AuthService {
     } else {
       [usuario] = await pool.query('SELECT id, username, nombre, email FROM usuarios WHERE LOWER(username) = ? AND activo = 1 LIMIT 1', [identificadorLimpio]);
     }
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[DEBUG recuperación] buscado:', identificadorLimpio, '| encontrado:', usuario && usuario.length ? `id=${usuario[0].id} email=${usuario[0].email || 'SIN CORREO'}` : 'NO EXISTE');
+    }
     if (!usuario || !usuario.length) {
-      if (process.env.NODE_ENV === 'development') console.log('[DEBUG recuperación] usuario no encontrado:', identificadorLimpio);
       return true; // no revelar ausencia
     }
     const u = usuario[0];
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[DEBUG recuperación] encontrado usuario id=', u.id, 'email=', u.email || 'NO TIENE EMAIL');
-    }
     const tokenRaw = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(tokenRaw).digest('hex');
     const expira = new Date(Date.now() + 30 * 60 * 1000); // 30 min
@@ -211,10 +338,16 @@ class AuthService {
       [u.id, tokenHash, expira]
     );
 
+    if (!u.email || !u.email.includes('@')) {
+      // Sin correo registrado no hay dónde enviar el enlace; queda registrado.
+      console.error('[recuperación] el usuario %s no tiene un correo válido registrado; no se puede enviar el enlace', u.username);
+      return true; // no revelar ausencia de correo
+    }
+
     // Configurar nodemailer desde .env (no exponer credenciales en código)
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT) || 587,
+      port: Number(process.env.SMTP_PORT) || 465,
       secure: Number(process.env.SMTP_PORT) === 465,
       auth: {
         user: process.env.SMTP_USER,
@@ -222,19 +355,46 @@ class AuthService {
       }
     });
 
-    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
+    // En desarrollo el sistema se sirve bajo /usuarios (base: '/usuarios/');
+    // en producción FRONTEND_URL apunta al dominio (el HTML queda en la raíz).
+    const baseUrl = (process.env.FRONTEND_URL || 'http://localhost:5174/usuarios').replace(/\/$/, '');
     const link = `${baseUrl}/restablecer.html?token=${tokenRaw}`;
+
+    const html = `<div style="margin:0; padding:24px; background-color:#f4f4f5; font-family:Arial,Helvetica,sans-serif;">
+                   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px; margin:0 auto; background-color:#ffffff; border-radius:12px; overflow:hidden; border:1px solid #e4e4e7;">
+                     <tr>
+                       <td style="background-color:#141414; padding:18px 28px;">
+                         <p style="margin:0; color:#ffffff; font-size:15px; font-weight:bold;">FERRETERÍA EL PUENTE</p>
+                         <p style="margin:4px 0 0; color:#ea580c; font-size:12px; text-transform:uppercase; letter-spacing:1px;">Restablecimiento de contraseña</p>
+                       </td>
+                     </tr>
+                     <tr>
+                       <td style="padding:28px; font-size:14px; color:#27272a;">
+                         <p style="margin:0 0 12px;">Hola <strong>${escaparHtml(u.nombre || u.username)}</strong>,</p>
+                         <p style="margin:0 0 16px;">Recibimos una solicitud para restablecer la contraseña de tu cuenta <strong>${escaparHtml(u.username)}</strong>.</p>
+                         <p style="margin:0 0 20px;">
+                           <a href="${link}" style="display:inline-block; padding:12px 22px; background-color:#ea580c; color:#ffffff; text-decoration:none; font-weight:bold; border-radius:8px;">Restablecer contraseña</a>
+                         </p>
+                         <p style="margin:0 0 10px;">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
+                         <p style="margin:0 0 16px; word-break:break-all; font-size:12px; color:#71717a;">${link}</p>
+                         <p style="margin:0 0 6px;">El enlace expira en <strong>30 minutos</strong> y solo puede usarse una vez.</p>
+                         <p style="margin:0;">Si no solicitaste esto, ignora este mensaje y tu contraseña seguirá igual.</p>
+                       </td>
+                     </tr>
+                     <tr>
+                       <td style="padding:14px 28px; background-color:#faf7f2; border-top:1px solid #e4e4e7;">
+                         <p style="margin:0; font-size:11px; color:#a1a1aa;">Sistema SGIFEP — Ferretería El Puente</p>
+                       </td>
+                     </tr>
+                   </table>
+                 </div>`;
 
     try {
       await transporter.sendMail({
-        from: process.env.MAIL_FROM || `SGIFEP <noreply@sgifep.local>`,
-        to: u.email || `${u.username}@local`,
-        subject: 'Restablecer contraseña - SGIFEP',
-        html: `<p>Hola ${u.nombre || u.username},</p>
-               <p>Recibiste este mensaje porque solicitaste restablecer tu contraseña.</p>
-               <p><a href="${link}">Restablecer contraseña</a></p>
-               <p>El enlace expira en 30 minutos y solo puede usarse una vez.</p>
-               <p>Si no solicitaste esto, ignora este mensaje.</p>`
+        from: process.env.MAIL_FROM || `SGIFEP <${process.env.SMTP_USER || 'noreply@sgifep.local'}>`,
+        to: u.email,
+        subject: 'Restablecer contraseña - Ferretería El Puente',
+        html
       });
     } catch (err) {
       // Log solo para diagnóstico; sin contraseñas ni tokens

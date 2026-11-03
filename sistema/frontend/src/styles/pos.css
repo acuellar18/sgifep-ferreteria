@@ -170,6 +170,11 @@
   font-size: 11px;
 }
 
+.pos-ayuda-alerta {
+  color: #b45309;
+  font-weight: 600;
+}
+
 .pos-boton-escanear {
   white-space: nowrap;
 }

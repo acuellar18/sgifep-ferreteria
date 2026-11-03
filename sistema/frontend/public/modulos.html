@@ -398,6 +398,11 @@
         const roles = sesion.roles?.length ? sesion.roles : [sesion.rol || 'usuario'];
         const esSuperadmin = Boolean(sesion.superadmin) || roles.includes('superadmin');
 
+        // Usuario sin roles reales asignados: ve el catálogo completo;
+        // cada módulo está protegido y advertirá si no tiene permiso.
+        const rolesConocidos = ['administrador', 'admin', 'compras', 'bodega', 'caja', 'ventas', 'reparto', 'superadmin'];
+        const sinRoles = !esSuperadmin && !roles.some((rol) => rolesConocidos.includes(rol));
+
         document.getElementById('userInfo').textContent = nombreMostrar;
         document.getElementById('userRol').textContent = roles.join(', ');
         document.getElementById('bienvenidaTitulo').textContent = `Bienvenido, ${nombreMostrar}`;
@@ -464,7 +469,7 @@
         const container = document.getElementById('modulosContainer');
 
         modulos.forEach((modulo) => {
-            const tieneAcceso = esSuperadmin || modulo.roles.some((rol) => roles.includes(rol));
+            const tieneAcceso = sinRoles || esSuperadmin || modulo.roles.some((rol) => roles.includes(rol));
             if (!tieneAcceso) return;
 
             container.insertAdjacentHTML('beforeend', `
