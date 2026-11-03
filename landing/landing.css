@@ -928,6 +928,15 @@ body.landing {
 .landing-modern .brand-text .fw-bold { font-size: 0.92rem; }
 
 .landing-modern .nav-link { color: var(--ink-soft); font-weight: 500; position: relative; }
+
+/* Navbar verde tipo cristal (efecto vidrio) */
+.landing-modern .navbar-glass {
+  background: rgba(22, 163, 74, 0.42);
+  backdrop-filter: blur(12px) saturate(1.6);
+  -webkit-backdrop-filter: blur(12px) saturate(1.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.45);
+}
+.landing-modern .navbar-glass .brand-text { color: var(--negro-suave); }
 .landing-modern .nav-link.active, .landing-modern .nav-link:hover { color: var(--negro); }
 .landing-modern .nav-link.active::after {
     content: ""; position: absolute; left: 0; right: 0; bottom: -4px; height: 2px; background: var(--acento);
@@ -959,6 +968,15 @@ body.landing {
 .landing-modern .stat-number { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 2rem; color: var(--negro); line-height: 1; }
 .landing-modern .stat-label { color: var(--ink-soft); font-size: 0.85rem; margin-top: 4px; }
 
+/* Franja de estadísticas con fondo verde sólido */
+.stats-glass {
+  background: var(--acento);
+  border-top: 1px solid rgba(255, 255, 255, 0.35);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+}
+.stats-glass .stat-number,
+.stats-glass .stat-label { color: #fff; }
+
 .cat-tile { position: relative; border-radius: 16px; overflow: hidden; aspect-ratio: 16/10; }
 .cat-tile-tall { aspect-ratio: 16/13.3; height: 100%; }
 .cat-tile img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s ease; }
@@ -987,9 +1005,72 @@ body.landing {
 .landing-modern .about-modern-text h2 { color: var(--negro); font-weight: 700; margin-bottom: 14px; }
 .about-modern-text p { color: var(--ink-soft); line-height: 1.7; margin-bottom: 12px; }
 
+/* Hero de páginas internas (Sobre nosotros) */
+.page-hero-simple {
+  padding: 70px 0 30px;
+}
+.page-hero-simple h1 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  color: var(--negro);
+  margin-bottom: 10px;
+}
+.page-hero-simple p {
+  color: var(--ink-soft);
+  font-size: 1rem;
+  margin-bottom: 0;
+}
+
 .vm-band { background: var(--negro); color: #fff; border-radius: 24px; padding: 48px; }
 .vm-band h3 { color: var(--acento); font-weight: 700; margin-bottom: 12px; }
 .vm-band p { color: #f0c9a8; line-height: 1.7; }
+
+/* Visión/Misión: títulos y textos centrados, letra blanca */
+.vm-band h3, .vm-band p { text-align: center; }
+.vm-band p { color: #fff; }
+
+/* Recuadro con estilo vidrio (Nuestra historia) */
+.vidrio-card {
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 20px;
+  padding: 45px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Nuestra historia: la imagen es el recuadro y encima un panel vidrio negro */
+.historia-imagen {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 45px;
+  aspect-ratio: 16 / 9;
+  background-image: url('/img/fachada.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+@media (max-width: 767px) {
+  .historia-imagen { aspect-ratio: auto; min-height: 420px; padding: 28px; }
+}
+.historia-panel {
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 560px;
+  color: #fff;
+}
+.historia-panel h2 { color: #fff; font-weight: 700; }
+.historia-panel p { color: #fff; line-height: 1.7; }
 
 .valor-tile { background: var(--acento-suave); border-radius: 14px; padding: 26px; border-top: 3px solid var(--acento); box-shadow: 0 10px 24px rgba(0,0,0,0.06); height: 100%; }
 .landing-modern .valor-tile strong { font-family: 'Poppins', sans-serif; color: var(--negro); display: block; margin-bottom: 8px; }
@@ -1001,7 +1082,7 @@ body.landing {
   min-height: 78vh;
   display: flex;
   align-items: center;
-  background-image: url('img/ferreteria.jpg');
+  background-image: url('/img/ferreteria.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
