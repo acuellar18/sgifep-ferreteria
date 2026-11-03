@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Chart as ChartJS, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
+import { Chart as ChartJS, Tooltip, Legend, CategoryScale, LinearScale, BarElement, ArcElement, Title } from 'chart.js';
 import { Bar, Pie } from 'react-chartjs-2';
+ChartJS.register(Tooltip, Legend, CategoryScale, LinearScale, BarElement, ArcElement, Title);
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import api from '../../services/api';
 import { useNotificacion } from '../../components/Toast';
 import exportarCSV from '../../utils/csv';
-
-ChartJS.register(Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
+import ErrorBoundary from '../../components/ErrorBoundary';
 
 const HOY = new Date();
 function fechaLocal(fecha) {
@@ -75,7 +75,7 @@ function formatearFechaHora(fecha) {
   return d.toLocaleString('es-GT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-const ETIQUETAS_METODO = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia' };
+const ETIQUETAS_METODO = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia', credito: 'Crédito', contado: 'Contado' };
 
 export default function ReporteGeneralPage() {
   const notificar = useNotificacion();
@@ -84,6 +84,7 @@ export default function ReporteGeneralPage() {
   const [data, setData] = useState({
     kpis: KPI_INICIAL,
     ventas_vs_compras: [],
+    ventas_por_dia: [],
     top_productos: [],
     ventas_por_vendedor: [],
     inventario_por_categoria: [],
@@ -111,6 +112,7 @@ export default function ReporteGeneralPage() {
       setData({
         kpis: { ...KPI_INICIAL, ...(res.data?.kpis || {}) },
         ventas_vs_compras: res.data?.ventas_vs_compras || [],
+        ventas_por_dia: res.data?.ventas_por_dia || [],
         top_productos: res.data?.top_productos || [],
         ventas_por_vendedor: res.data?.ventas_por_vendedor || [],
         inventario_por_categoria: res.data?.inventario_por_categoria || [],
@@ -225,6 +227,7 @@ export default function ReporteGeneralPage() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filasExport()), 'Reporte General');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.ventas_vs_compras), 'Ventas vs Compras');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.ventas_por_dia), 'Ventas por día');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.ventas_por_vendedor), 'Por Vendedor');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.inventario_por_categoria), 'Inventario por Categoría');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.movimientos_recientes), 'Movimientos');
@@ -292,6 +295,7 @@ export default function ReporteGeneralPage() {
   function imprimir() { window.print(); }
 
   return (
+    <ErrorBoundary>
     <section className="reporte-compras">
       <header className="reporte-cabecera">
         <div>
@@ -566,6 +570,36 @@ export default function ReporteGeneralPage() {
           <article className="reporte-panel">
             <div className="reporte-panel-header">
               <div>
+                <h4>Ventas por día</h4>
+                <p>Resumen diario de ventas en el período seleccionado.</p>
+              </div>
+              <Link to="/reportes/ventas" className="reporte-enlace">Ver reporte completo</Link>
+            </div>
+            {data.ventas_por_dia.length ? (
+              <div className="reporte-tabla-wrapper">
+                <table className="tabla reporte-tabla">
+                  <thead><tr><th>Fecha</th><th className="reporte-numero">Ventas</th><th className="reporte-numero">Total</th><th className="reporte-numero">Efectivo</th><th className="reporte-numero">Tarjeta</th><th className="reporte-numero">Transferencia</th></tr></thead>
+                  <tbody>
+                    {data.ventas_por_dia.map(d => (
+                      <tr key={d.fecha}>
+                        <td>{formatearFecha(d.fecha)}</td>
+                        <td className="reporte-numero">{d.ventas_count}</td>
+                        <td className="reporte-numero">{formatearMoneda(d.total)}</td>
+                        <td className="reporte-numero">{formatearMoneda(d.efectivo)}</td>
+                        <td className="reporte-numero">{formatearMoneda(d.tarjeta)}</td>
+                        <td className="reporte-numero">{formatearMoneda(d.transferencia)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="reporte-vacio">Sin ventas en el período.</div>
+            )}
+          </article>
+          <article className="reporte-panel">
+            <div className="reporte-panel-header">
+              <div>
                 <h4>Productos con stock bajo o agotados</h4>
                 <p>Artículos que requieren reposición.</p>
               </div>
@@ -626,5 +660,6 @@ export default function ReporteGeneralPage() {
 
       {cargando && <p className="reporte-cargando">Cargando dashboard...</p>}
     </section>
+    </ErrorBoundary>
   );
 }

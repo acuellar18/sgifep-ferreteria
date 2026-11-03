@@ -8,6 +8,7 @@ class ReporteGeneralService {
     const [
       kpis,
       ventasVsCompras,
+      ventasPorDia,
       topProductos,
       ventasPorVendedor,
       inventarioPorCategoria,
@@ -18,6 +19,7 @@ class ReporteGeneralService {
     ] = await Promise.all([
       repo.kpis(filtros.desde, filtros.hasta),
       repo.ventasVsComprasPorMes(filtros.desde, filtros.hasta),
+      repo.ventasPorDia(filtros.desde, filtros.hasta),
       repo.topProductosVendidos(filtros.desde, filtros.hasta),
       repo.ventasPorVendedor(filtros.desde, filtros.hasta),
       repo.inventarioPorCategoria(),
@@ -31,6 +33,7 @@ class ReporteGeneralService {
       filtros,
       kpis: dto.serializarKpi(kpis),
       ventas_vs_compras: ventasVsCompras,
+      ventas_por_dia: ventasPorDia,
       top_productos: topProductos,
       ventas_por_vendedor: ventasPorVendedor,
       inventario_por_categoria: inventarioPorCategoria,

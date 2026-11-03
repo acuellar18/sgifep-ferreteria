@@ -15,20 +15,25 @@ function aplicarRango(where, params, desde, hasta, campo = 'fecha') {
 
 class ReporteGeneralRepository {
   async kpis(desde, hasta) {
-    const [diaActual] = await pool.query('SELECT CURDATE() AS hoy');
-    const hoy = diaActual[0].hoy;
+    const whereV = ["f.estado = 'emitida'"];
+    const paramsV = [];
+    aplicarRango(whereV, paramsV, desde, hasta, 'f.creado_en');
 
-    const [ventasDia] = await pool.query(
-      `SELECT COALESCE(COUNT(*),0) AS count, COALESCE(SUM(total),0) AS total
-       FROM facturas WHERE DATE(creado_en) = ? AND estado = 'emitida'`, [hoy]);
+    const whereC = ["c.estado = 'recibida'"];
+    const paramsC = [];
+    aplicarRango(whereC, paramsC, desde, hasta, 'c.fecha');
 
-    const [ventasMes] = await pool.query(
+    const [ventasHoy] = await pool.query(
       `SELECT COALESCE(COUNT(*),0) AS count, COALESCE(SUM(total),0) AS total
-       FROM facturas WHERE DATE_FORMAT(creado_en,'%Y-%m') = DATE_FORMAT(?,'%Y-%m') AND estado = 'emitida'`, [hoy]);
+       FROM facturas f WHERE f.estado = 'emitida' AND DATE(f.creado_en) = CURDATE()`);
 
-    const [comprasMes] = await pool.query(
+    const [ventasPeriodo] = await pool.query(
       `SELECT COALESCE(COUNT(*),0) AS count, COALESCE(SUM(total),0) AS total
-       FROM compras WHERE DATE_FORMAT(fecha,'%Y-%m') = DATE_FORMAT(?,'%Y-%m') AND estado = 'recibida'`, [hoy]);
+       FROM facturas f WHERE ${whereV.join(' AND ')}`, paramsV);
+
+    const [comprasPeriodo] = await pool.query(
+      `SELECT COALESCE(COUNT(*),0) AS count, COALESCE(SUM(total),0) AS total
+       FROM compras c WHERE ${whereC.join(' AND ')}`, paramsC);
 
     const [productos] = await pool.query(
       `SELECT COUNT(*) AS total, COALESCE(SUM(stock_actual),0) AS stock_total
@@ -45,20 +50,20 @@ class ReporteGeneralRepository {
       `SELECT COALESCE(COUNT(*),0) AS count, COALESCE(SUM(saldo_pendiente),0) AS total
        FROM compras WHERE estado = 'recibida' AND estado_pago IN ('pendiente','parcial')`);
 
-    const utilidadQuery = await pool.query(
+    const [utilidadQuery] = await pool.query(
       `SELECT COALESCE(SUM(
         CASE WHEN df.precio_unitario > 0 AND df.costo_unitario > 0
           THEN (df.precio_unitario - df.costo_unitario) * df.cantidad
           ELSE 0 END
-      ),0) AS utilidad
-      FROM detalle_factura df
-      JOIN facturas f ON f.id = df.factura_id
-      WHERE f.estado = 'emitida' AND DATE_FORMAT(f.creado_en,'%Y-%m') = DATE_FORMAT(?,'%Y-%m')`, [hoy]);
+       ),0) AS utilidad
+       FROM detalle_factura df
+       JOIN facturas f ON f.id = df.factura_id
+       WHERE f.estado = 'emitida' AND ${whereV.join(' AND ')}`, paramsV);
 
     return {
-      ventas_dia: { count: Number(ventasDia[0].count), total: Number(ventasDia[0].total) },
-      ventas_mes: { count: Number(ventasMes[0].count), total: Number(ventasMes[0].total) },
-      compras_mes: { count: Number(comprasMes[0].count), total: Number(comprasMes[0].total) },
+      ventas_dia: { count: Number(ventasHoy[0].count), total: Number(ventasHoy[0].total) },
+      ventas_mes: { count: Number(ventasPeriodo[0].count), total: Number(ventasPeriodo[0].total) },
+      compras_mes: { count: Number(comprasPeriodo[0].count), total: Number(comprasPeriodo[0].total) },
       utilidad_estimada: Number(utilidadQuery[0].utilidad),
       productos_inventario: { total: Number(productos[0].total), stock_total: Number(productos[0].stock_total) },
       stock_bajo: Number(stockBajo[0].count),
@@ -141,6 +146,34 @@ class ReporteGeneralRepository {
     }));
   }
 
+  async ventasPorDia(desde, hasta) {
+    const where = ["f.estado = 'emitida'"];
+    const params = [];
+    aplicarRango(where, params, desde, hasta, 'f.creado_en');
+
+    const [rows] = await pool.query(
+      `SELECT DATE(f.creado_en) AS fecha,
+              COUNT(*) AS facturas_count,
+              COALESCE(SUM(f.total),0) AS total,
+              COALESCE(SUM(CASE WHEN v.metodo_pago = 'efectivo' THEN f.total ELSE 0 END),0) AS efectivo,
+              COALESCE(SUM(CASE WHEN v.metodo_pago = 'tarjeta' THEN f.total ELSE 0 END),0) AS tarjeta,
+              COALESCE(SUM(CASE WHEN v.metodo_pago = 'transferencia' THEN f.total ELSE 0 END),0) AS transferencia
+       FROM facturas f
+       LEFT JOIN ventas v ON v.factura_id = f.id
+       WHERE ${where.join(' AND ')}
+       GROUP BY DATE(f.creado_en)
+       ORDER BY fecha ASC`, params);
+
+    return rows.map(r => ({
+      fecha: String(r.fecha),
+      ventas_count: Number(r.facturas_count || 0),
+      total: Number(r.total),
+      efectivo: Number(r.efectivo),
+      tarjeta: Number(r.tarjeta),
+      transferencia: Number(r.transferencia)
+    }));
+  }
+
   async inventarioPorCategoria() {
     const [rows] = await pool.query(
       `SELECT cat.id, cat.nombre,
@@ -162,19 +195,21 @@ class ReporteGeneralRepository {
   }
 
   async ultimasVentas(desde, hasta, limite = 10) {
-    const where = ["v.estado = 'completada'"];
+    const where = ["f.estado = 'emitida'"];
     const params = [];
-    aplicarRango(where, params, desde, hasta, 'v.creado_en');
+    aplicarRango(where, params, desde, hasta, 'f.creado_en');
 
     const [rows] = await pool.query(
-      `SELECT v.id, v.numero, v.total, v.creado_en, v.metodo_pago,
-        COALESCE(u.nombre, CONCAT('Usuario ', v.usuario_id)) AS usuario_nombre,
+      `SELECT f.id, f.numero, f.total, f.creado_en,
+        COALESCE(v.metodo_pago, CASE WHEN f.condicion = 'credito' THEN 'credito' ELSE 'contado' END) AS metodo_pago,
+        COALESCE(u.nombre, CONCAT('Usuario ', f.usuario_id)) AS usuario_nombre,
         COALESCE(cl.nombre, 'Consumidor Final') AS cliente_nombre
-       FROM ventas v
-       LEFT JOIN usuarios u ON u.id = v.usuario_id
-       LEFT JOIN clientes cl ON cl.id = v.cliente_id
+       FROM facturas f
+       LEFT JOIN ventas v ON v.factura_id = f.id
+       LEFT JOIN usuarios u ON u.id = f.usuario_id
+       LEFT JOIN clientes cl ON cl.id = f.cliente_id
        WHERE ${where.join(' AND ')}
-       ORDER BY v.creado_en DESC LIMIT ?`, [...params, limite]);
+       ORDER BY f.creado_en DESC LIMIT ?`, [...params, limite]);
 
     return rows.map(r => ({
       id: r.id, numero: r.numero, total: Number(r.total),
