@@ -14,6 +14,30 @@ const { validarPassword } = require('../utils/password');
 const MAX_INTENTOS = 5;
 const VENTANA_MINUTOS = 15;
 
+// Logo embebido (CID) para las plantillas de correo.
+const adjuntoLogo = {
+  filename: 'logo.png',
+  path: path.join(__dirname, '..', 'public', 'img', 'logo.png'),
+  cid: 'logo-ferreteria'
+};
+
+// Encabezado antracita con el logo a la izquierda y el título a la derecha.
+function encabezadoCorreo(titulo, subtitulo) {
+  return `<td style="background-color:#141414; padding:18px 28px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="vertical-align:middle; width:60px;">
+                    <img src="cid:logo-ferreteria" alt="Ferretería El Puente" style="display:block; width:48px; height:48px; border:0;">
+                  </td>
+                  <td style="vertical-align:middle; text-align:right;">
+                    <p style="margin:0; color:#ffffff; font-size:15px; font-weight:bold;">${titulo}</p>
+                    <p style="margin:4px 0 0; color:#16a34a; font-size:12px; text-transform:uppercase; letter-spacing:1px;">${subtitulo}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>`;
+}
+
 function escaparHtml(texto) {
   return String(texto == null ? '' : texto)
     .replace(/&/g, '&amp;')
@@ -278,10 +302,7 @@ class AuthService {
         html: `<div style="margin:0; padding:24px; background-color:#f4f4f5; font-family:Arial,Helvetica,sans-serif;">
                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px; margin:0 auto; background-color:#ffffff; border-radius:12px; overflow:hidden; border:1px solid #e4e4e7;">
                    <tr>
-                     <td style="background-color:#141414; padding:18px 28px;">
-                       <p style="margin:0; color:#ffffff; font-size:15px; font-weight:bold;">SISTEMA SGIFEP</p>
-                       <p style="margin:4px 0 0; color:#ea580c; font-size:12px; text-transform:uppercase; letter-spacing:1px;">Nueva solicitud de acceso</p>
-                     </td>
+                     ${encabezadoCorreo('SISTEMA SGIFEP', 'Nueva solicitud de acceso')}
                    </tr>
                    <tr>
                      <td style="padding:28px; font-size:14px; color:#27272a;">
@@ -290,7 +311,7 @@ class AuthService {
                          <tr><td style="padding:8px 0; color:#71717a;">Usuario</td><td style="padding:8px 0; font-weight:bold;">${escaparHtml(dto.username)}</td></tr>
                          <tr><td style="padding:8px 0; color:#71717a;">Correo</td><td style="padding:8px 0; font-weight:bold;">${escaparHtml(dto.email)}</td></tr>
                        </table>
-                       <div style="margin:18px 0 0; padding:16px 18px; background-color:#fef3ec; border-left:4px solid #ea580c; border-radius:6px;">
+                       <div style="margin:18px 0 0; padding:16px 18px; background-color:#e7f6ec; border-left:4px solid #16a34a; border-radius:6px;">
                          La cuenta quedó creada pero <strong>INACTIVA</strong>. Apruébala desde el módulo
                          <strong>Usuarios</strong>: actívala y asignale código, departamento y roles antes de su primer ingreso.
                        </div>
@@ -302,7 +323,8 @@ class AuthService {
                      </td>
                    </tr>
                  </table>
-               </div>`
+                </div>`,
+        attachments: [adjuntoLogo]
       });
     } catch (err) {
       console.error('[registro] error enviando aviso al administrador:', err.message || err);
@@ -363,17 +385,14 @@ class AuthService {
     const html = `<div style="margin:0; padding:24px; background-color:#f4f4f5; font-family:Arial,Helvetica,sans-serif;">
                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px; margin:0 auto; background-color:#ffffff; border-radius:12px; overflow:hidden; border:1px solid #e4e4e7;">
                      <tr>
-                       <td style="background-color:#141414; padding:18px 28px;">
-                         <p style="margin:0; color:#ffffff; font-size:15px; font-weight:bold;">FERRETERÍA EL PUENTE</p>
-                         <p style="margin:4px 0 0; color:#ea580c; font-size:12px; text-transform:uppercase; letter-spacing:1px;">Restablecimiento de contraseña</p>
-                       </td>
+                       ${encabezadoCorreo('FERRETERÍA EL PUENTE', 'Restablecimiento de contraseña')}
                      </tr>
                      <tr>
                        <td style="padding:28px; font-size:14px; color:#27272a;">
                          <p style="margin:0 0 12px;">Hola <strong>${escaparHtml(u.nombre || u.username)}</strong>,</p>
                          <p style="margin:0 0 16px;">Recibimos una solicitud para restablecer la contraseña de tu cuenta <strong>${escaparHtml(u.username)}</strong>.</p>
                          <p style="margin:0 0 20px;">
-                           <a href="${link}" style="display:inline-block; padding:12px 22px; background-color:#ea580c; color:#ffffff; text-decoration:none; font-weight:bold; border-radius:8px;">Restablecer contraseña</a>
+                           <a href="${link}" style="display:inline-block; padding:12px 22px; background-color:#16a34a; color:#ffffff; text-decoration:none; font-weight:bold; border-radius:8px;">Restablecer contraseña</a>
                          </p>
                          <p style="margin:0 0 10px;">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
                          <p style="margin:0 0 16px; word-break:break-all; font-size:12px; color:#71717a;">${link}</p>
@@ -394,7 +413,8 @@ class AuthService {
         from: process.env.MAIL_FROM || `SGIFEP <${process.env.SMTP_USER || 'noreply@sgifep.local'}>`,
         to: u.email,
         subject: 'Restablecer contraseña - Ferretería El Puente',
-        html
+        html,
+        attachments: [adjuntoLogo]
       });
     } catch (err) {
       // Log solo para diagnóstico; sin contraseñas ni tokens
