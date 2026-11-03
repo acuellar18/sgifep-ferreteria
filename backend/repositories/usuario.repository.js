@@ -214,8 +214,16 @@ class UsuarioRepository {
     return { totales: { total, activos, inactivos }, porDepartamento, porRol, usuarios };
   }
 
-  async buscarPorId(id) {
-    const sql = `
+  // Datos mínimos para avisar por correo al activar la cuenta.
+  async obtenerDatosActivacion(id) {
+    const [rows] = await pool.query(
+      'SELECT id, username, nombre, email FROM usuarios WHERE id = ? LIMIT 1',
+      [id]
+    );
+    return rows[0] || null;
+  }
+
+  async buscarPorId(id) {    const sql = `
       SELECT u.id, u.codigo, u.nombre, u.apellido, u.username, u.correo,
              u.rol, u.departamento_id, u.activo, u.creado_en, u.actualizado_en,
              u.foto, u.foto_mime,
@@ -266,13 +274,23 @@ class UsuarioRepository {
     return rows[0] ? rows[0].password_hash : null;
   }
 
+  async buscarPorEmail(email, excluirId = null) {
+    const sql = 'SELECT id FROM usuarios WHERE LOWER(email) = ?';
+    const params = [String(email || '').toLowerCase()];
+    if (excluirId) {
+      params.push(excluirId);
+      return pool.query(`${sql} AND id <> ? LIMIT 1`, params).then(([rows]) => rows[0] || null);
+    }
+    return pool.query(`${sql} LIMIT 1`, params).then(([rows]) => rows[0] || null);
+  }
+
   async crear(conn, datos) {
-    const { nombre, apellido, codigo, username, password_hash, rol, departamento_id, activo } = datos;
+    const { nombre, apellido, codigo, username, password_hash, rol, departamento_id, activo, email } = datos;
     const destino = conn || pool;
     const [result] = await destino.query(
-      `INSERT INTO usuarios (nombre, apellido, codigo, username, password_hash, rol, departamento_id, activo)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [nombre, apellido, codigo, username, password_hash, rol, departamento_id, activo]
+      `INSERT INTO usuarios (nombre, apellido, codigo, username, password_hash, rol, departamento_id, activo, email)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [nombre, apellido, codigo, username, password_hash, rol, departamento_id, activo, email || null]
     );
     return result.insertId;
   }

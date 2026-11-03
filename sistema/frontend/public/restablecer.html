@@ -49,7 +49,7 @@
     <button type="submit" class="btn btn-primario w-100 py-2">Guardar nueva contraseña</button>
   </form>
   <div class="text-center mt-3">
-    <a href="/login.html" class="small text-decoration-none" style="color:#ea580c;font-weight:600">← Volver al inicio de sesión</a>
+    <a href="login.html" class="small text-decoration-none" style="color:#ea580c;font-weight:600">← Volver al inicio de sesión</a>
   </div>
 </div>
 
@@ -83,7 +83,7 @@
       if (data.success) {
         document.getElementById('msgOk').textContent = 'Contraseña actualizada. Ahora puedes iniciar sesión.';
         document.getElementById('resetForm').reset();
-        setTimeout(() => { window.location.href = '/login.html'; }, 2500);
+        setTimeout(() => { window.location.href = 'login.html'; }, 2500);
       } else {
         document.getElementById('msgError').textContent = data.mensaje || 'Token inválido o expirado.';
       }

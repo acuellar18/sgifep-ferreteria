@@ -85,6 +85,7 @@ export default function CobrosPage() {
   const [textoBusqueda, setTextoBusqueda] = useState('');
   const [sugerencias, setSugerencias] = useState([]);
   const [buscandoProducto, setBuscandoProducto] = useState(false);
+  const [sinCoincidencias, setSinCoincidencias] = useState('');
   const [escanerAbierto, setEscanerAbierto] = useState(false);
   const [modalPago, setModalPago] = useState(false);
   const [metodoPago, setMetodoPago] = useState('efectivo');
@@ -207,6 +208,7 @@ export default function CobrosPage() {
 
   function buscarProductos(texto) {
     setTextoBusqueda(texto);
+    setSinCoincidencias('');
     clearTimeout(temporizadorBusqueda.current);
     if (texto.trim().length < 2) {
       setSugerencias([]);
@@ -217,6 +219,7 @@ export default function CobrosPage() {
       try {
         const res = await api.get('/pos/productos', { params: { q: texto.trim() } });
         setSugerencias(res.data || []);
+        if (!res.data || res.data.length === 0) setSinCoincidencias(texto.trim());
       } catch {
         setSugerencias([]);
       } finally {
@@ -274,6 +277,7 @@ export default function CobrosPage() {
 
     setTextoBusqueda('');
     setSugerencias([]);
+    setSinCoincidencias('');
   }
 
   async function agregarPorCodigo(codigo) {
@@ -295,8 +299,17 @@ export default function CobrosPage() {
     evento.preventDefault();
     const texto = textoBusqueda.trim();
     if (!texto) return;
+    // Con coincidencias (por nombre, código o barras) se agrega la primera;
+    // solo si la búsqueda no arrojó nada se intenta tratarlo como código.
     if (sugerencias.length === 1) {
       agregarProducto(sugerencias[0]);
+      return;
+    }
+    if (sugerencias.length > 1) {
+      agregarProducto(sugerencias[0]);
+      notificar.exito(
+        `${sugerencias.length} productos coinciden; se agregó "${sugerencias[0].nombre}"`
+      );
       return;
     }
     agregarPorCodigo(texto);
@@ -561,6 +574,16 @@ export default function CobrosPage() {
                 </button>
               </form>
               {buscandoProducto && <p className="pos-ayuda">Buscando productos...</p>}
+              {!buscandoProducto && sinCoincidencias && (
+                <p className="pos-ayuda pos-ayuda-alerta">
+                  Sin coincidencias para "{sinCoincidencias}". Prueba con otra parte del nombre o el código.
+                </p>
+              )}
+              {!buscandoProducto && !sinCoincidencias && textoBusqueda.trim().length >= 2 && sugerencias.length > 0 && (
+                <p className="pos-ayuda">
+                  {sugerencias.length} producto(s) coinciden — haz clic en uno de la lista o presiona "Agregar" para llevar el primero.
+                </p>
+              )}
             </div>
 
             <div className="pos-panel pos-carrito">

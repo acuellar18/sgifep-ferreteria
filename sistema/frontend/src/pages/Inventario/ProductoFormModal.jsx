@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import Modal from '../../components/Modal';
 import { useNotificacion } from '../../components/Toast';
@@ -235,16 +236,6 @@ export default function ProductoFormModal({
         abierto={abierto}
         titulo={titulo}
         onCerrar={cerrarFormulario}
-        pie={
-          <div className="modal-pie">
-            <button type="button" className="btn btn-secundario" onClick={cerrarFormulario} disabled={cargando}>
-              Cancelar
-            </button>
-            <button type="submit" form="form-producto" className="btn btn-primario" disabled={cargando || (esAlta)}>
-              {cargando ? 'Guardando...' : 'Guardar'}
-            </button>
-          </div>
-        }
       >
         <form id="form-producto" className="formulario" onSubmit={enviar}>
           {error && <div className="alerta alerta-error">{error}</div>}
@@ -314,6 +305,14 @@ export default function ProductoFormModal({
                   </button>
                 )}
               </div>
+            </div>
+            <div className="campo">
+              <label>Proveedor</label>
+              <input
+                className="control"
+                value={producto?.proveedor_nombre || 'Sin proveedor'}
+                readOnly
+              />
             </div>
             <div className="campo">
               <label>Tipo</label>
@@ -410,11 +409,28 @@ export default function ProductoFormModal({
                 <input type="file" accept="image/jpeg,image/png,image/webp" onChange={seleccionarArchivo} />
                 {previewUrl && (
                   <div style={{ marginTop: '12px' }}>
-                    <img src={previewUrl} alt="Vista previa" style={{ maxWidth: '200px', maxHeight: '200px', borderRadius: '8px' }} />
+                    <img src={previewUrl} alt="Vista previa" className="inventario-form-preview" />
                   </div>
                 )}
               </div>
             )}
+          </div>
+          <div className="modal-acciones" style={{ flexWrap: 'wrap' }}>
+            {!esAlta && (
+              <Link
+                to="/compras/facturas/nueva"
+                className="btn btn-secundario"
+                onClick={cerrarFormulario}
+              >
+                Agregar más productos
+              </Link>
+            )}
+            <button type="button" className="btn btn-secundario" onClick={cerrarFormulario} disabled={cargando}>
+              Cancelar
+            </button>
+            <button type="submit" className="btn btn-primario" disabled={cargando || esAlta}>
+              {cargando ? 'Guardando...' : 'Guardar'}
+            </button>
           </div>
         </form>
       </Modal>

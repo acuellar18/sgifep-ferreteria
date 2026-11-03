@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
 import { useNotificacion } from '../../components/Toast';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import ProveedorAutocompletar from './ProveedorAutocompletar';
 import ProductoAutocompletar from './ProductoAutocompletar';
 import FlujoCompras from './FlujoCompras';
@@ -50,6 +51,7 @@ const LINEA_INICIAL = {
   precio_venta: '',
   margen: '',
   es_nuevo: false,
+  categoria_id: '',
   costo_anterior: 0
 };
 
@@ -66,6 +68,9 @@ export default function NuevaCompraPage() {
   const [productosSugeridos, setProductosSugeridos] = useState([]);
   const [guardando, setGuardando] = useState(false);
   const [proveedorSeleccionado, setProveedorSeleccionado] = useState(false);
+  const [erroresCampos, setErroresCampos] = useState({});
+  const [confirmandoSalir, setConfirmandoSalir] = useState(false);
+  const [categorias, setCategorias] = useState([]);
 
   const inputCantidadRefs = useRef([]);
   const inputCostoRefs = useRef([]);
@@ -79,6 +84,10 @@ export default function NuevaCompraPage() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    api.get('/productos/categorias').then(res => setCategorias(res.data || [])).catch(() => {});
+  }, []);
+
   async function cargarProveedor(id) {
     try {
       const res = await api.get(`/proveedores/${id}`);
@@ -91,6 +100,7 @@ export default function NuevaCompraPage() {
         fecha_vencimiento: calcularVencimiento(prev.fecha, prev.condicion, dias)
       }));
       setProveedorSeleccionado(true);
+      setErroresCampos(prev => ({ ...prev, proveedor_id: '' }));
     } catch (err) {
       console.error('Error cargando proveedor:', err);
     }
@@ -108,6 +118,12 @@ export default function NuevaCompraPage() {
       }
       return siguiente;
     });
+    if (campo === 'condicion') {
+      setErroresCampos(prev => ({ ...prev, fecha_vencimiento: '' }));
+    }
+    if (campo === 'fecha') {
+      setErroresCampos(prev => ({ ...prev, fecha: '' }));
+    }
   }
 
   function actualizarLinea(index, campo, valor) {
@@ -132,13 +148,17 @@ export default function NuevaCompraPage() {
       }
       return nuevas;
     });
+    setErroresCampos(prev => ({
+      ...prev,
+      lineas: { ...(prev.lineas || {}), [index]: '' }
+    }));
   }
 
   async function buscarProveedores(q) {
-    if (!q || q.length < 2) { setProveedoresSugeridos([]); return; }
+    if (q && q.length < 2) { setProveedoresSugeridos([]); return; }
     try {
-      const res = await api.get('/proveedores', { params: { q, estado: 'activo', pageSize: 10 } });
-      setProveedoresSugeridos(res.data);
+      const res = await api.get('/proveedores', { params: { q: q || '', estado: 'activo', pageSize: 50 } });
+      setProveedoresSugeridos(res.data || []);
     } catch (err) { console.error(err); }
   }
 
@@ -153,6 +173,7 @@ export default function NuevaCompraPage() {
     }));
     setProveedoresSugeridos([]);
     setProveedorSeleccionado(true);
+    setErroresCampos(prev => ({ ...prev, proveedor_id: '' }));
   }
 
   async function buscarProductos(q) {
@@ -245,6 +266,57 @@ export default function NuevaCompraPage() {
     return form.proveedor_id || lineas.some(l => l.producto_id || l.producto_nombre);
   }
 
+  function tieneLineaConProducto(l) {
+    return Boolean(l.producto_id || l.producto_nombre?.trim());
+  }
+
+  // Errores por campo para mostrarlos debajo de cada input (tarea 5).
+  function validarFormulario() {
+    const errores = {};
+    if (!form.proveedor_id) errores.proveedor_id = 'Seleccione un proveedor para continuar';
+    if (!form.fecha) errores.fecha = 'La fecha es obligatoria';
+    if (form.condicion === 'credito' && !form.fecha_vencimiento) {
+      errores.fecha_vencimiento = 'Indique la fecha de vencimiento';
+    }
+
+    const erroresLineas = {};
+    lineas.forEach((l, i) => {
+      if (!tieneLineaConProducto(l)) return; // línea vacía se ignora
+      const cant = Number(l.cantidad);
+      const precioCompra = Number(l.precio_compra);
+      const precioVenta = Number(l.precio_venta);
+      if (!Number.isFinite(cant) || cant <= 0) {
+        erroresLineas[i] = 'La cantidad debe ser mayor a 0';
+      } else if (!Number.isFinite(precioCompra) || precioCompra < 0) {
+        erroresLineas[i] = 'El precio de compra no puede ser negativo';
+      } else if (!Number.isFinite(precioVenta) || precioVenta < 0) {
+        erroresLineas[i] = 'El precio de venta no puede ser negativo';
+      } else if (precioVenta < precioCompra) {
+        erroresLineas[i] = 'El precio de venta no puede ser menor al precio de compra';
+      }
+    });
+    if (Object.keys(erroresLineas).length > 0) {
+      errores.lineas = erroresLineas;
+    }
+    if (lineas.every(l => !tieneLineaConProducto(l) || Number(l.cantidad) <= 0)) {
+      errores.lineasGeneral = 'Debe agregar al menos un producto con cantidad, precio de compra y precio de venta';
+    }
+    return errores;
+  }
+
+  function intentarSalir() {
+    if (!hayCambiosSinGuardar()) {
+      navigate('/compras');
+      return;
+    }
+    setConfirmandoSalir(true);
+  }
+
+  function confirmarSalir() {
+    setConfirmandoSalir(false);
+    navigate('/compras');
+  }
+
   useEffect(() => {
     const handler = (e) => {
       if (hayCambiosSinGuardar()) {
@@ -258,28 +330,28 @@ export default function NuevaCompraPage() {
 
   async function guardar(yOtra = false) {
     setError('');
-    if (!form.proveedor_id) { setError('Falta seleccionar un proveedor'); return; }
+    const errores = validarFormulario();
+    if (Object.keys(errores).length > 0) {
+      setErroresCampos(errores);
+      if (errores.lineasGeneral) setError(errores.lineasGeneral);
+      return;
+    }
+    setErroresCampos({});
+
     const lineasValidas = [];
     for (let i = 0; i < lineas.length; i++) {
       const l = lineas[i];
-      const cant = Number(l.cantidad);
-      const precioCompra = Number(l.precio_compra);
-      const precioVenta = Number(l.precio_venta);
-      if (!l.producto_id && !l.producto_nombre.trim()) continue;
-      if (!Number.isFinite(cant) || cant <= 0) { setError(`Línea ${i + 1}: La cantidad debe ser mayor a 0`); return; }
-      if (!Number.isFinite(precioCompra) || precioCompra < 0) { setError(`Línea ${i + 1}: El precio de compra no puede ser negativo`); return; }
-      if (!Number.isFinite(precioVenta) || precioVenta < 0) { setError(`Línea ${i + 1}: El precio de venta no puede ser negativo`); return; }
-      if (precioVenta < precioCompra) { setError(`Línea ${i + 1}: El precio de venta no puede ser menor al precio de compra`); return; }
+      if (!tieneLineaConProducto(l)) continue;
       lineasValidas.push({
         producto_id: l.producto_id ? Number(l.producto_id) : null,
         producto_nombre: l.es_nuevo || !l.producto_id ? l.producto_nombre.trim() : undefined,
-        cantidad: cant,
-        precio_compra: precioCompra,
-        precio_venta: precioVenta,
+        categoria_id: l.es_nuevo && l.categoria_id ? Number(l.categoria_id) : undefined,
+        cantidad: Number(l.cantidad),
+        precio_compra: Number(l.precio_compra),
+        precio_venta: Number(l.precio_venta),
         margen: l.margen !== '' ? Number(l.margen) : undefined
       });
     }
-    if (lineasValidas.length === 0) { setError('Debe agregar al menos un producto con cantidad, precio de compra y precio de venta'); return; }
 
     const payload = {
       proveedor_id: Number(form.proveedor_id),
@@ -329,6 +401,21 @@ export default function NuevaCompraPage() {
       : <span className="costo-indicador bajo"> Bajó {formatearMoneda(Math.abs(diff))}</span>;
   }
 
+  // Botones deshabilitados mientras falten los datos imprescindibles:
+  // proveedor, fecha y al menos una línea con producto y cantidad > 0.
+  const puedeGuardar = Boolean(
+    form.proveedor_id &&
+    form.fecha &&
+    lineas.some((l) => tieneLineaConProducto(l) && Number(l.cantidad) > 0) &&
+    !guardando
+  );
+
+  const resumenRequisitos = [
+    { ok: Boolean(form.proveedor_id), texto: 'Seleccione el proveedor' },
+    { ok: Boolean(form.fecha), texto: 'Indique la fecha' },
+    { ok: lineas.some((l) => tieneLineaConProducto(l) && Number(l.cantidad) > 0), texto: 'Agregue al menos un producto con cantidad' }
+  ];
+
   return (
     <div className="pagina compra-nueva">
       <div className="pagina-cabecera">
@@ -337,7 +424,7 @@ export default function NuevaCompraPage() {
           <p>Registrar compra a proveedor (genera o actualiza inventario automáticamente)</p>
         </div>
         <div className="pagina-acciones">
-          <Link to="/compras" className="btn btn-secundario">Volver</Link>
+          <button type="button" className="btn btn-secundario" onClick={intentarSalir}>Volver</button>
         </div>
       </div>
 
@@ -350,8 +437,8 @@ export default function NuevaCompraPage() {
               <h2>Datos de la factura</h2>
             </div>
             <div className="formulario-grid formulario-grid-3">
-              <div className="campo campo-completo">
-                <label>Proveedor *</label>
+              <div className={`campo campo-completo campo-obligatorio${erroresCampos.proveedor_id ? ' campo-invalido' : ''}`}>
+                <label>Proveedor <span className="requerido">*</span></label>
                 <div style={{ width: '100%' }}>
                   <ProveedorAutocompletar
                     valor={form.proveedor_nombre}
@@ -361,15 +448,18 @@ export default function NuevaCompraPage() {
                     onChange={(e) => {
                       setForm(prev => ({ ...prev, proveedor_nombre: e.target.value, proveedor_id: '', proveedor_dias_credito: 0 }));
                       setProveedorSeleccionado(false);
+                      setErroresCampos(prev => ({ ...prev, proveedor_id: '' }));
                       buscarProveedores(e.target.value);
                     }}
                     placeholder="Buscar proveedor por nombre o NIT"
                   />
                 </div>
+                {erroresCampos.proveedor_id && <small className="campo-error">{erroresCampos.proveedor_id}</small>}
               </div>
-              <div className="campo">
-                <label>Fecha *</label>
-                <input type="date" name="fecha" className="control" value={form.fecha} onChange={(e) => actualizarCampo('fecha', e.target.value)} />
+              <div className={`campo campo-obligatorio${erroresCampos.fecha ? ' campo-invalido' : ''}`}>
+                <label>Fecha <span className="requerido">*</span></label>
+                <input type="date" name="fecha" className="control" value={form.fecha} onChange={(e) => { actualizarCampo('fecha', e.target.value); setErroresCampos(prev => ({ ...prev, fecha: '' })); }} />
+                {erroresCampos.fecha && <small className="campo-error">{erroresCampos.fecha}</small>}
               </div>
               <div className="campo">
                 <label>Serie</label>
@@ -387,9 +477,10 @@ export default function NuevaCompraPage() {
                 </select>
               </div>
               {form.condicion === 'credito' && (
-                <div className="campo">
-                  <label>Fecha de vencimiento *</label>
-                  <input type="date" className="control" value={form.fecha_vencimiento} onChange={(e) => actualizarCampo('fecha_vencimiento', e.target.value)} />
+                <div className={`campo campo-obligatorio${erroresCampos.fecha_vencimiento ? ' campo-invalido' : ''}`}>
+                  <label>Fecha de vencimiento <span className="requerido">*</span></label>
+                  <input type="date" className="control" value={form.fecha_vencimiento} onChange={(e) => { actualizarCampo('fecha_vencimiento', e.target.value); setErroresCampos(prev => ({ ...prev, fecha_vencimiento: '' })); }} />
+                  {erroresCampos.fecha_vencimiento && <small className="campo-error">{erroresCampos.fecha_vencimiento}</small>}
                 </div>
               )}
               <div className="campo campo-completo">
@@ -423,54 +514,72 @@ export default function NuevaCompraPage() {
                     const cant = Number(linea.cantidad) || 0;
                     const precioC = Number(linea.precio_compra) || 0;
                     const subtotalLinea = cant * precioC;
+                    const errorLinea = erroresCampos.lineas?.[index];
+                    const claseControl = `control control-tabla${errorLinea ? ' control-invalido' : ''}`;
                     return (
-                      <tr key={index}>
-                        <td style={{ position: 'relative' }}>
-                          <ProductoAutocompletar
-                            valor={linea.producto_nombre}
-                            onBuscar={(q) => {
-                              buscarProductos(q);
-                              actualizarLinea(index, 'producto_nombre', q);
-                              setLineas(prev => { const n = [...prev]; n[index] = { ...n[index], es_nuevo: false, producto_id: '' }; return n; });
-                            }}
-                            sugerencias={productosSugeridos}
-                            onSeleccionar={(p) => seleccionarProducto(index, p)}
-                            onChange={(e) => {
-                              actualizarLinea(index, 'producto_nombre', e.target.value);
-                              setLineas(prev => { const n = [...prev]; n[index] = { ...n[index], es_nuevo: false, producto_id: '' }; return n; });
-                            }}
-                            onBlur={() => {
-                              setTimeout(() => setProductosSugeridos([]), 150);
-                              if (!linea.producto_id && linea.producto_nombre.trim()) marcarProductoNuevo(index);
-                            }}
-                            placeholder="Buscar o escribir nombre para crear"
-                            ref={(el) => (inputProductoRefs.current[index] = el)}
-                          />
-                          {linea.es_nuevo && <small className="texto-nuevo">Se creará como producto nuevo</small>}
-                          {linea.producto_codigo && <small className="texto-suave">Código: {linea.producto_codigo}</small>}
-                          {linea.costo_anterior > 0 && indicadorCosto(linea.precio_compra, linea.costo_anterior)}
-                        </td>
-                        <td>
-                          <input type="number" min="1" step="1" className="control control-tabla" value={linea.cantidad} onChange={(e) => actualizarLinea(index, 'cantidad', e.target.value)} ref={(el) => (inputCantidadRefs.current[index] = el)} />
-                        </td>
-                        <td>
-                          <input type="number" min="0" step="0.01" className="control control-tabla" value={linea.precio_compra} onChange={(e) => actualizarLinea(index, 'precio_compra', e.target.value)} ref={(el) => (inputCostoRefs.current[index] = el)} />
-                        </td>
-                        <td>
-                          <input type="number" min="0" step="0.01" className="control control-tabla" value={linea.margen} onChange={(e) => actualizarLinea(index, 'margen', e.target.value)} placeholder="%" />
-                        </td>
-                        <td>
-                          <input type="number" min="0" step="0.01" className="control control-tabla" value={linea.precio_venta} onChange={(e) => actualizarLinea(index, 'precio_venta', e.target.value)} ref={(el) => (inputPrecioVentaRefs.current[index] = el)} />
-                        </td>
-                        <td className="col-subtotal">{formatearMoneda(subtotalLinea)}</td>
-                        <td>
-                          <button type="button" className="btn-icono-eliminar" onClick={() => eliminarLinea(index)} disabled={lineas.length === 1} title="Eliminar línea">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M2 4H14M5.333 4V2.667A1.333 1.333 0 016.667 1.334h2.666A1.333 1.333 0 0110.667 2.667V4M12.667 4V13.334A1.333 1.333 0 0111.334 14.667H4.667A1.333 1.333 0 013.334 13.334V4H12.667Z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          </button>
-                        </td>
-                      </tr>
+                      <Fragment key={index}>
+                        <tr className={errorLinea ? 'fila-linea-invalida' : undefined}>
+                          <td style={{ position: 'relative' }}>
+                            {errorLinea && <span className="campo-error linea-error-flotante">{errorLinea}</span>}
+                            <ProductoAutocompletar
+                              valor={linea.producto_nombre}
+                              onBuscar={(q) => {
+                                buscarProductos(q);
+                                actualizarLinea(index, 'producto_nombre', q);
+                                setLineas(prev => { const n = [...prev]; n[index] = { ...n[index], es_nuevo: false, producto_id: '' }; return n; });
+                              }}
+                              sugerencias={productosSugeridos}
+                              onSeleccionar={(p) => seleccionarProducto(index, p)}
+                              onChange={(e) => {
+                                actualizarLinea(index, 'producto_nombre', e.target.value);
+                                setLineas(prev => { const n = [...prev]; n[index] = { ...n[index], es_nuevo: false, producto_id: '' }; return n; });
+                              }}
+                              onBlur={() => {
+                                setTimeout(() => setProductosSugeridos([]), 150);
+                                if (!linea.producto_id && linea.producto_nombre.trim()) marcarProductoNuevo(index);
+                              }}
+                              placeholder="Buscar o escribir nombre para crear"
+                              ref={(el) => (inputProductoRefs.current[index] = el)}
+                            />
+                            {linea.es_nuevo && <small className="texto-nuevo">Se creará como producto nuevo</small>}
+                            {linea.es_nuevo && (
+                              <select style={{ width: '100%', marginTop: '4px', padding: '4px 6px', fontSize: '12px', border: '1px solid var(--color-borde, #d1d5db)', borderRadius: '6px' }} value={linea.categoria_id} onChange={(e) => actualizarLinea(index, 'categoria_id', e.target.value)}>
+                                <option value="">Sin categoría</option>
+                                {categorias.map((cat) => (
+                                  <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+                                ))}
+                              </select>
+                            )}
+                            {linea.producto_codigo && <small className="texto-suave">Código: {linea.producto_codigo}</small>}
+                            {linea.costo_anterior > 0 && indicadorCosto(linea.precio_compra, linea.costo_anterior)}
+                          </td>
+                          <td>
+                            <input type="number" min="1" step="1" className={claseControl} value={linea.cantidad} onChange={(e) => actualizarLinea(index, 'cantidad', e.target.value)} ref={(el) => (inputCantidadRefs.current[index] = el)} />
+                          </td>
+                          <td>
+                            <input type="number" min="0" step="0.01" className={claseControl} value={linea.precio_compra} onChange={(e) => actualizarLinea(index, 'precio_compra', e.target.value)} ref={(el) => (inputCostoRefs.current[index] = el)} />
+                          </td>
+                          <td>
+                            <input type="number" min="0" step="0.01" className={`control control-tabla${errorLinea ? ' control-invalido' : ''}`} value={linea.margen} onChange={(e) => actualizarLinea(index, 'margen', e.target.value)} placeholder="%" />
+                          </td>
+                          <td>
+                            <input type="number" min="0" step="0.01" className={claseControl} value={linea.precio_venta} onChange={(e) => actualizarLinea(index, 'precio_venta', e.target.value)} ref={(el) => (inputPrecioVentaRefs.current[index] = el)} />
+                          </td>
+                          <td className="col-subtotal">{formatearMoneda(subtotalLinea)}</td>
+                          <td>
+                            <button type="button" className="btn-icono-eliminar" onClick={() => eliminarLinea(index)} disabled={lineas.length === 1} title="Eliminar línea">
+                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M2 4H14M5.333 4V2.667A1.333 1.333 0 016.667 1.334h2.666A1.333 1.333 0 0110.667 2.667V4M12.667 4V13.334A1.333 1.333 0 0111.334 14.667H4.667A1.333 1.333 0 013.334 13.334V4H12.667Z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            </button>
+                          </td>
+                        </tr>
+                        {errorLinea && (
+                          <tr className="fila-linea-error">
+                            <td colSpan={7}>Línea {index + 1}: {errorLinea}</td>
+                          </tr>
+                        )}
+                      </Fragment>
                     );
                   })}
                 </tbody>
@@ -480,40 +589,60 @@ export default function NuevaCompraPage() {
         </div>
 
         <div className="compra-col compra-col-resumen">
-          <div className="tarjeta tarjeta-sombra tarjeta-totales">
-            <div className="tarjeta-cabecera">
-              <h2>Resumen</h2>
+          <div className="compra-resumen-sticky">
+            <div className="tarjeta tarjeta-sombra tarjeta-totales">
+              <div className="tarjeta-cabecera">
+                <h2>Resumen</h2>
+              </div>
+              <div className="totales-lista">
+                <div className="totales-fila">
+                  <span>Subtotal (sin IVA)</span>
+                  <span>{formatearMoneda(totales.subtotal)}</span>
+                </div>
+                <div className="totales-fila">
+                  <span>IVA 12%</span>
+                  <span>{formatearMoneda(totales.iva)}</span>
+                </div>
+                <div className="totales-separador"></div>
+                <div className="totales-fila totales-total">
+                  <span>Total</span>
+                  <span>{formatearMoneda(totales.total)}</span>
+                </div>
+              </div>
+              <p className="ayuda-campo">El precio de compra se registra sin IVA. El costo del producto se guarda sin IVA.</p>
             </div>
-            <div className="totales-lista">
-              <div className="totales-fila">
-                <span>Subtotal (sin IVA)</span>
-                <span>{formatearMoneda(totales.subtotal)}</span>
-              </div>
-              <div className="totales-fila">
-                <span>IVA 12%</span>
-                <span>{formatearMoneda(totales.iva)}</span>
-              </div>
-              <div className="totales-separador"></div>
-              <div className="totales-fila totales-total">
-                <span>Total</span>
-                <span>{formatearMoneda(totales.total)}</span>
-              </div>
+
+            <div className="resumen-requisitos">
+              {resumenRequisitos.map((r, i) => (
+                <span key={i} className={`resumen-requisito${r.ok ? ' ok' : ''}`}>
+                  <span className="resumen-requisito-icono">{r.ok ? '✓' : '·'}</span>
+                  {r.texto}
+                </span>
+              ))}
             </div>
-            <p className="ayuda-campo">El precio de compra se registra sin IVA. El costo del producto se guarda sin IVA.</p>
-          </div>
 
-          {error && <div className="alerta alerta-error">{error}</div>}
+            {error && <div className="alerta alerta-error">{error}</div>}
 
-          <div className="acciones-compra">
-            <button type="button" className="btn btn-secundario" onClick={() => guardar(true)} disabled={guardando || !proveedorSeleccionado}>
-              {guardando ? 'Guardando...' : 'Guardar y registrar otra'}
-            </button>
-            <button type="button" className="btn btn-primario" onClick={() => guardar(false)} disabled={guardando || !proveedorSeleccionado}>
-              {guardando ? 'Guardando...' : 'Guardar compra'}
-            </button>
+            <div className="acciones-compra">
+              <button type="button" className="btn btn-secundario" onClick={() => guardar(true)} disabled={!puedeGuardar}>
+                {guardando ? <><span className="spinner-chico" aria-hidden="true" /> Guardando...</> : 'Guardar y registrar otra compra'}
+              </button>
+              <button type="button" className="btn btn-primario" onClick={() => guardar(false)} disabled={!puedeGuardar}>
+                {guardando ? <><span className="spinner-chico" aria-hidden="true" /> Guardando...</> : 'Guardar compra'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        abierto={confirmandoSalir}
+        titulo="Salir sin guardar"
+        mensaje="Hay cambios sin guardar en esta compra. Si sales ahora, se perderán los datos capturados. ¿Desea continuar?"
+        confirmarTexto="Salir sin guardar"
+        onConfirmar={confirmarSalir}
+        onCancelar={() => setConfirmandoSalir(false)}
+      />
     </div>
   );
 }

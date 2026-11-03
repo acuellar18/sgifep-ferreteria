@@ -19,7 +19,10 @@ class Database {
       charset: 'utf8mb4_unicode_ci',
       waitForConnections: true,
       connectionLimit: 10,
-      timezone: 'Z'
+      // Guatemala no usa horario de verano: fijo UTC-6 para que los DATETIME
+      // guardados por MySQL (hora local del sistema = America/Guatemala) se
+      // interpreten como tales y NO como UTC (timezone:'Z' corría las horas).
+      timezone: process.env.DB_TIMEZONE || '-06:00'
     });
   }
 

@@ -33,14 +33,15 @@ class DespachoService {
       if (!clienteId) throw new HttpError(400, 'Debe indicar un cliente o una venta válida');
 
       // Validar que detalles no excedan vendido menos ya despachado
-      if (datos.detalles && datos.detalles.length) {
-        for (const d of datos.detalles) {
+      const detalles = (datos.detalles || []).filter((d) => d.producto_id || d.cantidad);
+      if (detalles.length) {
+        for (const d of detalles) {
           if (!d.producto_id || !d.cantidad || d.cantidad <= 0) throw new HttpError(400, 'Cada línea requiere producto y cantidad > 0');
         }
       }
 
       const estadoInicial = datos.estado || 'pendiente';
-      const res = await repo.crear(conn, {
+      const [res] = await repo.crear(conn, {
         ...datos,
         cliente_id: clienteId,
         estado: estadoInicial,
@@ -51,10 +52,9 @@ class DespachoService {
       // Formatear código
       await conn.query('UPDATE despachos SET codigo = ? WHERE id = ?', [formatearCodigo(despachoId), despachoId]);
 
-      // Insertar detalle
-      if (datos.detalles && datos.detalles.length) {
-        const detalleRepo = require('../repositories/despacho.repository');
-        for (const d of datos.detalles) {
+// Insertar detalle
+      if (detalles.length) {
+        for (const d of detalles) {
           await conn.query(
             'INSERT INTO despacho_detalle (despacho_id, producto_id, cantidad, subtotal, entregado) VALUES (?, ?, ?, ?, ?)',
             [despachoId, d.producto_id, d.cantidad, Math.round(d.cantidad * (d.precio_unitario || 0) * 100) / 100, 0]
@@ -79,6 +79,11 @@ class DespachoService {
     const [rows] = await repo.listar(filtros);
     const [[count]] = await repo.contar(filtros);
     return { data: rows, total: count.total || 0 };
+  }
+
+  async disponiblesParaRuta(filtros = {}) {
+    const [rows] = await repo.disponiblesParaRuta(filtros);
+    return rows;
   }
 
   async detalle(id) {

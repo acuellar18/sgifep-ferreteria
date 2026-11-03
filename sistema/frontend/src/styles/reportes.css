@@ -682,3 +682,38 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Impresión directa (Ctrl+P) del Reporte de Usuarios en pantalla: el botón
+   "Imprimir" abre una vista dedicada, pero si se imprime la página web tal
+   cual se ocultan barra superior, sidebar, botones y filtros. */
+@media print {
+  .reporte-imprimible .filterbar,
+  .reporte-imprimible .encabezado-pagina .acciones-encabezado,
+  .reporte-imprimible .reporte-nota,
+  .reporte-imprimible .fila-clicable {
+    display: none !important;
+  }
+
+  .reporte-imprimible .tarjetas,
+  .reporte-imprimible .reporte-grid > div {
+    break-inside: avoid;
+  }
+
+  .reporte-imprimible .reporte-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .layout .app-header,
+  .layout .drawer {
+    display: none !important;
+  }
+
+  .layout .contenido,
+  .layout .main {
+    display: block !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}

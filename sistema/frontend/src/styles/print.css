@@ -36,7 +36,17 @@ body.print-body {
 
 .print-toolbar-acciones {
   display: flex;
+  align-items: center;
   gap: 8px;
+}
+
+.print-toolbar-error {
+  max-width: 320px;
+  padding: 6px 10px;
+  background: #7f1d1d;
+  border-radius: 4px;
+  color: #fecaca;
+  font-size: 12px;
 }
 
 .print-hojas {
@@ -54,6 +64,11 @@ body.print-body {
   padding: 12mm;
   background: #fff;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.print-tamano-letter .print-hoja {
+  width: 215.9mm;
+  min-height: 279.4mm;
 }
 
 .print-landscape .print-hoja {
@@ -292,6 +307,24 @@ body.print-body {
   font-size: 8pt;
 }
 
+.print-nota-interna {
+  margin-top: 4mm;
+  text-align: center;
+  color: #6b7280;
+  font-size: 8pt;
+  line-height: 1.4;
+}
+
+.print-nota-interna p {
+  margin: 0;
+}
+
+.print-nota-interna p + p {
+  margin-top: 1mm;
+  color: #9ca3af;
+  font-size: 7pt;
+}
+
 .print-firmas {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -364,6 +397,11 @@ body.print-body {
     background: #fff !important;
   }
 
+  .print-documento,
+  .print-documento * {
+    visibility: visible !important;
+  }
+
   .print-documento {
     min-height: 0;
     padding: 0;
@@ -407,4 +445,172 @@ body.print-body {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+}
+
+/* ---------------------------------------------------------------------------
+ * Impresión profesional del Reporte de usuarios (vista dedicada).
+ * Hojas tamaño carta con cabecera de empresa, resúmenes, desgloses y listado
+ * detallado paginado ("Página X de Y" lo agrega PrintLayout en cada hoja).
+ * ------------------------------------------------------------------------- */
+
+.print-rep-regla {
+  position: fixed;
+  top: 0;
+  left: -9999px;
+  width: 191.9mm; /* hoja carta 215.9mm - padding 12mm x2 */
+  visibility: hidden;
+  pointer-events: none;
+  font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
+  color: #111827;
+}
+
+.print-rep-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.print-rep-encabezado {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12mm;
+  padding-bottom: 5mm;
+  border-bottom: 2px solid #16a34a;
+}
+
+.print-rep-empresa {
+  display: flex;
+  align-items: flex-start;
+  gap: 5mm;
+}
+
+.print-rep-logo {
+  max-width: 42mm;
+  max-height: 20mm;
+  object-fit: contain;
+}
+
+.print-rep-empresa h1 {
+  margin: 0 0 1.5mm;
+  font-size: 16pt;
+  color: #111827;
+}
+
+.print-rep-empresa p,
+.print-rep-meta p {
+  margin: 0.8mm 0;
+  font-size: 9pt;
+  color: #374151;
+}
+
+.print-rep-titulo-doc {
+  min-width: 52mm;
+  padding: 3mm;
+  text-align: right;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+}
+
+.print-rep-etiqueta {
+  display: block;
+  color: #16a34a;
+  font-size: 7.5pt;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.print-rep-titulo-doc strong {
+  display: block;
+  margin: 1mm 0;
+  font-size: 13pt;
+}
+
+.print-rep-continuacion {
+  display: flex;
+  justify-content: space-between;
+  gap: 8mm;
+  padding-bottom: 3mm;
+  border-bottom: 2px solid #16a34a;
+  font-size: 9pt;
+}
+
+.print-rep-meta {
+  padding: 2.5mm 3mm;
+  background: #f8f9fa;
+  border-left: 3px solid #16a34a;
+  font-size: 8.5pt;
+}
+
+.print-rep-meta p {
+  margin: 1mm 0;
+  line-height: 1.4;
+}
+
+.print-rep-meta p span {
+  font-weight: 700;
+}
+
+.print-rep-resumen {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6mm;
+}
+
+.print-rep-resumen > div {
+  padding: 2.5mm 3mm;
+  background: #f8f9fa;
+  border: 1px solid #e5e7eb;
+  border-radius: 3px;
+  page-break-inside: avoid;
+}
+
+.print-rep-resumen span {
+  display: block;
+  color: #6b7280;
+  font-size: 7.5pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.print-rep-resumen strong {
+  display: block;
+  margin-top: 1mm;
+  font-size: 15pt;
+  color: #16a34a;
+}
+
+.print-rep-seccion h3,
+.print-rep-titulo-listado {
+  margin: 0 0 2mm;
+  color: #16a34a;
+  font-size: 9.5pt;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.print-rep-tabla th {
+  background: #141414;
+  color: #fff;
+}
+
+.print-rep-tabla-detalle {
+  font-size: 8pt;
+}
+
+.print-rep-tabla-detalle th,
+.print-rep-tabla-detalle td {
+  padding: 1.5mm 2mm;
+}
+
+.print-rep-pie {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8mm;
+  padding-top: 3mm;
+  border-top: 1px solid #d1d5db;
+  color: #6b7280;
+  font-size: 8.5pt;
 }

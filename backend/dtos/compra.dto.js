@@ -81,6 +81,9 @@ function baseValidacion(datos = {}) {
         : null,
       producto_nombre: typeof d.producto_nombre === 'string' ? d.producto_nombre.trim() : (typeof d.nombre === 'string' ? d.nombre.trim() : null),
       codigo: typeof d.codigo === 'string' ? d.codigo.trim() : null,
+      categoria_id: d.categoria_id !== undefined && d.categoria_id !== null && d.categoria_id !== ''
+        ? Number(d.categoria_id)
+        : null,
       cantidad: Number(d.cantidad),
       precio_compra: Number(d.precio_compra !== undefined ? d.precio_compra : d.costo_unitario),
       precio_venta: d.precio_venta !== undefined ? Number(d.precio_venta) : null,

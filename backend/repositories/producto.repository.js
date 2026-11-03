@@ -244,6 +244,18 @@ class ProductoRepository {
     return result.affectedRows;
   }
 
+  async actualizarImagen(id, datos) {
+    const { imagen, imagen_miniatura, imagen_mime } = datos;
+    const [result] = await pool.query(
+      `UPDATE productos
+       SET imagen = ?, imagen_miniatura = ?, imagen_mime = ?,
+           actualizado_en = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [imagen, imagen_miniatura, imagen_mime, id]
+    );
+    return result.affectedRows;
+  }
+
   async cambiarEstado(id, activo) {
     const [result] = await pool.query('UPDATE productos SET activo = ?, actualizado_en = CURRENT_TIMESTAMP WHERE id = ?', [activo ? 1 : 0, id]);
     return result.affectedRows;

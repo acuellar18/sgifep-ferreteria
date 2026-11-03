@@ -15,6 +15,11 @@ export function formatearNumero(valor, decimales = 2) {
   }).format(Number.isFinite(numero) ? numero : 0);
 }
 
+export function formatearNumeroComprobante(numero) {
+  if (!numero) return '—';
+  return String(numero).replace(/^FAC-/, 'CMP-');
+}
+
 export function formatearFecha(fecha) {
   if (!fecha) return '—';
   const valor = String(fecha).slice(0, 10);
@@ -32,7 +37,8 @@ export function formatearFechaHora(fecha) {
     month: '2-digit',
     year: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    timeZone: 'America/Guatemala'
   });
 }
 

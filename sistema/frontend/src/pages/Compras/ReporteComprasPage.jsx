@@ -322,60 +322,143 @@ export default function ReporteComprasPage() {
     XLSX.writeFile(wb, `reporte_compras_${fechaLocal(new Date())}.xlsx`);
   }
 
-  function exportarPDF() {
+async function construirPdfDocumento() {
     const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.text('Reporte de Compras - Ferretería El Puente', 14, 22);
-    doc.setFontSize(10);
-    doc.text(
-      `Generado: ${new Date().toLocaleDateString('es-GT')} | Proveedor: ${nombreProveedor(filtrosAplicados.proveedor)} | Categoría: ${nombreCategoria(filtrosAplicados.categoria)} | ${filtrosAplicados.startDate || 'inicio'} a ${filtrosAplicados.endDate || 'hoy'}`,
-      14,
-      28
-    );
+    const AP = 210;
 
-    doc.setFontSize(12);
-    doc.text('Resumen', 14, 38);
+    let logoB64 = null;
+    try {
+      const r = await fetch('/img/logo.png');
+      const b = await r.arrayBuffer();
+      const u = new Uint8Array(b);
+      let s = '';
+      u.forEach(v => s += String.fromCharCode(v));
+      logoB64 = `data:image/png;base64,${btoa(s)}`;
+    } catch {}
+
+    if (logoB64) doc.addImage(logoB64, 'PNG', 12, 4, 22, 14);
+    doc.setTextColor(17, 24, 39);
+    doc.setFontSize(18);
+    doc.text('Ferretería El Puente', logoB64 ? 38 : 14, 14);
+    doc.setFontSize(9);
+    doc.text('SGIFEP — Sistema de Gestión Integral', logoB64 ? 38 : 14, 21);
+
+    const tx = AP - 68;
+    doc.setDrawColor(209, 213, 219);
+    doc.setFillColor(255, 255, 255);
+    doc.rect(tx, 4, 60, 20, 'DF');
+    doc.setTextColor(22, 163, 74);
+    doc.setFontSize(10);
+    doc.text('REPORTE', tx + 5, 10);
+    doc.setTextColor(17, 24, 39);
+    doc.setFontSize(14);
+    doc.text('Compras', tx + 5, 17);
+    doc.setTextColor(107, 114, 128);
+    doc.setFontSize(8);
+    doc.text(`${filtrosAplicados.startDate || 'inicio'} a ${filtrosAplicados.endDate || 'hoy'}`, tx + 5, 23);
+
+    doc.setDrawColor(22, 163, 74);
+    doc.setLineWidth(0.6);
+    doc.line(12, 36, AP - 12, 36);
+    doc.setLineWidth(0.1);
+
+    let y = 42;
+
     autoTable(doc, {
-      startY: 42,
+      startY: y,
       head: [['Indicador', 'Valor']],
       body: [
         ['Total comprado', formatearMoneda(totalComprado)],
         ['Facturas registradas', resumen.num_compras],
         ['Promedio por factura', formatearMoneda(resumen.promedio_compra)],
         ['Saldo por pagar', formatearMoneda(resumen.total_por_pagar)]
-      ]
+      ],
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 1.2 },
+      headStyles: { fillColor: [20, 20, 20], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7 },
+      alternateRowStyles: { fillColor: [248, 249, 250] },
+      columnStyles: { 1: { halign: 'right' } }
     });
 
-    doc.text('Compras por mes', 14, doc.lastAutoTable.finalY + 10);
+    y = doc.lastAutoTable.finalY + 6;
     autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 14,
+      startY: y,
       head: [['Mes', 'Compras', 'Total']],
-      body: comprasPorMes.map((mes) => [mes.mes, mes.cantidad, formatearMoneda(mes.total)])
+      body: comprasPorMes.map((mes) => [mes.mes, mes.cantidad, formatearMoneda(mes.total)]),
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 1.2 },
+      headStyles: { fillColor: [20, 20, 20], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7 },
+      alternateRowStyles: { fillColor: [248, 249, 250] },
+      columnStyles: { 2: { halign: 'right' } }
     });
 
-    doc.text('Proveedores con más compras', 14, doc.lastAutoTable.finalY + 10);
+    y = doc.lastAutoTable.finalY + 6;
     autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 14,
+      startY: y,
       head: [['Proveedor', 'Compras', 'Total']],
-      body: topProveedores.map((proveedor) => [proveedor.nombre, proveedor.num_compras, formatearMoneda(proveedor.total_comprado)])
+      body: topProveedores.map((prov) => [prov.nombre, prov.num_compras, formatearMoneda(prov.total_comprado)]),
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 1.2 },
+      headStyles: { fillColor: [20, 20, 20], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7 },
+      alternateRowStyles: { fillColor: [248, 249, 250] },
+      columnStyles: { 2: { halign: 'right' } }
     });
 
-    doc.text('Productos más comprados', 14, doc.lastAutoTable.finalY + 10);
+    y = doc.lastAutoTable.finalY + 6;
     autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 14,
+      startY: y,
       head: [['Código', 'Producto', 'Cantidad', 'Total', 'Costo prom.']],
-      body: productosMasComprados.map((producto) => [producto.codigo, producto.nombre, producto.cantidad_total.toLocaleString('es-GT'), formatearMoneda(producto.total_comprado), formatearMoneda(producto.costo_promedio)])
+      body: productosMasComprados.map((p) => [p.codigo, p.nombre, p.cantidad_total.toLocaleString('es-GT'), formatearMoneda(p.total_comprado), formatearMoneda(p.costo_promedio)]),
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 1.2 },
+      headStyles: { fillColor: [20, 20, 20], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7 },
+      alternateRowStyles: { fillColor: [248, 249, 250] },
+      columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' } }
     });
 
-    doc.text('Cuentas por pagar', 14, doc.lastAutoTable.finalY + 10);
+    y = doc.lastAutoTable.finalY + 6;
     autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 14,
+      startY: y,
       head: [['Factura', 'Proveedor', 'Fecha', 'Vence', 'Total', 'Saldo', 'Días']],
-      body: cuentasPorPagar.map((cuenta) => [cuenta.numero, cuenta.proveedor_nombre, cuenta.fecha, cuenta.fecha_vencimiento, formatearMoneda(cuenta.total), formatearMoneda(cuenta.saldo_pendiente), cuenta.dias_restantes])
+      body: cuentasPorPagar.map((c) => [c.numero, c.proveedor_nombre, c.fecha, c.fecha_vencimiento, formatearMoneda(c.total), formatearMoneda(c.saldo_pendiente), c.dias_restantes]),
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 1.2 },
+      headStyles: { fillColor: [20, 20, 20], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7 },
+      alternateRowStyles: { fillColor: [248, 249, 250] },
+      columnStyles: { 4: { halign: 'right' }, 5: { halign: 'right' } }
     });
 
+    const fy = doc.lastAutoTable.finalY + 8;
+    doc.setFontSize(7);
+    doc.setTextColor(107, 114, 128);
+    const ahora = new Date();
+    doc.text(`Generado el ${ahora.toLocaleDateString('es-GT')}, ${ahora.toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })}`, 14, fy);
+
+    return doc;
+  }
+
+  async function exportarPDF() {
+    const doc = await construirPdfDocumento();
+    if (!doc) return;
     doc.save(`reporte_compras_${fechaLocal(new Date())}.pdf`);
   }
+
+async function imprimirReporte() {
+    try {
+      const doc = await construirPdfDocumento();
+      if (!doc) return;
+      const url = URL.createObjectURL(doc.output('blob'));
+      const ventana = window.open(url, '_blank');
+      if (ventana) setTimeout(() => URL.revokeObjectURL(url), 60000);
+      else {
+        URL.revokeObjectURL(url);
+        notificar.error('Permite la ventana emergente para imprimir');
+      }
+    } catch {
+      notificar.error('No se pudo abrir la ventana de impresión');
+    }
+  }
+
 
   return (
     <section className="reporte-compras">
@@ -385,15 +468,10 @@ export default function ReporteComprasPage() {
           <p>Consulta cuánto compraste, a quién le compraste y cuánto falta pagar.</p>
         </div>
         <div className="reporte-acciones">
-          <details className="reporte-opciones">
-            <summary className="btn btn-secundario">Opciones <span aria-hidden="true">▾</span></summary>
-            <div className="reporte-opciones-menu">
-              <button type="button" onClick={exportarExcel} disabled={cargando}>Exportar Excel</button>
-              <button type="button" onClick={exportarPDF} disabled={cargando}>Exportar PDF</button>
-              <button type="button" onClick={exportarCSVReporte} disabled={cargando}>Exportar CSV</button>
-              <button type="button" onClick={() => window.print()}>Imprimir</button>
-            </div>
-          </details>
+          <button type="button" className="btn btn-secundario" onClick={exportarCSVReporte} disabled={cargando}>CSV</button>
+          <button type="button" className="btn btn-secundario" onClick={exportarExcel} disabled={cargando}>Excel</button>
+          <button type="button" className="btn btn-secundario" onClick={exportarPDF} disabled={cargando}>PDF</button>
+          <button type="button" className="btn btn-primario" onClick={imprimirReporte}>Imprimir</button>
         </div>
       </header>
 

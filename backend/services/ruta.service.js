@@ -44,7 +44,7 @@ class RutaService {
         }
       }
 
-      const res = await repo.crear(conn, datos);
+      const [res] = await repo.crear(conn, datos);
       const rutaId = res.insertId;
 
       // Código
@@ -175,9 +175,15 @@ class RutaService {
     }
   }
 
-  async listarConductores(filtros) { return repo.listarConductores(filtros); }
+  async listarConductores(filtros) {
+    const [rows] = await repo.listarConductores(filtros);
+    return rows;
+  }
 
-  async listarVehiculos(filtros) { return repo.listarVehiculos(filtros); }
+  async listarVehiculos(filtros) {
+    const [rows] = await repo.listarVehiculos(filtros);
+    return rows;
+  }
 };
 
 module.exports = new RutaService();

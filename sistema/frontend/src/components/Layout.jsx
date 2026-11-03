@@ -7,6 +7,7 @@ import { permisosCaja } from '../utils/permisosCaja';
 import { permisosCompras } from '../utils/permisosCompras';
 import { permisosFacturacion } from '../utils/permisosFacturacion';
 import { permisosInventario } from '../utils/permisosInventario';
+import { permisosGenerales } from '../utils/permisosGenerales';
 import {
   MODULOS_SISTEMA,
   RUTA_LOGIN,
@@ -54,13 +55,24 @@ export default function Layout() {
     ...permisosCaja(sesion),
     ...permisosCompras(sesion),
     ...permisosInventario(sesion),
-    ...permisosFacturacion(sesion)
+    ...permisosFacturacion(sesion),
+    ...permisosGenerales(sesion)
   };
-  const modulosVisibles = MODULOS_SISTEMA.filter(
-    (modulo) => !modulo.permiso || permisos[modulo.permiso]
-  );
+
+  // Usuario SIN roles asignados: puede ver el catálogo completo de módulos,
+  // pero cada uno está protegido (RequierePermiso) y mostrará el aviso
+  // "No tiene permiso para este módulo" al abrirlo.
+  const rolesSesion = Array.isArray(sesion?.roles) ? sesion.roles : [];
+  const sinRoles = !sesion?.superadmin && rolesSesion.length === 0;
+
+  const modulosVisibles = sinRoles
+    ? MODULOS_SISTEMA
+    : MODULOS_SISTEMA.filter(
+        (modulo) => !modulo.permiso || permisos[modulo.permiso]
+      );
 
   function subitemsVisibles(modulo) {
+    if (sinRoles) return modulo.subitems || [];
     return (modulo.subitems || []).filter(
       (subitem) => !subitem.permiso || permisos[subitem.permiso]
     );
@@ -272,9 +284,6 @@ export default function Layout() {
               );
             })}
           </nav>
-          <div className="drawer-footer">
-            <a href="/index.html" className="drawer-volver">← Volver al sitio</a>
-          </div>
         </aside>
 
         <div className="contenido">

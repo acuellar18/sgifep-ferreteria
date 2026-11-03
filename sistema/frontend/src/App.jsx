@@ -3,10 +3,13 @@ import { permisosCaja } from './utils/permisosCaja';
 import { permisosCompras } from './utils/permisosCompras';
 import { permisosFacturacion } from './utils/permisosFacturacion';
 import { permisosInventario } from './utils/permisosInventario';
+import { permisosGenerales } from './utils/permisosGenerales';
+import SinAccesoModulo from './components/SinAccesoModulo';
 import Layout from './components/Layout';
 import { ToastProvider } from './components/Toast';
 import UsuariosPage from './pages/Usuarios/UsuariosPage';
 import ReportePage from './pages/Usuarios/ReportePage';
+import ImpresionReporteUsuariosPage from './pages/Usuarios/ImpresionReporteUsuariosPage';
 import RolesPage from './pages/Roles/RolesPage';
 import DepartamentosPage from './pages/Departamentos/DepartamentosPage';
 import ProveedoresPage from './pages/Compras/ProveedoresPage';
@@ -17,6 +20,7 @@ import ImpresionListaComprasPage from './pages/Compras/ImpresionListaComprasPage
 import ReporteComprasPage from './pages/Compras/ReporteComprasPage';
 import ReporteInventarioPage from './pages/Inventario/ReporteInventarioPage';
 import ReporteVentasPage from './pages/Reportes/ReporteVentasPage';
+import ReporteGeneralPage from './pages/Reportes/ReporteGeneralPage';
 import AuditoriaPage from './pages/Seguridad/AuditoriaPage';
 import CategoriasPage from './pages/Inventario/CategoriasPage';
 import ProductosPage from './pages/Inventario/ProductosPage';
@@ -30,30 +34,37 @@ import CajaPage from './pages/Caja/CajaPage';
 import PerfilPage from './pages/Perfil/PerfilPage';
 import ModuloEnConstruccionPage from './pages/Modulos/ModuloEnConstruccionPage';
 import ListadoDespachosPage from './pages/Despacho/ListadoDespachosPage';
-import ReporteDespachosPage from './pages/Reportes/ReporteDespachosPage';
 import RutasEntregasPage from './pages/Despacho/RutasEntregasPage';
 
 // basename = '/usuarios' -> las rutas internas quedan bajo /usuarios/*.
 // ToastProvider se monta una sola vez para conservar las notificaciones
 // durante la navegación entre rutas.
-function RequierePermiso({ permiso = 'consultarCompras', children }) {
+// Guardia de permisos: sin acceso muestra el panel "No tiene permiso para
+// este módulo" (y, solo en páginas de impresión sin layout, redirige).
+function RequierePermiso({ permiso = 'consultarCompras', redirigir = false, children }) {
   const permisos = {
     ...permisosCaja(),
     ...permisosCompras(),
     ...permisosInventario(),
-    ...permisosFacturacion()
+    ...permisosFacturacion(),
+    ...permisosGenerales()
   };
-  if (!permisos[permiso]) {
-    const inicio = permisos.consultarCaja
-      ? '/caja'
-      : permisos.consultarCompras
-        ? '/compras/facturas'
-        : permisos.consultarInventario
-          ? '/inventario/productos'
-          : permisos.consultarFacturacion ? '/facturacion/facturas' : permisos.consultarCobros ? '/pos' : '/perfil';
+  if (permisos[permiso]) return children;
+  if (redirigir) {
+    const inicio = permisos.administrarUsuarios
+      ? '/'
+      : permisos.consultarCaja
+        ? '/caja'
+        : permisos.consultarCompras
+          ? '/compras/facturas'
+          : permisos.consultarInventario
+            ? '/inventario/productos'
+            : permisos.consultarFacturacion
+              ? '/facturacion/facturas'
+              : permisos.consultarCobros ? '/pos' : '/perfil';
     return <Navigate to={inicio} replace />;
   }
-  return children;
+  return <SinAccesoModulo />;
 }
 
 export default function App() {
@@ -63,15 +74,19 @@ export default function App() {
         <Routes>
           <Route
             path="/compras/facturas/imprimir"
-            element={<RequierePermiso><ImpresionListaComprasPage /></RequierePermiso>}
+            element={<RequierePermiso redirigir><ImpresionListaComprasPage /></RequierePermiso>}
           />
           <Route
             path="/compras/facturas/:id/imprimir"
-            element={<RequierePermiso><ImpresionFacturaPage /></RequierePermiso>}
+            element={<RequierePermiso redirigir><ImpresionFacturaPage /></RequierePermiso>}
           />
           <Route
             path="/facturacion/facturas/:id/imprimir"
-            element={<RequierePermiso permiso="consultarFacturas"><ImpresionFacturaVentaPage /></RequierePermiso>}
+            element={<RequierePermiso permiso="consultarFacturas" redirigir><ImpresionFacturaVentaPage /></RequierePermiso>}
+          />
+          <Route
+            path="/reporte/imprimir"
+            element={<RequierePermiso permiso="administrarUsuarios" redirigir><ImpresionReporteUsuariosPage /></RequierePermiso>}
           />
 
           <Route element={<Layout />}>
@@ -79,10 +94,10 @@ export default function App() {
             <Route path="/pos" element={<RequierePermiso permiso="consultarCobros"><CobrosPage /></RequierePermiso>} />
             <Route path="/perfil" element={<PerfilPage />} />
 
-            <Route path="/" element={<UsuariosPage />} />
-            <Route path="/reporte" element={<ReportePage />} />
-            <Route path="/roles" element={<RolesPage />} />
-            <Route path="/departamentos" element={<DepartamentosPage />} />
+            <Route path="/" element={<RequierePermiso permiso="administrarUsuarios"><UsuariosPage /></RequierePermiso>} />
+            <Route path="/reporte" element={<RequierePermiso permiso="administrarUsuarios"><ReportePage /></RequierePermiso>} />
+            <Route path="/roles" element={<RequierePermiso permiso="administrarUsuarios"><RolesPage /></RequierePermiso>} />
+            <Route path="/departamentos" element={<RequierePermiso permiso="administrarUsuarios"><DepartamentosPage /></RequierePermiso>} />
 
             {/* Módulo Compras: solo Proveedores y Facturas de proveedor.
                 Las páginas y endpoints de Órdenes de Compra se conservan, pero
@@ -107,12 +122,13 @@ export default function App() {
             <Route path="/facturacion/clientes" element={<RequierePermiso permiso="consultarClientes"><ClientesPage /></RequierePermiso>} />
             <Route path="/facturacion/cobros" element={<Navigate to="/pos" replace />} />
 
-            <Route path="/despacho" element={<ListadoDespachosPage />} />
-            <Route path="/despacho/rutas-entregas" element={<RutasEntregasPage />} />
-            <Route path="/reportes/despachos" element={<RequierePermiso permiso="consultarReporteDespachos"><ReporteDespachosPage /></RequierePermiso>} />
-<Route path="/despacho/reporte" element={<Navigate to="/reportes/despachos" replace />} />
+                        <Route path="/despacho" element={<RequierePermiso permiso="consultarDespacho"><ListadoDespachosPage /></RequierePermiso>} />
+            <Route path="/despacho/rutas-entregas" element={<RequierePermiso permiso="consultarDespacho"><RutasEntregasPage /></RequierePermiso>} />
+            {/* Reporte de Despachos eliminado: redirigir enlaces viejos al listado */}
+            <Route path="/despacho/reporte" element={<Navigate to="/despacho" replace />} />
+            <Route path="/reportes/despachos" element={<Navigate to="/despacho" replace />} />
 
-            <Route path="/reportes" element={<ModuloEnConstruccionPage titulo="Reportes" descripcion="El módulo de Reportes centralizará los indicadores generales del sistema." />} />
+            <Route path="/reportes" element={<RequierePermiso permiso="consultarReporteGeneral"><ReporteGeneralPage /></RequierePermiso>} />
             <Route path="/reportes/ventas" element={<RequierePermiso permiso="consultarReporteFacturacion"><ReporteVentasPage /></RequierePermiso>} />
             <Route path="/reportes/compras" element={<RequierePermiso permiso="consultarReportes"><ReporteComprasPage /></RequierePermiso>} />
             <Route path="/reportes/inventario" element={<RequierePermiso permiso="consultarReporteInventario"><ReporteInventarioPage /></RequierePermiso>} />

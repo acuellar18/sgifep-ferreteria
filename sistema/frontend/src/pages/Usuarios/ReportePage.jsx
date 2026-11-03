@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import api from '../../services/api';
 import FilterBar from '../../components/FilterBar';
 import Modal from '../../components/Modal';
 import { useNotificacion } from '../../components/Toast';
 import exportarCSV from '../../utils/csv';
+import { formatearFecha } from '../../utils/formatos';
 
 const FILTROS_INICIALES = {
   q: '',
@@ -133,31 +136,267 @@ export default function ReportePage() {
     }
   }
 
-  // Exporta ambos bloques del reporte (con los filtros ya aplicados) a CSV.
+  // Exporta todos los bloques del reporte (con los filtros ya aplicados) a
+  // CSV con UTF-8 + BOM (exportarCSV) para que Excel muestre bien las tildes.
   function exportarCsv() {
     if (!reporte) return;
-    const { totales, porDepartamento, porRol } = reporte;
-    const filas = [
-      {
-        Sección: 'TOTALES',
-        Nombre: 'General',
-        Detalle: `${totales.total} usuarios (${totales.activos} activos, ${totales.inactivos} inactivos)`,
-        Activos: Number(totales.activos)
-      },
-      ...porDepartamento.map((d) => ({
+    const { totales, porDepartamento, porRol, usuarios } = reporte;
+    const filas = [];
+    filas.push({
+      Sección: 'TOTALES',
+      Código: '',
+      Nombre: 'General',
+      Departamento: '',
+      Rol: '',
+      Estado: `${totales.activos} activos / ${totales.inactivos} inactivos`,
+      Fecha: '',
+      Activos: Number(totales.activos)
+    });
+    porDepartamento.forEach((d) => {
+      filas.push({
         Sección: 'POR DEPARTAMENTO',
+        Código: '',
         Nombre: d.nombre,
-        Detalle: '',
+        Departamento: '',
+        Rol: '',
+        Estado: '',
+        Fecha: '',
         Activos: Number(d.total_activos)
-      })),
-      ...porRol.map((r) => ({
+      });
+    });
+    porRol.forEach((r) => {
+      filas.push({
         Sección: 'POR ROL',
+        Código: '',
         Nombre: r.nombre,
-        Detalle: r.acceso_total ? 'Acceso total' : '',
+        Departamento: '',
+        Rol: r.acceso_total ? 'Acceso total' : '',
+        Estado: '',
+        Fecha: '',
         Activos: Number(r.total_activos)
-      }))
-    ];
+      });
+    });
+    (usuarios || []).forEach((u) => {
+      filas.push({
+        Sección: 'USUARIO',
+        Código: u.codigo || '',
+        Nombre: `${u.nombre || ''} ${u.apellido || ''}`.trim(),
+        Departamento: u.departamento_nombre || '',
+        Rol: (u.roles || []).join(' | '),
+        Estado: u.activo ? 'Activo' : 'Inactivo',
+        Fecha: String(u.creado_en || '').slice(0, 10),
+        Activos: ''
+      });
+    });
     exportarCSV(filas, `reporte_usuarios_${new Date().toISOString().slice(0, 10)}.csv`);
+  }
+
+  function textoPeriodo() {
+    if (filtros.startDate && filtros.endDate) {
+      return `Del ${formatearFecha(filtros.startDate)} al ${formatearFecha(filtros.endDate)}`;
+    }
+    if (filtros.startDate) return `Desde ${formatearFecha(filtros.startDate)}`;
+    if (filtros.endDate) return `Hasta ${formatearFecha(filtros.endDate)}`;
+    return 'Todos los registros';
+  }
+
+  function textoFiltros() {
+    const partes = [];
+    if (filtros.q) partes.push(`Búsqueda: "${filtros.q}"`);
+    if (filtros.estado === 'activo') partes.push('Estado: Solamente activos');
+    else if (filtros.estado === 'inactivo') partes.push('Estado: Solamente inactivos');
+    const depto = departamentos.find((d) => String(d.id) === String(filtros.departamento));
+    if (depto) partes.push(`Departamento: ${depto.nombre}`);
+    const rol = roles.find((r) => String(r.id) === String(filtros.rol));
+    if (rol) partes.push(`Rol: ${rol.nombre}`);
+    if (partes.length === 0) partes.push('Sin filtros aplicados');
+    return partes.join(' · ');
+  }
+
+  // Construye el PDF del reporte (mismo formato que el Reporte General: logo
+  // y nombre de la empresa, línea y acentos verdes, tablas antracita).
+  async function construirPdfDocumento() {
+    if (!reporte) return;
+    const { totales, porDepartamento, porRol, usuarios } = reporte;
+    const doc = new jsPDF();
+    const AP = 210;
+
+    let logoB64 = null;
+    try {
+      const r = await fetch('/img/logo.png');
+      const b = await r.arrayBuffer();
+      const u = new Uint8Array(b);
+      let s = '';
+      u.forEach((v) => { s += String.fromCharCode(v); });
+      logoB64 = `data:image/png;base64,${btoa(s)}`;
+    } catch {
+      logoB64 = null;
+    }
+
+    if (logoB64) {
+      doc.addImage(logoB64, 'PNG', 12, 4, 22, 14);
+    }
+    doc.setTextColor(17, 24, 39);
+    doc.setFontSize(18);
+    doc.text('Ferretería El Puente', logoB64 ? 38 : 14, 14);
+    doc.setFontSize(9);
+    doc.text('SGIFEP — Sistema de Gestión Integral', logoB64 ? 38 : 14, 21);
+
+    const tx = AP - 68;
+    doc.setDrawColor(209, 213, 219);
+    doc.setFillColor(255, 255, 255);
+    doc.rect(tx, 4, 60, 20, 'DF');
+    doc.setTextColor(22, 163, 74);
+    doc.setFontSize(10);
+    doc.text('REPORTE', tx + 5, 10);
+    doc.setTextColor(17, 24, 39);
+    doc.setFontSize(14);
+    doc.text('Reporte de usuarios', tx + 5, 17);
+    doc.setTextColor(107, 114, 128);
+    doc.setFontSize(8);
+    doc.text(textoPeriodo(), tx + 5, 23);
+
+    doc.setDrawColor(22, 163, 74);
+    doc.setLineWidth(0.6);
+    doc.line(12, 36, AP - 12, 36);
+    doc.setLineWidth(0.1);
+
+    let y = 38;
+    doc.setFillColor(248, 249, 250);
+    doc.rect(12, y, AP - 24, 6, 'F');
+    doc.setDrawColor(22, 163, 74);
+    doc.setLineWidth(1.2);
+    doc.line(12, y, 12, y + 6);
+    doc.setLineWidth(0.1);
+    doc.setTextColor(17, 24, 39);
+    doc.setFontSize(9);
+    doc.text('Filtros:', 15, y + 4.5);
+    doc.setTextColor(55, 65, 81);
+    const lineasFiltros = doc.splitTextToSize(textoFiltros(), AP - 44);
+    doc.text(lineasFiltros, 32, y + 4.5);
+    y += 6 + lineasFiltros.length * 4 + 2;
+
+    const estiloCabecera = {
+      fillColor: [20, 20, 20],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      fontSize: 7
+    };
+    const estiloTabla = {
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 1.2 },
+      headStyles: estiloCabecera,
+      alternateRowStyles: { fillColor: [248, 249, 250] }
+    };
+
+    autoTable(doc, {
+      ...estiloTabla,
+      startY: y,
+      head: [['Resumen', 'Cantidad']],
+      body: [
+        ['Total de usuarios (según filtros)', String(totales.total)],
+        ['Activos', String(totales.activos)],
+        ['Inactivos', String(totales.inactivos)]
+      ],
+      columnStyles: { 1: { halign: 'right' } }
+    });
+    y = doc.lastAutoTable.finalY + 6;
+
+    doc.setTextColor(22, 163, 74);
+    doc.setFontSize(10);
+    doc.text('Usuarios activos por departamento', 14, y);
+    y += 4;
+    autoTable(doc, {
+      ...estiloTabla,
+      startY: y,
+      head: [['Departamento', 'Activos']],
+      body: porDepartamento.length
+        ? porDepartamento.map((d) => [d.nombre, String(d.total_activos)])
+        : [['Sin datos', '—']],
+      columnStyles: { 1: { halign: 'right' } }
+    });
+    y = doc.lastAutoTable.finalY + 6;
+
+    doc.setTextColor(22, 163, 74);
+    doc.setFontSize(10);
+    doc.text('Usuarios activos por rol', 14, y);
+    y += 4;
+    autoTable(doc, {
+      ...estiloTabla,
+      startY: y,
+      head: [['Rol', 'Acceso total', 'Activos']],
+      body: porRol.length
+        ? porRol.map((r) => [r.nombre, r.acceso_total ? 'Sí' : 'No', String(r.total_activos)])
+        : [['Sin datos', '—', '—']],
+      columnStyles: { 1: { halign: 'center' }, 2: { halign: 'right' } }
+    });
+    y = doc.lastAutoTable.finalY + 6;
+
+    if (usuarios?.length) {
+      doc.setTextColor(22, 163, 74);
+      doc.setFontSize(10);
+      doc.text('Listado detallado de usuarios', 14, y);
+      y += 4;
+      autoTable(doc, {
+        ...estiloTabla,
+        startY: y,
+        head: [['Código', 'Nombre completo', 'Departamento', 'Rol', 'Estado', 'Fecha']],
+        body: usuarios.map((u) => [
+          u.codigo || '—',
+          `${u.nombre || ''} ${u.apellido || ''}`.trim() || '—',
+          u.departamento_nombre || '—',
+          (u.roles || []).join(', ') || '—',
+          u.activo ? 'Activo' : 'Inactivo',
+          formatearFecha(u.creado_en)
+        ]),
+        styles: { fontSize: 7.5, cellPadding: 1.2 },
+        headStyles: estiloCabecera,
+        alternateRowStyles: { fillColor: [248, 249, 250] }
+      });
+      y = doc.lastAutoTable.finalY + 6;
+    }
+
+    const fechaGen = new Date().toLocaleString('es-GT', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+    const totalPaginas = doc.getNumberOfPages();
+    for (let i = 1; i <= totalPaginas; i += 1) {
+      doc.setPage(i);
+      doc.setFontSize(7);
+      doc.setTextColor(107, 114, 128);
+      doc.text(`Ferretería El Puente · Reporte de usuarios · Generado el ${fechaGen}`, 14, 289);
+      doc.text(`Página ${i} de ${totalPaginas}`, AP - 14, 289, { align: 'right' });
+    }
+
+    return doc;
+  }
+
+  async function exportarPdf() {
+    const doc = await construirPdfDocumento();
+    if (!doc) return;
+    doc.save(`reporte_usuarios_${new Date().toISOString().slice(0, 10)}.pdf`);
+    notificar.exito('PDF descargado');
+  }
+
+  // Abre el PDF del reporte en una ventana nueva. Al visor de PDF del navegador
+  // se le puede dar Imprimir sin bloquear la aplicación principal.
+  async function abrirImpresion() {
+    if (!reporte) return;
+    try {
+      const doc = await construirPdfDocumento();
+      if (!doc) return;
+      const url = URL.createObjectURL(doc.output('blob'));
+      const ventana = window.open(url, '_blank');
+      if (ventana) {
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      } else {
+        URL.revokeObjectURL(url);
+        notificar.error('Permite la ventana emergente para imprimir');
+      }
+    } catch {
+      notificar.error('No se pudo abrir la ventana de impresión');
+    }
   }
 
   return (
@@ -165,11 +404,14 @@ export default function ReportePage() {
       <div className="encabezado-pagina">
         <h2>Reporte de usuarios</h2>
         <div className="acciones-encabezado">
-          <button type="button" className="btn btn-secundario" onClick={() => window.print()}>
-            Imprimir
-          </button>
-          <button type="button" className="btn btn-primario" onClick={exportarCsv} disabled={!reporte}>
+          <button type="button" className="btn btn-secundario" onClick={exportarCsv} disabled={!reporte}>
             Exportar CSV
+          </button>
+          <button type="button" className="btn btn-secundario" onClick={exportarPdf} disabled={!reporte}>
+            PDF
+          </button>
+          <button type="button" className="btn btn-primario" onClick={abrirImpresion}>
+            Imprimir
           </button>
         </div>
       </div>

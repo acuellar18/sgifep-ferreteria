@@ -28,6 +28,7 @@ export function permisosFacturacion(sesion = leerSesion()) {
     anularCobros: tieneAlgunRol(sesion, [ADMINISTRADOR]),
     registrarDevoluciones: tieneAlgunRol(sesion, ROLES_COBRAR),
     consultarReporteFacturacion: tieneAlgunRol(sesion, ROLES_FACTURACION),
-    consultarAuditoria: tieneAlgunRol(sesion, [ADMINISTRADOR])
+    consultarAuditoria: tieneAlgunRol(sesion, [ADMINISTRADOR]),
+    consultarReporteGeneral: tieneAlgunRol(sesion, [ADMINISTRADOR])
   };
 }

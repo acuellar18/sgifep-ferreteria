@@ -498,7 +498,6 @@
     '<aside class="drawer" id="drawer">' +
       '<div class="drawer-cabecera"><span class="drawer-logo">SGIFEP</span></div>' +
       '<nav class="drawer-nav" id="navModulos" aria-label="Menú de módulos"></nav>' +
-      '<div class="drawer-footer"><a class="drawer-volver" href="/index.html">← Volver al sitio</a></div>' +
     '</aside>' +
     '<div class="contenido"><main class="main" id="contenidoPrincipal"></main></div>';
   app.appendChild(cuerpo);

@@ -497,7 +497,8 @@
 .inventario-producto-card-media {
   position: relative;
   aspect-ratio: 4 / 3;
-  background: #f3f4f6;
+  padding: 10px;
+  background: #f8f9fa;
   overflow: hidden;
 }
 
@@ -505,13 +506,14 @@
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .inventario-producto-card-media .inventario-imagen-vacia,
 .inventario-producto-card-media .inventario-imagen-cargando {
   width: 100%;
   height: 100%;
+  border-radius: 8px;
 }
 
 .inventario-producto-card-badges {
@@ -593,6 +595,9 @@
   margin: 6px 0 0;
   font-size: 12px;
   color: var(--color-texto-suave);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .inventario-producto-card-meta {
@@ -935,11 +940,15 @@
 }
 
 .inventario-form-preview {
+  display: block;
   width: 100%;
-  max-width: 180px;
-  height: 120px;
-  margin-top: 4px;
-  object-fit: cover;
+  max-width: 220px;
+  max-height: 250px;
+  aspect-ratio: 4 / 3;
+  margin-top: 8px;
+  padding: 8px;
+  object-fit: contain;
+  background: #f8f9fa;
   border: 1px solid var(--color-borde);
   border-radius: 10px;
 }
@@ -966,8 +975,10 @@
   align-items: center;
   justify-content: center;
   aspect-ratio: 4 / 3;
+  max-height: 250px;
+  padding: 10px;
   overflow: hidden;
-  background: #f3f4f6;
+  background: #f8f9fa;
   border: 1px solid var(--color-borde);
   border-radius: 14px;
 }
@@ -977,6 +988,7 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
+  border-radius: 8px;
   background: var(--color-superficie);
 }
 
@@ -1084,7 +1096,7 @@
   }
 
   .inventario-detalle-imagen {
-    max-height: 320px;
+    max-height: 250px;
   }
 }
 
@@ -1463,5 +1475,37 @@
 
   .inventario-acciones-encabezado .btn {
     flex: 1 1 auto;
+  }
+}
+
+/* ============================================================
+   PRODUCTOS · TARJETAS (grid desde ProductosPage)
+   ============================================================ */
+
+.producto-card-nombre {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.6em;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.inventario-conteo {
+  margin-bottom: 8px;
+}
+
+.filterbar .btn {
+  flex: 0 1 auto;
+  white-space: nowrap;
+}
+
+@media (max-width: 820px) {
+  .filterbar .btn {
+    width: 100%;
+    margin-top: 4px;
   }
 }

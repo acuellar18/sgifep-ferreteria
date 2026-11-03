@@ -62,6 +62,35 @@ module.exports = {
     return pool.query(`SELECT COUNT(*) total FROM despachos d LEFT JOIN clientes c ON c.id = d.cliente_id WHERE ${where.join(' AND ')}`, params);
   },
 
+  disponiblesParaRuta({ q = '', excluirDespachoId } = {}) {
+    const where = ["d.estado IN ('pendiente', 'programado')"];
+    const params = [];
+    if (q) {
+      where.push('(d.codigo LIKE ? OR c.nombre LIKE ? OR d.direccion_entrega LIKE ?)');
+      const like = `%${q}%`;
+      params.push(like, like, like);
+    }
+    where.push(`d.id NOT IN (
+      SELECT rp.despacho_id FROM ruta_paradas rp
+      JOIN rutas r ON r.id = rp.ruta_id
+      WHERE r.estado IN ('planificada', 'en_curso')
+    )`);
+    if (excluirDespachoId) {
+      where.push('d.id != ?');
+      params.push(excluirDespachoId);
+    }
+    return pool.query(
+      `SELECT d.id, d.codigo, d.estado, d.fecha_programada, d.direccion_entrega,
+              c.nombre AS cliente_nombre
+       FROM despachos d
+       LEFT JOIN clientes c ON c.id = d.cliente_id
+       WHERE ${where.join(' AND ')}
+       ORDER BY d.fecha_programada IS NULL ASC, d.fecha_programada ASC, d.id DESC
+       LIMIT 200`,
+      params
+    );
+  },
+
   buscarPorId(id) {
     return pool.query(
       `SELECT d.*, c.nombre AS cliente_nombre, c.telefono AS cliente_telefono,

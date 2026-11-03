@@ -266,10 +266,11 @@ class CompraService {
             productoId = existentes[0].id;
           } else {
             const codigo = generarCodigoProducto();
+            const categoriaId = d.categoria_id ? Number(d.categoria_id) : null;
             const [resProd] = await connection.query(
-              `INSERT INTO productos (codigo, nombre, tipo, unidad_medida, stock_actual, stock_minimo, costo_ultimo, costo_promedio, precio_venta, activo, proveedor_id)
-               VALUES (?, ?, 'producto', 'UNI', 0, 0, 0, 0, ?, 1, ?)`,
-              [codigo, nombreProducto, precioVenta, dto.proveedor_id]
+              `INSERT INTO productos (codigo, nombre, tipo, unidad_medida, stock_actual, stock_minimo, costo_ultimo, costo_promedio, precio_venta, activo, proveedor_id, categoria_id)
+               VALUES (?, ?, 'producto', 'UNI', 0, 0, 0, 0, ?, 1, ?, ?)`,
+              [codigo, nombreProducto, precioVenta, dto.proveedor_id, categoriaId]
             );
             productoId = resProd.insertId;
           }

@@ -122,6 +122,8 @@ function serializar(fila, { incluirCostos = true } = {}) {
     ubicacion: fila.ubicacion || null,
     categoria_id: fila.categoria_id,
     categoria_nombre: fila.categoria_nombre,
+    proveedor_id: fila.proveedor_id ?? null,
+    proveedor_nombre: fila.proveedor_nombre || null,
     tipo,
     unidad_medida: fila.unidad_medida,
     stock_actual: stockActual,

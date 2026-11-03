@@ -45,6 +45,7 @@ app.get('/', (req, res) => {
 // ---------- API REST (arquitectura MVC: rutas -> controladores -> servicios) ----------
 
 app.use('/api', require('./routes/auth.routes')); // /api/login, /api/reset-password
+app.use('/api', require('./routes/contacto.routes')); // /api/contacto (público, formulario landing)
 app.use('/api/usuarios', require('./routes/usuarios.routes'));
 app.use('/api/perfil', require('./routes/perfil.routes'));
 app.use('/api/caja', require('./routes/caja.routes'));
@@ -66,6 +67,7 @@ app.use('/api/despachos', require('./routes/despachos.routes'));
 app.use('/api/configuracion-empresa', require('./routes/configuracion-empresa.routes'));
 app.use('/api/reportes-inventario', require('./routes/reporte-inventario.routes'));
 app.use('/api/reportes-ventas', require('./routes/reporte-ventas.routes'));
+app.use('/api/reportes', require('./routes/reporte-general.routes'));
 
 // ---------- SPA / catch-all ----------
 

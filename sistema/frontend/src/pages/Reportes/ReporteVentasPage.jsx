@@ -172,23 +172,61 @@ export default function ReporteVentasPage() {
     notificar.exito('Reporte exportado en Excel');
   }
 
-  function exportarPdf() {
+  async function construirPdfDocumento() {
     const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text('Reporte de ventas', 14, 18);
+    const AP = 210;
+
+    let logoB64 = null;
+    try {
+      const r = await fetch('/img/logo.png');
+      const b = await r.arrayBuffer();
+      const u = new Uint8Array(b);
+      let s = '';
+      u.forEach(v => s += String.fromCharCode(v));
+      logoB64 = `data:image/png;base64,${btoa(s)}`;
+    } catch {}
+
+    if (logoB64) doc.addImage(logoB64, 'PNG', 12, 4, 22, 14);
+    doc.setTextColor(17, 24, 39);
+    doc.setFontSize(18);
+    doc.text('Ferretería El Puente', logoB64 ? 38 : 14, 14);
     doc.setFontSize(9);
-    doc.text(`Del ${aplicados.desde} al ${aplicados.hasta}`, 14, 25);
+    doc.text('SGIFEP — Sistema de Gestión Integral', logoB64 ? 38 : 14, 21);
+
+    const tx = AP - 68;
+    doc.setDrawColor(209, 213, 219);
+    doc.setFillColor(255, 255, 255);
+    doc.rect(tx, 4, 60, 20, 'DF');
+    doc.setTextColor(22, 163, 74);
+    doc.setFontSize(10);
+    doc.text('REPORTE', tx + 5, 10);
+    doc.setTextColor(17, 24, 39);
+    doc.setFontSize(14);
+    doc.text('Ventas', tx + 5, 17);
+    doc.setTextColor(107, 114, 128);
+    doc.setFontSize(8);
+    doc.text(`Del ${aplicados.desde} al ${aplicados.hasta}`, tx + 5, 23);
+
+    doc.setDrawColor(22, 163, 74);
+    doc.setLineWidth(0.6);
+    doc.line(12, 36, AP - 12, 36);
+    doc.setLineWidth(0.1);
+
+    let y = 42;
 
     autoTable(doc, {
-      startY: 31,
+      startY: y,
       head: [['Indicador', 'Valor']],
       body: filasResumen().map((fila) => [fila.Indicador, String(fila.Valor)]),
-      theme: 'striped',
-      styles: { fontSize: 8 }
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 1.2 },
+      headStyles: { fillColor: [20, 20, 20], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7 },
+      alternateRowStyles: { fillColor: [248, 249, 250] },
+      columnStyles: { 1: { halign: 'right' } }
     });
 
     autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 8,
+      startY: doc.lastAutoTable.finalY + 6,
       head: [['Fecha', 'Ventas', 'Total', 'Efectivo', 'Tarjeta', 'Transferencia']],
       body: data.por_dia.map((dia) => [
         dia.fecha,
@@ -199,9 +237,24 @@ export default function ReporteVentasPage() {
         formatearMoneda(dia.transferencia)
       ]),
       theme: 'grid',
-      styles: { fontSize: 8 }
+      styles: { fontSize: 8, cellPadding: 1.2 },
+      headStyles: { fillColor: [20, 20, 20], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7 },
+      alternateRowStyles: { fillColor: [248, 249, 250] },
+      columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } }
     });
 
+    const fy = doc.lastAutoTable.finalY + 8;
+    doc.setFontSize(7);
+    doc.setTextColor(107, 114, 128);
+    const ahora = new Date();
+    doc.text(`Generado el ${ahora.toLocaleDateString('es-GT')}, ${ahora.toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })}`, 14, fy);
+
+    return doc;
+  }
+
+  async function exportarPdf() {
+    const doc = await construirPdfDocumento();
+    if (!doc) return;
     doc.save(`reporte-ventas-${aplicados.desde}-${aplicados.hasta}.pdf`);
     notificar.exito('Reporte exportado en PDF');
   }
@@ -222,6 +275,23 @@ export default function ReporteVentasPage() {
     }
   }
 
+async function imprimirReporte() {
+    try {
+      const doc = await construirPdfDocumento();
+      if (!doc) return;
+      const url = URL.createObjectURL(doc.output('blob'));
+      const ventana = window.open(url, '_blank');
+      if (ventana) setTimeout(() => URL.revokeObjectURL(url), 60000);
+      else {
+        URL.revokeObjectURL(url);
+        notificar.error('Permite la ventana emergente para imprimir');
+      }
+    } catch {
+      notificar.error('No se pudo abrir la ventana de impresión');
+    }
+  }
+
+
   return (
     <section className="reporte-ventas">
       <header className="reporte-ventas-encabezado">
@@ -232,7 +302,8 @@ export default function ReporteVentasPage() {
         <div className="reporte-acciones">
           <button type="button" className="btn btn-secundario" onClick={exportarCsv}>CSV</button>
           <button type="button" className="btn btn-secundario" onClick={exportarExcel}>Excel</button>
-          <button type="button" className="btn btn-primario" onClick={exportarPdf}>PDF</button>
+          <button type="button" className="btn btn-secundario" onClick={exportarPdf}>PDF</button>
+          <button type="button" className="btn btn-primario" onClick={imprimirReporte}>Imprimir</button>
         </div>
       </header>
 

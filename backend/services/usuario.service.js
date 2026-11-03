@@ -6,6 +6,14 @@ const rolRepository = require('../repositories/rol.repository');
 const departamentoRepository = require('../repositories/departamento.repository');
 const usuarioDto = require('../dtos/usuario.dto');
 
+function escaparNombre(texto) {
+  return String(texto == null ? '' : texto)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 // Capa de negocio de USUARIOS: reglas (unicidad, referencias, roles múltiples)
 // y transacciones atómicas. No conoce HTTP: lanza HttpError para el controlador.
 class UsuarioService {
@@ -129,9 +137,85 @@ class UsuarioService {
     if (valor !== 0 && valor !== 1) {
       throw new HttpError(400, 'El campo activo debe ser 0 o 1');
     }
+    // Datos ANTES del cambio: así se sabe a quién avisar (si tiene correo) y
+    // el estado previo para no duplicar el aviso si ya estaba activo.
+    const usuario = await usuarioRepository.obtenerDatosActivacion(id);
+
     const affected = await usuarioRepository.cambiarEstado(id, valor);
     if (affected === 0) throw new HttpError(404, 'Usuario no encontrado');
+
+    if (valor === 1 && usuario && usuario.email && usuario.email.includes('@')) {
+      await this.notificarActivacion(usuario).catch(() => {});
+    }
     return valor ? 'Usuario activado' : 'Usuario inactivado';
+  }
+
+  // Correo "tu cuenta ya está activa": se envía al activar (equivalente a
+  // aprobar el registro público o reactivar un usuario desde el módulo Users).
+  async notificarActivacion(usuario) {
+    try {
+      const nodemailer = require('nodemailer');
+      const user = process.env.SMTP_USER;
+      const pass = process.env.SMTP_PASS;
+      if (!user || !pass) return;
+
+      const port = Number(process.env.SMTP_PORT) || 465;
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port,
+        secure: port === 465,
+        auth: { user, pass }
+      });
+
+      const baseUrl = (process.env.FRONTEND_URL || 'http://localhost:5174/usuarios').replace(/\/$/, '');
+      const link = `${baseUrl}/login.html`;
+      const nombres = [usuario.nombre].filter(Boolean).join(' ');
+      const remitente = process.env.MAIL_FROM || `Sistema SGIFEP <${user}>`;
+
+      await transporter.sendMail({
+        from: remitente,
+        to: usuario.email,
+        subject: 'Tu cuenta ya está activa - Ferretería El Puente',
+        text: [
+          `Hola ${nombres || usuario.username},`,
+          '',
+          'Tu cuenta del sistema SGIFEP fue activada por un administrador.',
+          'Ya puedes iniciar sesión con tu usuario y tu contraseña:',
+          link,
+          '',
+          'Ferretería El Puente'
+        ].join('\n'),
+        html: `<div style="margin:0; padding:24px; background-color:#f4f4f5; font-family:Arial,Helvetica,sans-serif;">
+                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px; margin:0 auto; background-color:#ffffff; border-radius:12px; overflow:hidden; border:1px solid #e4e4e7;">
+                   <tr>
+                     <td style="background-color:#141414; padding:18px 28px;">
+                       <p style="margin:0; color:#ffffff; font-size:15px; font-weight:bold;">FERRETERÍA EL PUENTE</p>
+                       <p style="margin:4px 0 0; color:#ea580c; font-size:12px; text-transform:uppercase; letter-spacing:1px;">Cuenta activada</p>
+                     </td>
+                   </tr>
+                   <tr>
+                     <td style="padding:28px; font-size:14px; color:#27272a;">
+                       <p style="margin:0 0 12px;">Hola <strong>${escaparNombre(nombres || usuario.username)}</strong>,</p>
+                       <p style="margin:0 0 16px;">Tu cuenta <strong>${escaparNombre(usuario.username)}</strong> fue <strong>activada</strong> por un administrador. Ya puedes iniciar sesión con tu usuario y tu contraseña.</p>
+                       <p style="margin:0 0 20px;">
+                         <a href="${link}" style="display:inline-block; padding:12px 22px; background-color:#ea580c; color:#ffffff; text-decoration:none; font-weight:bold; border-radius:8px;">Iniciar sesión</a>
+                       </p>
+                       <p style="margin:0 0 10px;">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
+                       <p style="margin:0; word-break:break-all; font-size:12px; color:#71717a;">${link}</p>
+                     </td>
+                   </tr>
+                   <tr>
+                     <td style="padding:14px 28px; background-color:#faf7f2; border-top:1px solid #e4e4e7;">
+                       <p style="margin:0; font-size:11px; color:#a1a1aa;">Sistema SGIFEP — Ferretería El Puente</p>
+                     </td>
+                   </tr>
+                 </table>
+               </div>`
+      });
+    } catch (err) {
+      // No interrumpe la activación: el estado ya cambió en la BD.
+      console.error('[usuarios] error enviando correo de activación:', err.message || err);
+    }
   }
 
   async eliminar(id) {
