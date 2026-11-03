@@ -11,7 +11,7 @@
 </head>
 <body class="landing-modern">
 
-<nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm py-3">
+<nav class="navbar navbar-expand-lg navbar-light navbar-glass sticky-top shadow-sm py-3">
     <div class="container">
         <a class="navbar-brand d-flex align-items-center gap-2" href="index.html">
             <img src="img/logo.png" alt="Ferretería El Puente" class="brand-badge">
@@ -37,30 +37,40 @@
     </div>
 </nav>
 
-<section class="page-hero-simple">
-    <div class="container">
-        <h1 class="display-6">Ubicación</h1>
-        <p>Oficinas centrales</p>
-    </div>
-</section>
-
-<section class="py-5">
+<!-- Sección con fondo de imagen, igual que Contacto -->
+<section class="contacto-bg">
     <div class="container py-3">
-        <div class="mapa-card mb-4">
-            <iframe
-                src="https://www.google.com/maps?q=Diagonal+1,+1-76+Zona+1,+San+Lucas+Tolim%C3%A1n,+Solol%C3%A1,+Guatemala&output=embed"
-                width="100%"
-                height="380"
-                style="border:0;"
-                allowfullscreen=""
-                loading="lazy">
-            </iframe>
-        </div>
+        <div class="contacto-card">
+            <div class="row g-0 align-items-center">
 
-        <div class="row g-3 row-cols-1 row-cols-md-3">
-            <div class="col"><div class="info-tile"><strong>TEL</strong><p>+(502) 5606-9373</p></div></div>
-            <div class="col"><div class="info-tile"><strong>Oficinas centrales</strong><p>Diagonal 1, 1-76 Zona 1 San Lucas Tolimán, Sololá</p></div></div>
-            <div class="col"><div class="info-tile"><strong>Correo electrónico</strong><p>ferreteriaelpuente34@gmail.com</p></div></div>
+                <!-- Columna izquierda: título + información -->
+                <div class="col-lg-5">
+                    <div class="contacto-info-modern">
+                        <h1 class="display-6 fw-bold mb-4">Ubicación</h1>
+                        <p>Diagonal 1, 1-76 Zona 1, San Lucas Tolimán, Sololá</p>
+                        <p><a href="tel:+50256069373">+(502) 5606-9373</a></p>
+                        <p><a href="mailto:ferreteriaelpuente34@gmail.com">ferreteriaelpuente34@gmail.com</a></p>
+                        <p class="hours mb-0">Lunes a viernes: 8:00am – 5:00pm<br>Sábado: 8:00am – 12:30pm</p>
+                    </div>
+                </div>
+
+                <!-- Columna derecha: mapa -->
+                <div class="col-lg-7">
+                    <div class="contacto-form-modern">
+                        <div class="mapa-card">
+                            <iframe
+                                src="https://www.google.com/maps?q=Diagonal+1,+1-76+Zona+1,+San+Lucas+Tolim%C3%A1n,+Solol%C3%A1,+Guatemala&output=embed"
+                                width="100%"
+                                height="380"
+                                style="border:0;"
+                                allowfullscreen=""
+                                loading="lazy">
+                            </iframe>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
         </div>
     </div>
 </section>
@@ -88,11 +98,6 @@
         <hr class="border-secondary my-4">
         <div class="d-flex flex-wrap justify-content-between small text-light-soft">
             <span>© Ferretería El Puente — 2026</span>
-            <div class="d-flex gap-3">
-                <a href="#">Facebook</a>
-                <a href="#">WhatsApp</a>
-                <a href="#">Instagram</a>
-            </div>
         </div>
     </div>
 </footer>
