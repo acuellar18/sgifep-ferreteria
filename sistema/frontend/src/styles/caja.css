@@ -22,6 +22,29 @@
   font-size: 14px;
 }
 
+.caja-encabezado-derecha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.caja-reloj-en-vivo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  background: var(--color-superficie);
+  box-shadow: var(--sombra);
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-texto);
+  white-space: nowrap;
+}
+
 .caja-cargando {
   display: flex;
   align-items: center;
@@ -53,13 +76,14 @@
   box-shadow: var(--sombra);
 }
 
-.caja-estadistica-icono {
+.caja-estadistica .caja-estadistica-icono {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 42px;
   width: 42px;
   height: 42px;
+  margin: 0;
   border-radius: 11px;
   background: var(--color-primario-suave);
   color: var(--color-primario);

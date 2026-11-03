@@ -66,6 +66,7 @@ export default function CajaPage() {
   const [data, setData] = useState({ actual: null, historial: [] });
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const [horaActual, setHoraActual] = useState(new Date());
   const [modalApertura, setModalApertura] = useState(false);
   const [modalCierre, setModalCierre] = useState(false);
   const [montoInicial, setMontoInicial] = useState('100.00');
@@ -108,6 +109,8 @@ export default function CajaPage() {
 
   useEffect(() => {
     cargar();
+    const intervalo = setInterval(() => setHoraActual(new Date()), 1000);
+    return () => clearInterval(intervalo);
   }, []);
 
   function abrirModalApertura() {
@@ -177,9 +180,21 @@ export default function CajaPage() {
           <h2>Caja</h2>
           <p>Apertura, cierre y arqueo del turno</p>
         </div>
-        <span className={`chip ${actual ? 'chip-ok' : 'chip-neutro'}`}>
-          {actual ? 'Caja abierta' : 'Caja cerrada'}
-        </span>
+        <div className="caja-encabezado-derecha">
+          <span className="caja-reloj-en-vivo">
+            <IconoReloj />
+            {horaActual.toLocaleTimeString('es-GT', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false,
+              timeZone: 'America/Guatemala'
+            })}
+          </span>
+          <span className={`chip ${actual ? 'chip-ok' : 'chip-neutro'}`}>
+            {actual ? 'Caja abierta' : 'Caja cerrada'}
+          </span>
+        </div>
       </header>
 
       {error && <div className="alerta alerta-error">{error}</div>}
