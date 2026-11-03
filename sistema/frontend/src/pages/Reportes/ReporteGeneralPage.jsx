@@ -235,16 +235,67 @@ export default function ReporteGeneralPage() {
     notificar.exito('Excel generado');
   }
 
-  function exportarPdf() {
+  async function exportarPdf() {
     const doc = new jsPDF();
-    doc.setFontSize(20);
-    doc.text('Ferretería El Puente', 14, 18);
-    doc.setFontSize(14);
-    doc.text('Reporte General', 14, 26);
-    doc.setFontSize(9);
-    doc.text(`Generado: ${new Date().toLocaleDateString('es-GT', { hour: '2-digit', minute: '2-digit' })}  |  ${textoPeriodo()}`, 14, 33);
+    const AP = 210;
 
-    let y = 40;
+    // Cargar logo
+    let logoB64 = null;
+    try {
+      const r = await fetch('/img/logo.png');
+      const b = await r.arrayBuffer();
+      const u = new Uint8Array(b);
+      let s = '';
+      u.forEach(v => s += String.fromCharCode(v));
+      logoB64 = `data:image/png;base64,${btoa(s)}`;
+    } catch {}
+
+    // Encabezado con línea verde debajo
+    if (logoB64) {
+      doc.addImage(logoB64, 'PNG', 12, 4, 22, 14);
+    }
+    doc.setTextColor(17, 24, 39);
+    doc.setFontSize(18);
+    doc.text('Ferretería El Puente', logoB64 ? 38 : 14, 14);
+    doc.setFontSize(9);
+    doc.text('SGIFEP — Sistema de Gestión Integral', logoB64 ? 38 : 14, 21);
+
+    // Tarjeta de título a la derecha
+    const tx = AP - 68;
+    doc.setDrawColor(209, 213, 219);
+    doc.setFillColor(255, 255, 255);
+    doc.rect(tx, 4, 60, 20, 'DF');
+    doc.setTextColor(22, 163, 74);
+    doc.setFontSize(10);
+    doc.text('REPORTE', tx + 5, 10);
+    doc.setTextColor(17, 24, 39);
+    doc.setFontSize(14);
+    doc.text('Reporte General', tx + 5, 17);
+    doc.setTextColor(107, 114, 128);
+    doc.setFontSize(8);
+    doc.text(textoPeriodo(), tx + 5, 23);
+
+    // Línea verde debajo del encabezado
+    doc.setDrawColor(22, 163, 74);
+    doc.setLineWidth(0.6);
+    doc.line(12, 36, AP - 12, 36);
+    doc.setLineWidth(0.1);
+
+    // Filtros
+    let y = 38;
+    doc.setFillColor(248, 249, 250);
+    doc.rect(12, y, AP - 24, 6, 'F');
+    doc.setDrawColor(22, 163, 74);
+    doc.setLineWidth(1.2);
+    doc.line(12, y, 12, y + 6);
+    doc.setLineWidth(0.1);
+    doc.setTextColor(17, 24, 39);
+    doc.setFontSize(9);
+    doc.text('Filtros:', 15, y + 4.5);
+    doc.setTextColor(55, 65, 81);
+    doc.text(textoPeriodo(), 32, y + 4.5);
+    y += 11;
+
     const kpis = [
       ['Ventas del día', `${data.kpis.ventas_dia.count} ventas`, formatearMoneda(data.kpis.ventas_dia.total)],
       ['Ventas del mes', `${data.kpis.ventas_mes.count} ventas`, formatearMoneda(data.kpis.ventas_mes.total)],
@@ -260,39 +311,171 @@ export default function ReporteGeneralPage() {
       startY: y,
       head: [['Indicador', 'Detalle', 'Valor']],
       body: kpis,
-      theme: 'striped', styles: { fontSize: 8 }
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 1.2 },
+      headStyles: { fillColor: [20, 20, 20], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7 },
+      alternateRowStyles: { fillColor: [248, 249, 250] },
+      columnStyles: { 2: { halign: 'right' } }
     });
 
     if (data.ultimas_ventas.length) {
-      y = doc.lastAutoTable.finalY + 8;
-      doc.setFontSize(11);
+      y = doc.lastAutoTable.finalY + 6;
+      doc.setTextColor(22, 163, 74);
+      doc.setFontSize(10);
       doc.text('Últimas ventas', 14, y);
+      doc.setTextColor(0, 0, 0);
       y += 4;
       autoTable(doc, {
         startY: y,
         head: [['No.', 'Cliente', 'Total', 'Fecha']],
         body: data.ultimas_ventas.slice(0, 10).map(v => [v.numero, v.cliente, formatearMoneda(v.total), formatearFechaHora(v.creado_en)]),
-        theme: 'grid', styles: { fontSize: 8 }
+        theme: 'grid',
+        styles: { fontSize: 8, cellPadding: 1.2 },
+        headStyles: { fillColor: [20, 20, 20], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7 },
+        alternateRowStyles: { fillColor: [248, 249, 250] },
+        columnStyles: { 2: { halign: 'right' } }
       });
     }
 
     if (data.productos_stock_bajo.length) {
-      y = doc.lastAutoTable.finalY + 8;
+      y = doc.lastAutoTable.finalY + 6;
+      doc.setTextColor(22, 163, 74);
+      doc.setFontSize(10);
       doc.text('Productos con stock bajo', 14, y);
+      doc.setTextColor(0, 0, 0);
       y += 4;
       autoTable(doc, {
         startY: y,
         head: [['Código', 'Producto', 'Stock actual', 'Stock mínimo']],
         body: data.productos_stock_bajo.map(p => [p.codigo, p.nombre, String(p.stock_actual), String(p.stock_minimo)]),
-        theme: 'grid', styles: { fontSize: 8 }
+        theme: 'grid',
+        styles: { fontSize: 8, cellPadding: 1.2 },
+        headStyles: { fillColor: [20, 20, 20], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7 },
+        alternateRowStyles: { fillColor: [248, 249, 250] },
+        columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' } }
       });
     }
 
+    // Totales
+    y = doc.lastAutoTable ? doc.lastAutoTable.finalY + 8 : y + 10;
+    const totVentas = data.kpis.ventas_mes.total;
+    const totCompras = data.kpis.compras_mes.total;
+    const totGanancia = data.kpis.utilidad_estimada;
+    const tc = [totVentas, totCompras, totGanancia].map(v => ({ monto: v }));
+    const tl = AP - 14;
+    const tcw = 44;
+    const tcg = 5;
+    const tcTotal = tc.length * tcw + (tc.length - 1) * tcg;
+    const tcStart = tl - tcTotal;
+
+    tc.forEach((t, i) => {
+      const cx = tcStart + i * (tcw + tcg);
+      doc.setDrawColor(229, 231, 235);
+      doc.setFillColor(248, 249, 250);
+      doc.rect(cx, y, tcw, 12, 'DF');
+      doc.setTextColor(107, 114, 128);
+      doc.setFontSize(6);
+      const labels = ['Total ventas', 'Total compras', 'Ganancia'];
+      doc.text(labels[i].toUpperCase(), cx + 2, y + 3.5);
+      doc.setTextColor(17, 24, 39);
+      doc.setFontSize(9);
+      doc.text(formatearMoneda(t.monto), cx + tcw - 2, y + 8.5, { align: 'right' });
+    });
+    y += 18;
+
+    // Pie
+    doc.setFontSize(7);
+    doc.setTextColor(107, 114, 128);
+    doc.text(`Registros: ${kpis.length} indicadores`, 14, y);
+    const ahora = new Date();
+    const fechaGen = ahora.toLocaleDateString('es-GT') + ', ' + ahora.toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' });
+    doc.text(`Generado el ${fechaGen}`, AP - 14, y, { align: 'right' });
+
     doc.save(`reporte-general-${fechaLocal(HOY)}.pdf`);
-    notificar.exito('PDF generado');
+    notificar.exito('PDF descargado');
   }
 
-  function imprimir() { window.print(); }
+  function imprimir() {
+    const kpiRows = [
+      ['Ventas del día', `${data.kpis.ventas_dia.count} ventas`, formatearMoneda(data.kpis.ventas_dia.total)],
+      ['Ventas del mes', `${data.kpis.ventas_mes.count} ventas`, formatearMoneda(data.kpis.ventas_mes.total)],
+      ['Compras del mes', `${data.kpis.compras_mes.count} compras`, formatearMoneda(data.kpis.compras_mes.total)],
+      ['Utilidad estimada', '', formatearMoneda(data.kpis.utilidad_estimada)],
+      ['Productos en inventario', String(data.kpis.productos_inventario.total), ''],
+      ['Stock bajo', String(data.kpis.stock_bajo), ''],
+      ['Usuarios activos', String(data.kpis.usuarios_activos), ''],
+      ['Cuentas por pagar', `${data.kpis.cuentas_por_pagar.count} cuentas`, formatearMoneda(data.kpis.cuentas_por_pagar.total)]
+    ];
+    const html = `<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><title>Reporte General</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter','Segoe UI',Tahoma,sans-serif;color:#111827;background:#fff;padding:12mm}
+.print-encabezado{display:flex;align-items:flex-start;justify-content:space-between;gap:12mm;padding-bottom:5mm;border-bottom:2px solid #16a34a}
+.print-empresa{display:flex;align-items:flex-start;gap:5mm}
+.print-logo{max-width:42mm;max-height:20mm;object-fit:contain}
+.print-empresa h1{margin:0 0 1.5mm;font-size:16pt;color:#111827}
+.print-empresa p{margin:0.8mm 0;font-size:9pt;color:#374151}
+.print-documento-titulo{min-width:52mm;padding:3mm 5mm;text-align:right;border:1px solid #d1d5db;border-radius:3px}
+.print-etiqueta{display:block;color:#16a34a;font-size:7.5pt;font-weight:700;letter-spacing:0.08em}
+.print-documento-titulo strong{display:block;margin:1mm 0;font-size:13pt}
+.print-numero{font-size:10pt;font-weight:600}
+.print-filtros{margin:4mm 0 0;padding:2mm 3mm;background:#f8f9fa;border-left:3px solid #16a34a;font-size:8.5pt}
+h2.print-seccion{margin:5mm 0 2mm;color:#16a34a;font-size:9.5pt;text-transform:uppercase;letter-spacing:0.04em}
+.print-tabla{width:100%;border-collapse:collapse;font-size:8.8pt}
+.print-tabla th{padding:2mm;background:#141414;color:#fff;text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:0.03em}
+.print-tabla td{padding:1.8mm 2mm;border-bottom:1px solid #e5e7eb}
+.print-tabla tbody tr:nth-child(even) td{background:#f8f9fa}
+.print-tabla .num{text-align:right;white-space:nowrap}
+.print-totales{display:flex;justify-content:flex-end;gap:8mm;margin-top:5mm}
+.print-totales>div{display:flex;flex-direction:column;align-items:flex-end;min-width:38mm;padding:2mm 3mm;border:1px solid #e5e7eb;border-radius:3px;background:#f8f9fa}
+.print-totales span{color:#6b7280;font-size:7.5pt;font-weight:700;text-transform:uppercase}
+.print-totales strong{font-size:12pt;color:#111827}
+.print-meta{display:flex;justify-content:space-between;margin-top:6mm;color:#6b7280;font-size:8pt}
+@media print{@page{margin:0}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head><body>
+<div class="print-encabezado">
+  <div class="print-empresa">
+    <img src="/img/logo.png" alt="Logo" class="print-logo">
+    <div><h1>Ferretería El Puente</h1><p>SGIFEP — Sistema de Gestión Integral</p></div>
+  </div>
+  <div class="print-documento-titulo">
+    <span class="print-etiqueta">REPORTE</span>
+    <strong>Reporte General</strong>
+    <span class="print-numero">${textoPeriodo()}</span>
+  </div>
+</div>
+<div class="print-filtros"><strong>Filtros:</strong> ${textoPeriodo()}</div>
+<h2 class="print-seccion">Indicadores</h2>
+<table class="print-tabla"><thead><tr><th>Indicador</th><th>Detalle</th><th class="num">Valor</th></tr></thead><tbody>
+${kpiRows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td class="num">${r[2]}</td></tr>`).join('')}
+</tbody></table>
+${data.ultimas_ventas.length ? `<h2 class="print-seccion">Últimas ventas</h2>
+<table class="print-tabla"><thead><tr><th>No.</th><th>Cliente</th><th class="num">Total</th><th>Fecha</th></tr></thead><tbody>
+${data.ultimas_ventas.slice(0,10).map(v => `<tr><td>${v.numero}</td><td>${v.cliente}</td><td class="num">${formatearMoneda(v.total)}</td><td>${formatearFechaHora(v.creado_en)}</td></tr>`).join('')}
+</tbody></table>` : ''}
+${data.productos_stock_bajo.length ? `<h2 class="print-seccion">Productos con stock bajo</h2>
+<table class="print-tabla"><thead><tr><th>Código</th><th>Producto</th><th class="num">Stock actual</th><th class="num">Stock mínimo</th></tr></thead><tbody>
+${data.productos_stock_bajo.map(p => `<tr><td>${p.codigo}</td><td>${p.nombre}</td><td class="num">${p.stock_actual}</td><td class="num">${p.stock_minimo}</td></tr>`).join('')}
+</tbody></table>` : ''}
+<div class="print-totales">
+  <div><span>Total ventas</span><strong>${formatearMoneda(data.kpis.ventas_mes.total)}</strong></div>
+  <div><span>Total compras</span><strong>${formatearMoneda(data.kpis.compras_mes.total)}</strong></div>
+  <div><span>Ganancia estimada</span><strong>${formatearMoneda(data.kpis.utilidad_estimada)}</strong></div>
+</div>
+<div class="print-meta">
+  <span>Registros: ${kpiRows.length} indicadores</span>
+  <span>Generado el ${new Date().toLocaleString('es-GT')}</span>
+</div>
+</body></html>`;
+    try {
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url, '_blank');
+      if (w) setTimeout(() => URL.revokeObjectURL(url), 1000);
+      else notificar.error('Permite la ventana emergente');
+    } catch { notificar.error('No se pudo abrir la ventana'); }
+  }
 
   return (
     <ErrorBoundary>

@@ -51,6 +51,7 @@ const LINEA_INICIAL = {
   precio_venta: '',
   margen: '',
   es_nuevo: false,
+  categoria_id: '',
   costo_anterior: 0
 };
 
@@ -69,6 +70,7 @@ export default function NuevaCompraPage() {
   const [proveedorSeleccionado, setProveedorSeleccionado] = useState(false);
   const [erroresCampos, setErroresCampos] = useState({});
   const [confirmandoSalir, setConfirmandoSalir] = useState(false);
+  const [categorias, setCategorias] = useState([]);
 
   const inputCantidadRefs = useRef([]);
   const inputCostoRefs = useRef([]);
@@ -81,6 +83,10 @@ export default function NuevaCompraPage() {
       cargarProveedor(proveedorId);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    api.get('/productos/categorias').then(res => setCategorias(res.data || [])).catch(() => {});
+  }, []);
 
   async function cargarProveedor(id) {
     try {
@@ -339,6 +345,7 @@ export default function NuevaCompraPage() {
       lineasValidas.push({
         producto_id: l.producto_id ? Number(l.producto_id) : null,
         producto_nombre: l.es_nuevo || !l.producto_id ? l.producto_nombre.trim() : undefined,
+        categoria_id: l.es_nuevo && l.categoria_id ? Number(l.categoria_id) : undefined,
         cantidad: Number(l.cantidad),
         precio_compra: Number(l.precio_compra),
         precio_venta: Number(l.precio_venta),
@@ -535,6 +542,14 @@ export default function NuevaCompraPage() {
                               ref={(el) => (inputProductoRefs.current[index] = el)}
                             />
                             {linea.es_nuevo && <small className="texto-nuevo">Se creará como producto nuevo</small>}
+                            {linea.es_nuevo && (
+                              <select style={{ width: '100%', marginTop: '4px', padding: '4px 6px', fontSize: '12px', border: '1px solid var(--color-borde, #d1d5db)', borderRadius: '6px' }} value={linea.categoria_id} onChange={(e) => actualizarLinea(index, 'categoria_id', e.target.value)}>
+                                <option value="">Sin categoría</option>
+                                {categorias.map((cat) => (
+                                  <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+                                ))}
+                              </select>
+                            )}
                             {linea.producto_codigo && <small className="texto-suave">Código: {linea.producto_codigo}</small>}
                             {linea.costo_anterior > 0 && indicadorCosto(linea.precio_compra, linea.costo_anterior)}
                           </td>

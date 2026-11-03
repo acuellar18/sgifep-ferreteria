@@ -172,23 +172,61 @@ export default function ReporteVentasPage() {
     notificar.exito('Reporte exportado en Excel');
   }
 
-  function exportarPdf() {
+  async function exportarPdf() {
     const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text('Reporte de ventas', 14, 18);
+    const AP = 210;
+
+    let logoB64 = null;
+    try {
+      const r = await fetch('/img/logo.png');
+      const b = await r.arrayBuffer();
+      const u = new Uint8Array(b);
+      let s = '';
+      u.forEach(v => s += String.fromCharCode(v));
+      logoB64 = `data:image/png;base64,${btoa(s)}`;
+    } catch {}
+
+    if (logoB64) doc.addImage(logoB64, 'PNG', 12, 4, 22, 14);
+    doc.setTextColor(17, 24, 39);
+    doc.setFontSize(18);
+    doc.text('Ferretería El Puente', logoB64 ? 38 : 14, 14);
     doc.setFontSize(9);
-    doc.text(`Del ${aplicados.desde} al ${aplicados.hasta}`, 14, 25);
+    doc.text('SGIFEP — Sistema de Gestión Integral', logoB64 ? 38 : 14, 21);
+
+    const tx = AP - 68;
+    doc.setDrawColor(209, 213, 219);
+    doc.setFillColor(255, 255, 255);
+    doc.rect(tx, 4, 60, 20, 'DF');
+    doc.setTextColor(22, 163, 74);
+    doc.setFontSize(10);
+    doc.text('REPORTE', tx + 5, 10);
+    doc.setTextColor(17, 24, 39);
+    doc.setFontSize(14);
+    doc.text('Ventas', tx + 5, 17);
+    doc.setTextColor(107, 114, 128);
+    doc.setFontSize(8);
+    doc.text(`Del ${aplicados.desde} al ${aplicados.hasta}`, tx + 5, 23);
+
+    doc.setDrawColor(22, 163, 74);
+    doc.setLineWidth(0.6);
+    doc.line(12, 36, AP - 12, 36);
+    doc.setLineWidth(0.1);
+
+    let y = 42;
 
     autoTable(doc, {
-      startY: 31,
+      startY: y,
       head: [['Indicador', 'Valor']],
       body: filasResumen().map((fila) => [fila.Indicador, String(fila.Valor)]),
-      theme: 'striped',
-      styles: { fontSize: 8 }
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 1.2 },
+      headStyles: { fillColor: [20, 20, 20], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7 },
+      alternateRowStyles: { fillColor: [248, 249, 250] },
+      columnStyles: { 1: { halign: 'right' } }
     });
 
     autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 8,
+      startY: doc.lastAutoTable.finalY + 6,
       head: [['Fecha', 'Ventas', 'Total', 'Efectivo', 'Tarjeta', 'Transferencia']],
       body: data.por_dia.map((dia) => [
         dia.fecha,
@@ -199,8 +237,17 @@ export default function ReporteVentasPage() {
         formatearMoneda(dia.transferencia)
       ]),
       theme: 'grid',
-      styles: { fontSize: 8 }
+      styles: { fontSize: 8, cellPadding: 1.2 },
+      headStyles: { fillColor: [20, 20, 20], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7 },
+      alternateRowStyles: { fillColor: [248, 249, 250] },
+      columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } }
     });
+
+    const fy = doc.lastAutoTable.finalY + 8;
+    doc.setFontSize(7);
+    doc.setTextColor(107, 114, 128);
+    const ahora = new Date();
+    doc.text(`Generado el ${ahora.toLocaleDateString('es-GT')}, ${ahora.toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })}`, 14, fy);
 
     doc.save(`reporte-ventas-${aplicados.desde}-${aplicados.hasta}.pdf`);
     notificar.exito('Reporte exportado en PDF');
@@ -222,6 +269,48 @@ export default function ReporteVentasPage() {
     }
   }
 
+function imprimirReporte() {
+    const resumen = filasResumen().map(r => `<tr><td>${r.Indicador}</td><td class="num">${formatearMoneda(r.Valor)}</td></tr>`).join('');
+    const filas = data.por_dia.map(d => `<tr><td>${d.fecha}</td><td class="num">${d.ventas_count}</td><td class="num">${formatearMoneda(d.total)}</td><td class="num">${formatearMoneda(d.efectivo)}</td><td class="num">${formatearMoneda(d.tarjeta)}</td><td class="num">${formatearMoneda(d.transferencia)}</td></tr>`).join('');
+    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Reporte de Ventas</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter','Segoe UI',Tahoma,sans-serif;color:#111827;background:#fff;padding:12mm}
+.print-encabezado{display:flex;align-items:flex-start;justify-content:space-between;gap:12mm;padding-bottom:5mm;border-bottom:2px solid #16a34a}
+.print-empresa h1{margin:0 0 1.5mm;font-size:16pt;color:#111827}
+.print-empresa p{margin:0.8mm 0;font-size:9pt;color:#374151}
+.print-documento-titulo{min-width:52mm;padding:3mm 5mm;text-align:right;border:1px solid #d1d5db;border-radius:3px}
+.print-etiqueta{display:block;color:#16a34a;font-size:7.5pt;font-weight:700;letter-spacing:0.08em}
+.print-documento-titulo strong{display:block;margin:1mm 0;font-size:13pt}
+.print-numero{font-size:10pt;font-weight:600}
+.print-filtros{margin:4mm 0 0;padding:2mm 3mm;background:#f8f9fa;border-left:3px solid #16a34a;font-size:8.5pt}
+h2.print-seccion{margin:5mm 0 2mm;color:#16a34a;font-size:9.5pt;text-transform:uppercase;letter-spacing:0.04em}
+.print-tabla{width:100%;border-collapse:collapse;font-size:8.8pt}
+.print-tabla th{padding:2mm;background:#141414;color:#fff;text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:0.03em}
+.print-tabla td{padding:1.8mm 2mm;border-bottom:1px solid #e5e7eb}
+.print-tabla tbody tr:nth-child(even) td{background:#f8f9fa}
+.print-tabla .num{text-align:right;white-space:nowrap}
+.print-meta{display:flex;justify-content:space-between;margin-top:6mm;color:#6b7280;font-size:8pt}
+@media print{@page{margin:0}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head><body>
+<div class="print-encabezado"><div><h1>Ferretería El Puente</h1><p>SGIFEP — Sistema de Gestión Integral</p></div>
+<div class="print-documento-titulo"><span class="print-etiqueta">REPORTE</span><strong>Ventas</strong><span class="print-numero">Del ${aplicados.desde} al ${aplicados.hasta}</span></div></div>
+<div class="print-filtros"><strong>Filtros:</strong> Del ${aplicados.desde} al ${aplicados.hasta}</div>
+<h2 class="print-seccion">Resumen</h2>
+<table class="print-tabla"><thead><tr><th>Indicador</th><th class="num">Valor</th></tr></thead><tbody>${resumen}</tbody></table>
+<h2 class="print-seccion">Ventas por d&iacute;a</h2>
+<table class="print-tabla"><thead><tr><th>Fecha</th><th class="num">Ventas</th><th class="num">Total</th><th class="num">Efectivo</th><th class="num">Tarjeta</th><th class="num">Transferencia</th></tr></thead><tbody>${filas}</tbody></table>
+<div class="print-meta"><span>Registros: ${data.por_dia.length} d&iacute;as</span><span>Generado el ${new Date().toLocaleString('es-GT')}</span></div>
+</body></html>`;
+    try {
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url, '_blank');
+      if (w) setTimeout(() => URL.revokeObjectURL(url), 1000);
+      else notificar.error('Permite la ventana emergente');
+    } catch { notificar.error('No se pudo abrir la ventana'); }
+  }
+
   return (
     <section className="reporte-ventas">
       <header className="reporte-ventas-encabezado">
@@ -232,7 +321,8 @@ export default function ReporteVentasPage() {
         <div className="reporte-acciones">
           <button type="button" className="btn btn-secundario" onClick={exportarCsv}>CSV</button>
           <button type="button" className="btn btn-secundario" onClick={exportarExcel}>Excel</button>
-          <button type="button" className="btn btn-primario" onClick={exportarPdf}>PDF</button>
+          <button type="button" className="btn btn-secundario" onClick={exportarPdf}>PDF</button>
+          <button type="button" className="btn btn-primario" onClick={imprimirReporte}>Imprimir</button>
         </div>
       </header>
 
