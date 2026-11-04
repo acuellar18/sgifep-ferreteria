@@ -37,7 +37,7 @@ function encabezadoCorreo(titulo, subtitulo) {
                 <tr>
                   <td style="vertical-align:middle;">
                     <p style="margin:0; color:#ffffff; font-size:15px; font-weight:bold;">${titulo}</p>
-                    <p style="margin:4px 0 0; color:#ea580c; font-size:12px; text-transform:uppercase; letter-spacing:1px;">${subtitulo}</p>
+                    <p style="margin:4px 0 0; color:#15803d; font-size:12px; text-transform:uppercase; letter-spacing:1px;">${subtitulo}</p>
                   </td>
                 </tr>
               </table>
@@ -54,7 +54,7 @@ function escaparHtml(texto) {
 
 function pieCorreo() {
   return `<tr>
-             <td style="padding:14px 28px; background-color:#faf7f2; border-top:1px solid #e4e4e7;">
+             <td style="padding:14px 28px; background-color:#f4fbf6; border-top:1px solid #e4e4e7;">
                <p style="margin:0; font-size:11px; color:#a1a1aa;">Sistema SGIFEP — Ferretería El Puente</p>
              </td>
            </tr>`;
@@ -454,14 +454,14 @@ class AuthService {
                          <tr><td style="padding:8px 0; color:#71717a;">Usuario</td><td style="padding:8px 0; font-weight:bold;">${escaparHtml(dto.username)}</td></tr>
                          <tr><td style="padding:8px 0; color:#71717a;">Correo</td><td style="padding:8px 0; font-weight:bold;">${escaparHtml(dto.email)}</td></tr>
                        </table>
-                       <div style="margin:18px 0 0; padding:16px 18px; background-color:#fef3ec; border-left:4px solid #ea580c; border-radius:6px;">
+                       <div style="margin:18px 0 0; padding:16px 18px; background-color:#f0fdf4; border-left:4px solid #15803d; border-radius:6px;">
                          La cuenta quedó creada pero <strong>INACTIVA</strong>. Apruébala desde el módulo
                          <strong>Usuarios</strong>: actívala y asignale código, departamento y roles antes de su primer ingreso.
                        </div>
                      </td>
                    </tr>
                    <tr>
-                     <td style="padding:14px 28px; background-color:#faf7f2; border-top:1px solid #e4e4e7;">
+                     <td style="padding:14px 28px; background-color:#f4fbf6; border-top:1px solid #e4e4e7;">
                        <p style="margin:0; font-size:11px; color:#a1a1aa;">Aviso automático del formulario de registro (login SGIFEP)</p>
                      </td>
                    </tr>
@@ -530,37 +530,12 @@ class AuthService {
       [u.id, codigoHash, expiraCodigo]
     );
 
-    // Enlace extra (mismo uso) por si prefiere abrir directamente el formulario.
-    const tokenRaw = crypto.randomBytes(RESET_BYTES_TOKEN).toString('hex');
-    const tokenHash = crypto.createHash('sha256').update(tokenRaw).digest('hex');
-    const expira = new Date(Date.now() + RESET_EXPIRA_MINUTOS * 60 * 1000);
-
-    await pool.query(
-      'INSERT INTO password_resets (usuario_id, token_hash, expira_en, usado) VALUES (?, ?, ?, 0)',
-      [u.id, tokenHash, expira]
-    );
-
-    await this.enviarEnlaceRestablecimiento(u, codigo, tokenRaw);
+    await this.enviarCodigoRestablecimiento(u, codigo);
     await this.registrarIntentoReset(contexto.ip, 'codigo_enviado');
     return true;
   }
 
-  // Enlace con el formato https://mi-dominio.com/reset-password?token=XXXX
-  // (la base se ajusta con FRONTEND_URL / RESET_PASSWORD_URL en .env).
-  baseUrlRestablecimiento() {
-    const base = (
-      process.env.RESET_PASSWORD_URL ||
-      process.env.FRONTEND_URL ||
-      'http://localhost:5174/usuarios'
-    ).replace(/\/+$/, '');
-    return base;
-  }
-
-  async enviarEnlaceRestablecimiento(u, codigo, tokenRaw) {
-    const baseUrl = this.baseUrlRestablecimiento();
-    const ruta = process.env.RESET_PASSWORD_URL ? 'reset-password' : 'restablecer.html';
-    const link = `${baseUrl}/${ruta}?token=${tokenRaw}`;
-
+  async enviarCodigoRestablecimiento(u, codigo) {
     await enviarMail({
       from: remitente(),
       to: u.email, // SIEMPRE el correo guardado en la base de datos
@@ -569,11 +544,9 @@ class AuthService {
              <p style="margin:0 0 12px;">Hola <strong>${escaparHtml(u.nombre || u.username)}</strong>,</p>
              <p style="margin:0 0 16px;">Recibimos una solicitud para restablecer la contraseña de tu cuenta <strong>${escaparHtml(u.username)}</strong>. Ingresa este código en el formulario:</p>
              <p style="margin:0 0 18px; text-align:center;">
-               <span style="display:inline-block; padding:14px 34px; background-color:#fef3ec; border:2px solid #ea580c; border-radius:12px; font-size:32px; font-weight:bold; letter-spacing:10px; color:#141414;">${codigo}</span>
+               <span style="display:inline-block; padding:14px 34px; background-color:#f0fdf4; border:2px solid #15803d; border-radius:12px; font-size:32px; font-weight:bold; letter-spacing:10px; color:#141414;">${codigo}</span>
              </p>
              <p style="margin:0 0 16px; text-align:center;">Expira en <strong>${RESET_CODIGO_MINUTOS} minutos</strong> y solo puede usarse una vez.</p>
-             <p style="margin:0 0 10px; color:#71717a;">También puedes abrir directamente el formulario (expira en ${RESET_EXPIRA_MINUTOS} minutos):</p>
-             <p style="margin:0 0 16px; word-break:break-all; font-size:12px; color:#71717a;">${link}</p>
              <p style="margin:0;">Si no solicitaste esto, ignora este mensaje y tu contraseña seguirá igual.</p>`,
              'Restablecimiento de contraseña')
     });
