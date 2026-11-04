@@ -3,17 +3,17 @@ const cajaService = require('../services/caja.service');
 
 module.exports = {
   obtener: manejarAsync(async (req, res) => {
-    const data = await cajaService.obtener(req.usuario.id);
+    const data = await cajaService.obtener(req.usuario.id, req.query);
     res.json({ success: true, data });
   }),
 
   abrir: manejarAsync(async (req, res) => {
-    const data = await cajaService.abrir(req.usuario.id, req.body);
+    const data = await cajaService.abrir(req.usuario.id, req.body, req.query);
     res.status(201).json({ success: true, mensaje: 'Caja abierta correctamente', data });
   }),
 
   cerrar: manejarAsync(async (req, res) => {
-    const data = await cajaService.cerrar(req.usuario.id, req.body);
+    const data = await cajaService.cerrar(req.usuario.id, req.body, req.query);
     res.json({ success: true, mensaje: 'Caja cerrada correctamente', data });
   })
 };

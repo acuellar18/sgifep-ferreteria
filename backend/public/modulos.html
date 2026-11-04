@@ -280,7 +280,6 @@
                 <div class="drawer-subitems" id="subitems-despacho" hidden>
                     <a class="drawer-subitem" href="/usuarios/despacho">Listado de Despachos</a>
                     <a class="drawer-subitem" href="/usuarios/despacho/rutas-entregas">Rutas y Entregas</a>
-                    <a class="drawer-subitem" href="/usuarios/despacho/reporte">Reporte de Despachos</a>
                 </div>
 
                 <button type="button" class="drawer-item" data-menu-toggle="reportes" aria-expanded="false" aria-controls="subitems-reportes">
@@ -406,6 +405,21 @@
         document.getElementById('userInfo').textContent = nombreMostrar;
         document.getElementById('userRol').textContent = roles.join(', ');
         document.getElementById('bienvenidaTitulo').textContent = `Bienvenido, ${nombreMostrar}`;
+
+        // Cargar y mostrar la foto de perfil del usuario autenticado.
+        fetch('/api/perfil/foto', { headers: { Authorization: `Bearer ${sesion.token}` } })
+            .then((res) => (res.ok ? res.blob() : null))
+            .then((blob) => {
+                if (!blob) return;
+                const avatar = document.querySelector('.header-usuario .avatar');
+                if (!avatar) return;
+                const img = document.createElement('img');
+                img.alt = `Foto de ${nombreMostrar}`;
+                img.src = URL.createObjectURL(blob);
+                avatar.innerHTML = '';
+                avatar.appendChild(img);
+            })
+            .catch(() => {});
 
         const modulos = [
             {

@@ -117,11 +117,20 @@ class ContactoService {
         html: `<div style="margin:0; padding:24px; background-color:#f4f4f5; font-family:Arial,Helvetica,sans-serif;">
                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px; margin:0 auto; background-color:#ffffff; border-radius:12px; overflow:hidden; border:1px solid #e4e4e7;">
                    <tr>
-                     <td style="background-color:#141414; padding:18px 28px;">
-                       <p style="margin:0; color:#ffffff; font-size:15px; font-weight:bold;">FERRETERÍA EL PUENTE</p>
-                       <p style="margin:4px 0 0; color:#ea580c; font-size:12px; text-transform:uppercase; letter-spacing:1px;">Nuevo mensaje desde la web</p>
-                     </td>
-                   </tr>
+                      <td style="background-color:#141414; padding:18px 28px;">
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td style="vertical-align:middle; width:60px;">
+                              <img src="cid:logo-ferreteria" alt="Ferretería El Puente" style="display:block; width:48px; height:48px; border:0;">
+                            </td>
+                            <td style="vertical-align:middle; text-align:right;">
+                              <p style="margin:0; color:#ffffff; font-size:15px; font-weight:bold;">FERRETERÍA EL PUENTE</p>
+                              <p style="margin:4px 0 0; color:#16a34a; font-size:12px; text-transform:uppercase; letter-spacing:1px;">Nuevo mensaje desde la web</p>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
                    <tr>
                      <td style="padding:28px;">
                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px; color:#18181b;">
@@ -138,8 +147,8 @@ class ContactoService {
                            <td style="padding:8px 0; font-weight:bold;">${escaparHtml(campos.asunto)}</td>
                          </tr>
                        </table>
-                       <div style="margin:18px 0 0; padding:16px 18px; background-color:#f8f9fa; border-left:4px solid #ea580c; border-radius:6px; font-size:14px; color:#27272a; white-space:pre-wrap;">${escaparHtml(campos.mensaje)}</div>
-                       <p style="margin:24px 0 0; font-size:12px; color:#a1a1aa;">Responder a este correo escribe directo a <span style="color:#ea580c;">${escaparHtml(campos.correo)}</span>.</p>
+                       <div style="margin:18px 0 0; padding:16px 18px; background-color:#f8f9fa; border-left:4px solid #16a34a; border-radius:6px; font-size:14px; color:#27272a; white-space:pre-wrap;">${escaparHtml(campos.mensaje)}</div>
+                       <p style="margin:24px 0 0; font-size:12px; color:#a1a1aa;">Responder a este correo escribe directo a <span style="color:#16a34a;">${escaparHtml(campos.correo)}</span>.</p>
                      </td>
                    </tr>
                    <tr>
@@ -148,7 +157,14 @@ class ContactoService {
                      </td>
                    </tr>
                  </table>
-               </div>`
+                </div>`,
+        attachments: [
+          {
+            filename: 'logo.png',
+            path: require('path').join(__dirname, '..', 'public', 'img', 'logo.png'),
+            cid: 'logo-ferreteria'
+          }
+        ]
       });
     } catch (err) {
       console.error('[contacto] error enviando correo:', err.message || err);

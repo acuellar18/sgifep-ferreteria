@@ -33,7 +33,22 @@ function resumenConEsperado(sesion, ventas, cobros = {}, devoluciones = {}) {
 }
 
 class CajaService {
-  async obtener(usuarioId) {
+  // Filtra el historial por fechas de apertura. Solo valores YYYY-MM-DD;
+  // si los parámetros no son válidos se ignoran (sin filtro).
+  leerFiltrosFechas(filtros = {}) {
+    const patron = /^\d{4}-\d{2}-\d{2}$/;
+    const limpios = {};
+    const desde = String(filtros.desde || '');
+    const hasta = String(filtros.hasta || '');
+    if (patron.test(desde)) limpios.desde = desde;
+    if (patron.test(hasta)) limpios.hasta = hasta;
+    if (limpios.desde && limpios.hasta && limpios.desde > limpios.hasta) {
+      return { hasta: limpios.hasta };
+    }
+    return limpios;
+  }
+
+  async obtener(usuarioId, filtros = {}) {
     const actual = await cajaRepository.buscarAbierta(usuarioId);
     let resumen = null;
 
@@ -46,7 +61,11 @@ class CajaService {
       resumen = resumenConEsperado(actual, ventas, cobros, devoluciones);
     }
 
-    const historial = await cajaRepository.listarHistorial(usuarioId);
+    const historial = await cajaRepository.listarHistorial(
+      usuarioId,
+      25,
+      this.leerFiltrosFechas(filtros)
+    );
     return {
       actual: actual ? cajaDto.serializarSesion(actual, resumen) : null,
       historial: historial.map((sesion) =>
@@ -58,7 +77,7 @@ class CajaService {
     };
   }
 
-  async abrir(usuarioId, datos) {
+  async abrir(usuarioId, datos, filtros = {}) {
     const dto = cajaDto.validarApertura(datos);
     const connection = await pool.getConnection();
     try {
@@ -86,10 +105,10 @@ class CajaService {
       connection.release();
     }
 
-    return this.obtener(usuarioId);
+    return this.obtener(usuarioId, filtros);
   }
 
-  async cerrar(usuarioId, datos) {
+  async cerrar(usuarioId, datos, filtros = {}) {
     const dto = cajaDto.validarCierre(datos);
     const connection = await pool.getConnection();
 
@@ -150,7 +169,7 @@ class CajaService {
       connection.release();
     }
 
-    return this.obtener(usuarioId);
+    return this.obtener(usuarioId, filtros);
   }
 }
 

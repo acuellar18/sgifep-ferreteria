@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const path = require('path');
 const pool = require('../db');
 const { HttpError } = require('../utils/http-error');
 const usuarioRepository = require('../repositories/usuario.repository');
@@ -153,7 +154,10 @@ class UsuarioService {
     if (affected === 0) throw new HttpError(404, 'Usuario no encontrado');
 
     if (valor === 1 && usuario && usuario.email && usuario.email.includes('@')) {
-      await this.notificarActivacion(usuario).catch(() => {});
+      // Envío en segundo plano: si se esperara la respuesta del SMTP
+      // (1-3 s contra Gmail) el botón "Activar" se sentiría lento.
+      // notificarActivacion ya captura sus propios errores.
+      void this.notificarActivacion(usuario);
     }
     return valor ? 'Usuario activado' : 'Usuario inactivado';
   }
@@ -195,18 +199,27 @@ class UsuarioService {
         ].join('\n'),
         html: `<div style="margin:0; padding:24px; background-color:#f4f4f5; font-family:Arial,Helvetica,sans-serif;">
                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px; margin:0 auto; background-color:#ffffff; border-radius:12px; overflow:hidden; border:1px solid #e4e4e7;">
-                   <tr>
-                     <td style="background-color:#141414; padding:18px 28px;">
-                       <p style="margin:0; color:#ffffff; font-size:15px; font-weight:bold;">FERRETERÍA EL PUENTE</p>
-                       <p style="margin:4px 0 0; color:#ea580c; font-size:12px; text-transform:uppercase; letter-spacing:1px;">Cuenta activada</p>
-                     </td>
-                   </tr>
+                 <tr>
+                      <td style="background-color:#141414; padding:18px 28px;">
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td style="vertical-align:middle; width:60px;">
+                              <img src="cid:logo-ferreteria" alt="Ferretería El Puente" style="display:block; width:48px; height:48px; border:0;">
+                            </td>
+                            <td style="vertical-align:middle; text-align:right;">
+                              <p style="margin:0; color:#ffffff; font-size:15px; font-weight:bold;">FERRETERÍA EL PUENTE</p>
+                              <p style="margin:4px 0 0; color:#16a34a; font-size:12px; text-transform:uppercase; letter-spacing:1px;">Cuenta activada</p>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
                    <tr>
                      <td style="padding:28px; font-size:14px; color:#27272a;">
                        <p style="margin:0 0 12px;">Hola <strong>${escaparNombre(nombres || usuario.username)}</strong>,</p>
                        <p style="margin:0 0 16px;">Tu cuenta <strong>${escaparNombre(usuario.username)}</strong> fue <strong>activada</strong> por un administrador. Ya puedes iniciar sesión con tu usuario y tu contraseña.</p>
                        <p style="margin:0 0 20px;">
-                         <a href="${link}" style="display:inline-block; padding:12px 22px; background-color:#ea580c; color:#ffffff; text-decoration:none; font-weight:bold; border-radius:8px;">Iniciar sesión</a>
+                         <a href="${link}" style="display:inline-block; padding:12px 22px; background-color:#16a34a; color:#ffffff; text-decoration:none; font-weight:bold; border-radius:8px;">Iniciar sesión</a>
                        </p>
                        <p style="margin:0 0 10px;">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
                        <p style="margin:0; word-break:break-all; font-size:12px; color:#71717a;">${link}</p>
@@ -218,7 +231,14 @@ class UsuarioService {
                      </td>
                    </tr>
                  </table>
-               </div>`
+                </div>`,
+        attachments: [
+          {
+            filename: 'logo.png',
+            path: path.join(__dirname, '..', 'public', 'img', 'logo.png'),
+            cid: 'logo-ferreteria'
+          }
+        ]
       });
     } catch (err) {
       // No interrumpe la activación: el estado ya cambió en la BD.

@@ -136,12 +136,6 @@ export function construirTicket(venta, empresa = {}) {
   }
   lineas.push('');
   lineas.push(centrar('¡Gracias por su compra!', ancho));
-  for (const texto of envolverLineas('Comprobante de venta interno · No válido como factura', ancho)) {
-    lineas.push(centrar(texto, ancho));
-  }
-  for (const texto of envolverLineas('Sistema SGIFEP · Desarrollado por Anthony Cuellar', ancho)) {
-    lineas.push(centrar(texto, ancho));
-  }
   lineas.push('');
   lineas.push('');
   lineas.push('');

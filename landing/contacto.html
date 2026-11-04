@@ -136,13 +136,19 @@
         btn.textContent = 'Enviando...';
 
         try {
-            const res = await fetch('https://formsubmit.co/ajax/ferreteriaelpuente34@gmail.com', {
+            const datos = Object.fromEntries(new FormData(form));
+            const res = await fetch('/api/contacto', {
                 method: 'POST',
-                headers: { 'Accept': 'application/json' },
-                body: new FormData(form)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datos)
             });
-            if (!res.ok) throw new Error('Error en el envío');
+            if (!res.ok) {
+                let detalle = '';
+                try { detalle = (await res.json()).mensaje || ''; } catch (_) { /* sin cuerpo */ }
+                throw new Error(detalle || 'Error en el envío');
+            }
             document.getElementById('successModal').style.display = 'flex';
+            form.reset();
         } catch (err) {
             alert('No se pudo enviar el mensaje. Intenta de nuevo o escríbenos por WhatsApp.');
         } finally {

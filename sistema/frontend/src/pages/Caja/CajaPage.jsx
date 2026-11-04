@@ -11,6 +11,20 @@ function etiquetaDenominacion(valor) {
   return `Q${Number(valor).toFixed(2)}`;
 }
 
+function fechaLocal(dia = new Date()) {
+  const anio = dia.getFullYear();
+  const mes = String(dia.getMonth() + 1).padStart(2, '0');
+  const diaNum = String(dia.getDate()).padStart(2, '0');
+  return `${anio}-${mes}-${diaNum}`;
+}
+
+function fechasUltimosDias(cantidad = 5) {
+  const hoy = new Date();
+  const desde = new Date(hoy);
+  desde.setDate(desde.getDate() - (cantidad - 1));
+  return { desde: fechaLocal(desde), hasta: fechaLocal(hoy) };
+}
+
 function IconoCaja() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -64,6 +78,7 @@ export default function CajaPage() {
   const notificar = useNotificacion();
   const permisos = permisosCaja();
   const [data, setData] = useState({ actual: null, historial: [] });
+  const [filtrosFechas, setFiltrosFechas] = useState(fechasUltimosDias(5));
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [horaActual, setHoraActual] = useState(new Date());
@@ -94,11 +109,11 @@ export default function CajaPage() {
     totalVentas > 0 ? `${Math.round((Number(monto) / totalVentas) * 100)}%` : '0%'
   );
 
-  async function cargar() {
+  async function cargar(filtros = filtrosFechas) {
     setCargando(true);
     setError('');
     try {
-      const res = await api.get('/caja');
+      const res = await api.get('/caja', { params: filtros });
       setData({ actual: res.data?.actual || null, historial: res.data?.historial || [] });
     } catch (err) {
       setError(err.message);
@@ -134,7 +149,7 @@ export default function CajaPage() {
     evento.preventDefault();
     setGuardando(true);
     try {
-      const res = await api.post('/caja/abrir', { monto_inicial: Number(montoInicial) });
+      const res = await api.post('/caja/abrir', { monto_inicial: Number(montoInicial) }, { params: filtrosFechas });
       setData({ actual: res.data?.actual || null, historial: res.data?.historial || [] });
       setModalApertura(false);
       notificar.exito('Caja abierta correctamente');
@@ -154,7 +169,7 @@ export default function CajaPage() {
         monto_contado_tarjeta: Number(montoContadoTarjeta || 0),
         monto_contado_transferencia: Number(montoContadoTransferencia || 0),
         observaciones
-      });
+      }, { params: filtrosFechas });
       setData({ actual: res.data?.actual || null, historial: res.data?.historial || [] });
       setModalCierre(false);
       notificar.exito('Caja cerrada correctamente');
@@ -330,6 +345,35 @@ export default function CajaPage() {
             <p>Sesiones de caja registradas por tu usuario</p>
           </div>
         </header>
+
+        <div className="caja-mini-filtros">
+          <label className="campo">
+            <span>Desde</span>
+            <input
+              type="date"
+              className="control"
+              value={filtrosFechas.desde}
+              max={filtrosFechas.hasta}
+              onChange={(e) => setFiltrosFechas((prev) => ({ ...prev, desde: e.target.value }))}
+            />
+          </label>
+          <label className="campo">
+            <span>Hasta</span>
+            <input
+              type="date"
+              className="control"
+              value={filtrosFechas.hasta}
+              min={filtrosFechas.desde}
+              onChange={(e) => setFiltrosFechas((prev) => ({ ...prev, hasta: e.target.value }))}
+            />
+          </label>
+          <button type="button" className="btn btn-secundario" onClick={() => setFiltrosFechas(fechasUltimosDias(5))}>
+            Últimos 5 días
+          </button>
+          <button type="button" className="btn btn-primario" onClick={() => cargar(filtrosFechas)}>
+            Filtrar
+          </button>
+        </div>
 
         <div className="tabla-wrapper caja-tabla-wrapper">
           <table className="tabla caja-tabla">

@@ -113,8 +113,6 @@ export default function PosTicket({ venta, empresa }) {
 
       <div className="pos-ticket-separador" />
       <p className="pos-ticket-gracias">¡Gracias por su compra!</p>
-      <p className="pos-ticket-nota">Comprobante de venta interno · No válido como factura</p>
-      <p className="pos-ticket-credito">Sistema SGIFEP · Desarrollado por Anthony Cuellar</p>
     </div>
   );
 }

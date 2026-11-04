@@ -221,10 +221,6 @@ export default function ImpresionFacturaVentaPage() {
               <span>Emitida por {factura.usuario_nombre || '—'}</span>
               <span>Generado el {formatearFechaHora(new Date())}</span>
             </div>
-            <div className="print-nota-interna">
-              <p>Comprobante de venta interno · No válido como factura</p>
-              <p>Sistema SGIFEP · Desarrollado por Anthony Cuellar</p>
-            </div>
             <PieFirma />
           </>
         )}
