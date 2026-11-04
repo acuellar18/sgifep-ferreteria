@@ -208,15 +208,6 @@
           titulo: 'Rutas y Entregas',
           descripcion: 'Rutas de reparto y control de entregas programadas.',
           columnas: ['Ruta', 'Responsable', 'Entregas', 'Fecha', 'Estado']
-        },
-        {
-          id: 'reporte',
-          etiqueta: 'Reporte de Despachos',
-          ruta: 'despacho/reporte',
-          titulo: 'Reporte de Despachos',
-          descripcion: 'Resumen de despachos por vendedor y por día.',
-          vista: 'reporte',
-          columnas: ['Vendedor', 'Despachos', 'Entregas', 'Devoluciones']
         }
       ]
     },
@@ -423,6 +414,24 @@
       '</header>';
   }
 
+  // Foto de perfil: el endpoint requiere JWT, así que se descarga por fetch
+  // y se inyecta como blob dentro del avatar del encabezado.
+  function cargarFotoPerfil(raiz, sesion) {
+    var avatar = raiz ? raiz.querySelector('.header-usuario .avatar') : null;
+    if (!avatar || !sesion || !sesion.token) return;
+    fetch('/api/perfil/foto', { headers: { Authorization: 'Bearer ' + sesion.token } })
+      .then(function (res) { return res.ok ? res.blob() : null; })
+      .then(function (blob) {
+        if (!blob) return;
+        var img = document.createElement('img');
+        img.alt = 'Foto de perfil';
+        img.src = URL.createObjectURL(blob);
+        avatar.innerHTML = '';
+        avatar.appendChild(img);
+      })
+      .catch(function () {});
+  }
+
   function montarContenido(contenedor, subpagina) {
     var columnas = subpagina.columnas || [];
     var encabezadoTabla = columnas
@@ -491,6 +500,7 @@
 
   app.className = 'layout';
   montarEncabezado(app, sesion);
+  cargarFotoPerfil(app, sesion);
 
   var cuerpo = document.createElement('div');
   cuerpo.className = 'app-body';

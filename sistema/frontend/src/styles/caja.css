@@ -445,3 +445,24 @@
     grid-template-columns: 1fr;
   }
 }
+
+.caja-mini-filtros {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-bottom: 1px solid #eceef2;
+}
+
+.caja-mini-filtros .campo {
+  min-width: 150px;
+  margin: 0;
+}
+
+.caja-mini-filtros .campo span {
+  display: block;
+  font-size: 11px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}

@@ -258,15 +258,27 @@ class CajaRepository {
     return result.affectedRows;
   }
 
-  async listarHistorial(usuarioId, limite = 25) {
-    const cantidad = Math.max(1, Math.min(Number(limite) || 25, 100));
+  async listarHistorial(usuarioId, limite = 25, filtros = {}) {
+    const cantidad = Math.max(1, Math.min(Number(limite) || 25, 200));
+    const condiciones = ['usuario_id = ?'];
+    const valores = [usuarioId];
+
+    if (filtros.desde) {
+      condiciones.push('fecha_apertura >= ?');
+      valores.push(`${filtros.desde} 00:00:00`);
+    }
+    if (filtros.hasta) {
+      condiciones.push('fecha_apertura <= ?');
+      valores.push(`${filtros.hasta} 23:59:59`);
+    }
+
     const [rows] = await pool.query(
       `SELECT ${CAMPOS_SESION}
        FROM sesiones_caja
-       WHERE usuario_id = ?
+       WHERE ${condiciones.join(' AND ')}
        ORDER BY fecha_apertura DESC, id DESC
        LIMIT ?`,
-      [usuarioId, cantidad]
+      [...valores, cantidad]
     );
     return rows;
   }
