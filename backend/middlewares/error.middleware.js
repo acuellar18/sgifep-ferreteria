@@ -12,7 +12,9 @@ const esProduccion = process.env.NODE_ENV === 'production';
 // desarrollo incluye el mensaje real (detalles) para facilitar el diagnóstico.
 function manejarErrores(err, _req, res, _next) {
   if (err instanceof HttpError) {
-    return res.status(err.status).json({ success: false, mensaje: err.message });
+    return res
+      .status(err.status)
+      .json({ success: false, mensaje: err.message, ...(err.datos ? { datos: err.datos } : {}) });
   }
   console.error('Error no controlado:', err);
   return res.status(500).json({

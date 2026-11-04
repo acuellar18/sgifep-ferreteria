@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Restablecer Contraseña - SGIFEP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+  body {
+    margin: 0; padding: 0; min-height: 100vh;
+    background: linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)), url('img/herramientas.jpg') center/cover no-repeat fixed;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .reset-box {
+    width: 92%; max-width: 480px; background: #fff; border-radius: 20px;
+    padding: 40px 35px; box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+  }
+  h2 { color: #141414; font-weight: 700; margin-bottom: 8px; }
+  .text-muted { color: #6b7280; font-size: 14px; }
+  .btn-primario { background: #16a34a; border-color: #16a34a; color: #fff; font-weight: 600; }
+  .btn-primario:hover { background: #c2410c; border-color: #c2410c; }
+  input.form-control { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 14px; font-size: 15px; }
+  input.form-control:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.15); }
+  .aviso { font-size: 12px; color: #6b7280; margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="reset-box">
+  <h2>Restablecer contraseña</h2>
+  <p class="text-muted mb-3">Ingresa tu nueva contraseña y confirma. Tus sesiones activas se cerrarán al guardarla.</p>
+  <form id="resetForm" onsubmit="enviarRestablecer(event)">
+    <input type="hidden" id="token" />
+    <div class="mb-3">
+      <label for="newPassword" class="form-label fw-semibold">Nueva contraseña *</label>
+      <input id="newPassword" type="password" class="form-control" placeholder="Mínimo 8 caracteres, con mayúscula, minúscula y número" required>
+    </div>
+    <div class="mb-2">
+      <label for="confirmPassword" class="form-label fw-semibold">Confirmar contraseña *</label>
+      <input id="confirmPassword" type="password" class="form-control" placeholder="Repite la contraseña" required>
+    </div>
+    <div class="mb-3">
+      <small id="msgError" class="text-danger"></small>
+      <small id="msgOk" class="text-success fw-semibold"></small>
+    </div>
+    <button type="submit" class="btn btn-primario w-100 py-2">Guardar nueva contraseña</button>
+  </form>
+  <div class="text-center mt-3">
+    <a href="login.html" class="small text-decoration-none" style="color:#ea580c;font-weight:600">← Volver al inicio de sesión</a>
+  </div>
+</div>
+
+<script>
+  // Leer token de la URL (ej: /restablecer.html?token=XXXX)
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+  document.getElementById('token').value = token || '';
+
+  async function enviarRestablecer(e) {
+    e.preventDefault();
+    document.getElementById('msgError').textContent = '';
+    document.getElementById('msgOk').textContent = '';
+    const pw = document.getElementById('newPassword').value;
+    const pw2 = document.getElementById('confirmPassword').value;
+    if (pw !== pw2) {
+      document.getElementById('msgError').textContent = 'Las contraseñas no coinciden.';
+      return;
+    }
+    if (pw.length < 8 || !/[A-Z]/.test(pw) || !/[a-z]/.test(pw) || !/[0-9]/.test(pw)) {
+      document.getElementById('msgError').textContent = 'La contraseña debe tener mínimo 8 caracteres, con mayúscula, minúscula y número.';
+      return;
+    }
+    try {
+      const res = await fetch('/api/reset-password/validar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: token || document.getElementById('token').value, newPassword: pw })
+      });
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById('msgOk').textContent = 'Contraseña actualizada. Se cerraron todas tus sesiones activas.';
+        document.getElementById('resetForm').reset();
+        setTimeout(() => { window.location.href = 'login.html'; }, 2500);
+      } else {
+        document.getElementById('msgError').textContent = data.mensaje || 'Token inválido o expirado.';
+      }
+    } catch (err) {
+      document.getElementById('msgError').textContent = 'Error de conexión con el servidor.';
+    }
+  }
+</script>
+</body>
+</html>

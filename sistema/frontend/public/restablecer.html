@@ -31,7 +31,7 @@
 <body>
 <div class="reset-box">
   <h2>Restablecer contraseña</h2>
-  <p class="text-muted mb-3">Ingresa tu nueva contraseña y confirma.</p>
+  <p class="text-muted mb-3">Ingresa tu nueva contraseña y confirma. Tus sesiones activas se cerrarán al guardarla.</p>
   <form id="resetForm" onsubmit="enviarRestablecer(event)">
     <input type="hidden" id="token" />
     <div class="mb-3">
@@ -69,8 +69,8 @@
       document.getElementById('msgError').textContent = 'Las contraseñas no coinciden.';
       return;
     }
-    if (pw.length < 8) {
-      document.getElementById('msgError').textContent = 'La contraseña debe tener al menos 8 caracteres.';
+    if (pw.length < 8 || !/[A-Z]/.test(pw) || !/[a-z]/.test(pw) || !/[0-9]/.test(pw)) {
+      document.getElementById('msgError').textContent = 'La contraseña debe tener mínimo 8 caracteres, con mayúscula, minúscula y número.';
       return;
     }
     try {
@@ -81,7 +81,7 @@
       });
       const data = await res.json();
       if (data.success) {
-        document.getElementById('msgOk').textContent = 'Contraseña actualizada. Ahora puedes iniciar sesión.';
+        document.getElementById('msgOk').textContent = 'Contraseña actualizada. Se cerraron todas tus sesiones activas.';
         document.getElementById('resetForm').reset();
         setTimeout(() => { window.location.href = 'login.html'; }, 2500);
       } else {

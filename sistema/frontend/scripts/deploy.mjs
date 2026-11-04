@@ -30,6 +30,7 @@ function deployFile(src, dest) {
 deployDir(resolve(dist, 'assets'), resolve(backendPublic, 'usuarios', 'assets'));
 deployFile(resolve(dist, 'index.html'), resolve(backendPublic, 'usuarios', 'index.html'));
 deployFile(resolve(dist, 'login.html'), resolve(backendPublic, 'login.html'));
+deployFile(resolve(dist, 'restablecer.html'), resolve(backendPublic, 'restablecer.html'));
 deployFile(resolve(dist, 'modulos.html'), resolve(backendPublic, 'modulos.html'));
 deployDir(resolve(dist, 'img'), resolve(backendPublic, 'img'));
 // Copiar assets-modulos (menú lateral compartido para módulos HTML)

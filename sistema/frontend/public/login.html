@@ -220,7 +220,7 @@
                 </div>
             </div>
 
-            <button type="submit" class="btn-login-pill">Iniciar Sesión</button>
+            <button type="submit" id="btnLogin" class="btn-login-pill">Iniciar Sesión</button>
             <a href="#" class="forgot-password" data-bs-toggle="modal" data-bs-target="#resetModal">¿Olvidaste tu contraseña?</a>
             <a href="#" class="forgot-password" style="color:#15803d" data-bs-toggle="modal" data-bs-target="#registroModal">¿No tienes cuenta? Regístrate</a>
             <p id="error-msg" class="mt-3 mb-0"></p>
@@ -301,10 +301,14 @@
       </div>
       <form onsubmit="solicitarRestablecer(event)">
         <div class="modal-body">
-            <p class="text-muted small mb-3">Ingresa tu usuario o correo electrónico. Te enviaremos instrucciones.</p>
+            <p class="text-muted small mb-3">Ingresa tu usuario y el correo registrado en tu cuenta. Te enviaremos un enlace al correo guardado en el sistema.</p>
             <div class="field-group">
-                <label for="resetIdentificador">Usuario o Correo</label>
-                <input type="text" id="resetIdentificador" class="input-pill" placeholder="Ej: admin o admin@ferreteria.com" required>
+                <label for="resetUsuario">Usuario *</label>
+                <input type="text" id="resetUsuario" class="input-pill" placeholder="Ej: admin" autocomplete="username" required>
+            </div>
+            <div class="field-group">
+                <label for="resetCorreo">Correo registrado *</label>
+                <input type="email" id="resetCorreo" class="input-pill" placeholder="Ej: admin@ferreteria.com" autocomplete="email" required>
             </div>
             <div id="reset-msg" class="mt-2 small text-center"></div>
         </div>
@@ -349,12 +353,45 @@
         }
     }
 
+    // Bloqueo temporal: contador regresivo en el propio botón (la cuenta solo
+    // se muestra; la autoridad real del bloqueo vive en el servidor).
+    let temporizadorBloqueo = null;
+
+    function iniciarCuentaRegresiva(segundos) {
+        const btn = document.getElementById('btnLogin');
+        const errorMsg = document.getElementById('error-msg');
+        clearInterval(temporizadorBloqueo);
+        btn.disabled = true;
+        btn.style.opacity = '0.65';
+        let restante = Math.max(1, Math.floor(Number(segundos) || 300));
+        const mostrar = () => {
+            if (restante <= 0) {
+                clearInterval(temporizadorBloqueo);
+                temporizadorBloqueo = null;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                errorMsg.innerText = '';
+                return;
+            }
+            const min = Math.floor(restante / 60);
+            const seg = restante % 60;
+            errorMsg.style.color = '#b45309';
+            errorMsg.innerText = `⏳ Demasiados intentos. Intenta de nuevo en ${min}:${String(seg).padStart(2, '0')}`;
+            restante -= 1;
+        };
+        mostrar();
+        temporizadorBloqueo = setInterval(mostrar, 1000);
+    }
+
     async function hacerLogin(event) {
         event.preventDefault();
+
+        temporizadorBloqueo && clearInterval(temporizadorBloqueo);
 
         const errorMsg = document.getElementById('error-msg');
         const usuarioInput = document.getElementById('usuario').value.trim();
         const passwordInput = document.getElementById('password').value.trim();
+        const btnLogin = document.getElementById('btnLogin');
 
         errorMsg.style.color = '#15803d';
         errorMsg.innerText = '⏳ Cargando...';
@@ -384,6 +421,11 @@
                 setTimeout(() => {
                     window.location.href = 'modulos.html';
                 }, 600);
+            } else if (res.status === 429) {
+                // Bloqueo activo en el servidor: botón deshabilitado con cuenta regresiva.
+                const segundos = (data.datos && Math.floor(data.datos.segundos)) || 300;
+                errorMsg.innerText = '';
+                iniciarCuentaRegresiva(segundos);
             } else {
                 errorMsg.style.color = '#c0392b';
                 errorMsg.innerText = data.mensaje || data.message || 'Usuario o contraseña incorrectos';
@@ -391,13 +433,16 @@
         } catch (err) {
             errorMsg.style.color = '#c0392b';
             errorMsg.innerText = 'Error al conectar con el servidor';
+        } finally {
+            if (!temporizadorBloqueo) btnLogin.disabled = false;
         }
     }
 
     async function solicitarRestablecer(event) {
         event.preventDefault();
         const resetMsg = document.getElementById('reset-msg');
-        const identificador = document.getElementById('resetIdentificador').value.trim();
+        const resetUsuario = document.getElementById('resetUsuario').value.trim();
+        const resetCorreo = document.getElementById('resetCorreo').value.trim();
 
         resetMsg.style.color = '#15803d';
         resetMsg.innerText = '⏳ Enviando instrucciones...';
@@ -406,16 +451,19 @@
             const res = await fetch(`${API_BASE}/api/reset-password/solicitar`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ usuario: identificador, email: identificador })
+                body: JSON.stringify({ usuario: resetUsuario, correo: resetCorreo })
             });
             const data = await res.json();
-            if (res.ok && data.success) {
-                resetMsg.style.color = '#2e7d32';
-                resetMsg.innerText = '✅ Si el correo existe, recibirás instrucciones. Revisa tu correo (y spam) en minutos.';
-                document.getElementById('resetIdentificador').value = '';
+            if (res.status === 429) {
+                resetMsg.style.color = '#b45309';
+                resetMsg.innerText = data.mensaje || 'Demasiadas solicitudes. Intenta más tarde.';
             } else {
-                resetMsg.style.color = '#c0392b';
-                resetMsg.innerText = data.mensaje || 'No se pudo enviar';
+                // Mensaje genérico: se responda como se responda, no revela si el
+                // usuario o el correo son correctos.
+                resetMsg.style.color = '#2e7d32';
+                resetMsg.innerText = data.mensaje || 'Si los datos son correctos, te enviaremos un enlace al correo registrado.';
+                document.getElementById('resetUsuario').value = '';
+                document.getElementById('resetCorreo').value = '';
             }
         } catch (err) {
             resetMsg.style.color = '#c0392b';

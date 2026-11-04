@@ -260,9 +260,10 @@ class UsuarioRepository {
   }
 
   // Para autenticación (JWT): credenciales + estado. Nunca se expone por API.
+  // sesiones_version permite invalidar todos los tokens del usuario a la vez.
   async buscarConCredenciales(username) {
     const [rows] = await pool.query(
-      'SELECT id, nombre, username, password_hash, rol, activo FROM usuarios WHERE username = ? LIMIT 1',
+      'SELECT id, nombre, username, password_hash, rol, activo, sesiones_version FROM usuarios WHERE username = ? LIMIT 1',
       [username]
     );
     return rows[0] || null;

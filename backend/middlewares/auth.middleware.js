@@ -5,7 +5,9 @@ const { HttpError } = require('../utils/http-error');
 
 // Seguridad mediante JWT: valida el token Bearer enviado por el frontend y
 // adjunta el usuario autenticado a req.usuario.
-function autenticar(req, _res, next) {
+// Además verifica sesiones_version: cuando el usuario cambia su contraseña la
+// versión se incrementa y todos los tokens previos quedan inválidos al instante.
+async function autenticar(req, _res, next) {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7).trim() : null;
 
@@ -15,6 +17,20 @@ function autenticar(req, _res, next) {
 
   try {
     const payload = jwt.verify(token, jwtConfig.secreto);
+    const [rows] = await pool.query(
+      'SELECT sesiones_version FROM usuarios WHERE id = ? LIMIT 1',
+      [payload.sub]
+    );
+    if (!rows.length) {
+      return next(new HttpError(401, 'Sesión inválida. Inicia sesión nuevamente.'));
+    }
+    const versionActual = Number(rows[0].sesiones_version) || 1;
+    // Tokens sin `ver` (previos al cambio de contraseña) solo valen para
+    // usuarios en versión 1; tras cualquier cambio quedan invalidados.
+    const versionToken = payload.ver === undefined ? 1 : Number(payload.ver);
+    if (versionToken !== versionActual) {
+      return next(new HttpError(401, 'Sesión inválida. Inicia sesión nuevamente.'));
+    }
     req.usuario = {
       id: payload.sub,
       username: payload.username,

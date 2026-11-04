@@ -115,6 +115,14 @@ class UsuarioService {
         password_hash,
         rol: rolLegacy
       });
+      // Si el administrador cambió la contraseña, se cierran las sesiones activas
+      // del usuario (los JWT previos dejan de validar contra sesiones_version).
+      if (dto.password) {
+        await connection.query(
+          'UPDATE usuarios SET sesiones_version = sesiones_version + 1 WHERE id = ?',
+          [id]
+        );
+      }
       await usuarioRepository.reemplazarRoles(
         connection,
         id,
