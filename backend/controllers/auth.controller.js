@@ -108,6 +108,39 @@ module.exports = {
     });
   }),
 
+  // Verificación del código de un solo uso (OTP).
+  // Devuelve el token de canje (10 min) solo si el código es correcto; en caso
+  // contrario siempre responde "Código inválido o expirado" sin revelar nada más.
+  verificarCodigo: manejarAsync(async (req, res) => {
+    const ip = req.ip || req.connection.remoteAddress || 'unknown';
+    const estado = crearVentana();
+    const usuario = String(req.body?.usuario || '').trim().toLowerCase();
+    const codigo = String(req.body?.codigo || '').replace(/\D/g, '').slice(0, 10);
+
+    // Máximo 5 verificaciones por hora por IP (fuerza bruta sobre 1M combinaciones)
+    const limite = limitar(`reset-codigo:${ip}`, 5, estado);
+    if (limite.bloqueado) {
+      const segundos = Math.max(60, limite.segundos);
+      return res.status(429).json({
+        success: false,
+        mensaje: `Demasiados intentos. Intenta de nuevo en ${Math.ceil(segundos / 60)} minutos.`,
+        datos: { segundos }
+      });
+    }
+
+    if (!usuario || !codigo) {
+      return res.status(400).json({ success: false, mensaje: 'Código inválido o expirado' });
+    }
+
+    const data = await authService.verificarCodigoRestablecer({ usuario, codigo }, { ip });
+    res.json({
+      success: true,
+      mensaje: 'Código verificado. Establece tu nueva contraseña.',
+      token: data.token,
+      expiraMinutos: data.minutos
+    });
+  }),
+
   // Canje del token y nueva contraseña (validado en el servicio).
   validarRestablecer: manejarAsync(async (req, res) => {
     const { token, newPassword } = req.body || {};

@@ -291,7 +291,7 @@
   </div>
 </div>
 
-<!-- Modal Solicitar Restablecer Contraseña -->
+<!-- Modal Restablecer Contraseña (3 pasos: datos → código → contraseña) -->
 <div class="modal fade" id="resetModal" tabindex="-1" aria-labelledby="resetModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content p-3">
@@ -299,9 +299,11 @@
         <h5 class="modal-title fw-bold" id="resetModalLabel">Restablecer Contraseña</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <form onsubmit="solicitarRestablecer(event)">
+
+      <!-- Paso 1: usuario + correo -->
+      <form id="resetPasoDatos" onsubmit="solicitarRestablecer(event)">
         <div class="modal-body">
-            <p class="text-muted small mb-3">Ingresa tu usuario y el correo registrado en tu cuenta. Te enviaremos un enlace al correo guardado en el sistema.</p>
+            <p class="text-muted small mb-3">Ingresa tu usuario y el correo registrado en tu cuenta. Si son correctos, te enviaremos un código de un solo uso.</p>
             <div class="field-group">
                 <label for="resetUsuario">Usuario *</label>
                 <input type="text" id="resetUsuario" class="input-pill" placeholder="Ej: admin" autocomplete="username" required>
@@ -314,7 +316,46 @@
         </div>
         <div class="modal-footer border-0 pt-0">
             <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn-login-pill w-auto px-4 mt-0">Enviar instrucciones</button>
+            <button type="submit" class="btn-login-pill w-auto px-4 mt-0">Enviar código</button>
+        </div>
+      </form>
+
+      <!-- Paso 2: código de un solo uso -->
+      <form id="resetPasoCodigo" onsubmit="verificarCodigo(event)" style="display:none;">
+        <div class="modal-body">
+            <p class="text-muted small mb-3">Te enviamos un Código de 6 dígitos a tu correo registrado. Ingrésalo aquí (expira en <strong id="resetCodigoTimer">15</strong> minutos y solo se usa una vez).</p>
+            <div class="field-group">
+                <label for="resetCodigo">Código *</label>
+                <input type="text" id="resetCodigo" class="input-pill" style="letter-spacing:8px; text-align:center; font-size:1.3rem;" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000000" required>
+            </div>
+            <div id="reset-msg-codigo" class="mt-2 small text-center"></div>
+        </div>
+        <div class="modal-footer border-0 pt-0 d-flex justify-content-between align-items-center">
+            <button type="button" class="btn btn-link btn-sm px-2" onclick="reenviarCodigo(event)" id="btnReenviar">Reenviar código</button>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn-login-pill w-auto px-4 mt-0">Verificar código</button>
+            </div>
+        </div>
+      </form>
+
+      <!-- Paso 3: nueva contraseña -->
+      <form id="resetPasoPassword" onsubmit="guardarNuevaPassword(event)" style="display:none;">
+        <div class="modal-body">
+            <p class="text-muted small mb-3">Código verificado ✅. Ahora define tu nueva contraseña (se cerrarán tus sesiones activas).</p>
+            <div class="field-group">
+                <label for="resetPasswordNueva">Nueva contraseña *</label>
+                <input type="password" id="resetPasswordNueva" class="input-pill" placeholder="Mín. 8, mayúscula, minúscula y número" required>
+            </div>
+            <div class="field-group">
+                <label for="resetPasswordNueva2">Confirmar contraseña *</label>
+                <input type="password" id="resetPasswordNueva2" class="input-pill" placeholder="Repite la contraseña" required>
+            </div>
+            <div id="reset-msg-password" class="mt-2 small text-center"></div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn-login-pill w-auto px-4 mt-0">Guardar contraseña</button>
         </div>
       </form>
     </div>
@@ -325,6 +366,10 @@
 
 <script>
     const API_BASE = (window.location.port === '5500') ? 'http://127.0.0.1:3000' : '';
+
+    // Al abrir el modal de restablecimiento siempre se empieza en el paso 1.
+    const modalReset = document.getElementById('resetModal');
+    if (modalReset) modalReset.addEventListener('show.bs.modal', estadoInicialReset);
 
     // "Volver a la página principal" siempre regresa a la landing: en dev (5174)
     // la landing vive en el 5173; en producción se sirve en la raíz (/).
@@ -438,6 +483,30 @@
         }
     }
 
+    // ---------- Restablecimiento con código de un solo uso (OTP) ----------
+    // Paso 1: usuario + correo -> envía código (el backend responde genérico;
+    // el código solo llega si los datos coinciden con los de la cuenta).
+    // Paso 2: código de 6 dígitos -> si es correcto emite un token de canje
+    // (10 min, un uso) que queda en memoria del navegador.
+    // Paso 3: nueva contraseña + confirmación -> se guarda y cierran sesiones.
+
+    let tokenCanje = '';
+
+    function mostrarPasoReset(paso) {
+        document.getElementById('resetPasoDatos').style.display = paso === 1 ? '' : 'none';
+        document.getElementById('resetPasoCodigo').style.display = paso === 2 ? '' : 'none';
+        document.getElementById('resetPasoPassword').style.display = paso === 3 ? '' : 'none';
+    }
+
+    function estadoInicialReset() {
+        tokenCanje = '';
+        mostrarPasoReset(1);
+        ['reset-msg', 'reset-msg-codigo', 'reset-msg-password'].forEach(id => {
+            const el = document.getElementById(id);
+            el.textContent = '';
+        });
+    }
+
     async function solicitarRestablecer(event) {
         event.preventDefault();
         const resetMsg = document.getElementById('reset-msg');
@@ -445,7 +514,7 @@
         const resetCorreo = document.getElementById('resetCorreo').value.trim();
 
         resetMsg.style.color = '#15803d';
-        resetMsg.innerText = '⏳ Enviando instrucciones...';
+        resetMsg.innerText = '⏳ Enviando código...';
 
         try {
             const res = await fetch(`${API_BASE}/api/reset-password/solicitar`, {
@@ -457,17 +526,143 @@
             if (res.status === 429) {
                 resetMsg.style.color = '#b45309';
                 resetMsg.innerText = data.mensaje || 'Demasiadas solicitudes. Intenta más tarde.';
-            } else {
-                // Mensaje genérico: se responda como se responda, no revela si el
-                // usuario o el correo son correctos.
-                resetMsg.style.color = '#2e7d32';
-                resetMsg.innerText = data.mensaje || 'Si los datos son correctos, te enviaremos un enlace al correo registrado.';
-                document.getElementById('resetUsuario').value = '';
-                document.getElementById('resetCorreo').value = '';
+                return;
+            }
+            // Mensaje genérico: no revela si el usuario o el correo son correctos.
+            resetMsg.style.color = '#2e7d32';
+            resetMsg.innerText = data.mensaje || 'Si los datos son correctos, te enviaremos el código al correo registrado.';
+            if (res.ok && data.success) {
+                mostrarPasoReset(2);
+                iniciarExpiracionCodigo();
             }
         } catch (err) {
             resetMsg.style.color = '#c0392b';
             resetMsg.innerText = 'Error al conectar con el servidor';
+        }
+    }
+
+    let temporizadorCodigo = null;
+
+    function iniciarExpiracionCodigo() {
+        clearInterval(temporizadorCodigo);
+        let restante = 15 * 60;
+        const span = document.getElementById('resetCodigoTimer');
+        temporizadorCodigo = setInterval(() => {
+            restante -= 1;
+            const min = Math.floor(restante / 60);
+            const seg = restante % 60;
+            span.textContent = `${min}:${String(seg).padStart(2, '0')}`;
+            if (restante <= 0) clearInterval(temporizadorCodigo);
+        }, 1000);
+    }
+
+    async function reenviarCodigo(event) {
+        event.preventDefault();
+        const btn = document.getElementById('btnReenviar');
+        const avatarMsg = document.getElementById('reset-msg-codigo');
+        btn.disabled = true;
+        avatarMsg.style.color = '#15803d';
+        avatarMsg.innerText = '⏳ Reenviando código...';
+        try {
+            const res = await fetch(`${API_BASE}/api/reset-password/solicitar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    usuario: document.getElementById('resetUsuario').value.trim(),
+                    correo: document.getElementById('resetCorreo').value.trim()
+                })
+            });
+            const data = await res.json();
+            if (res.status === 429) {
+                avatarMsg.style.color = '#b45309';
+                avatarMsg.innerText = data.mensaje || 'Demasiadas solicitudes. Espera unos minutos.';
+                return;
+            }
+            avatarMsg.style.color = '#2e7d32';
+            avatarMsg.innerText = 'Código reenviado. Revisa tu correo (y la carpeta spam).';
+            iniciarExpiracionCodigo();
+        } catch (err) {
+            avatarMsg.style.color = '#c0392b';
+            avatarMsg.innerText = 'Error al conectar con el servidor';
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function verificarCodigo(event) {
+        event.preventDefault();
+        const msg = document.getElementById('reset-msg-codigo');
+        const codigo = document.getElementById('resetCodigo').value.replace(/\D/g, '');
+        msg.style.color = '#15803d';
+        msg.innerText = '⏳ Verificando código...';
+
+        try {
+            const res = await fetch(`${API_BASE}/api/reset-password/verificar-codigo`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    usuario: document.getElementById('resetUsuario').value.trim(),
+                    codigo
+                })
+            });
+            const data = await res.json();
+            if (res.ok && data.success && data.token) {
+                clearInterval(temporizadorCodigo);
+                tokenCanje = data.token;
+                mostrarPasoReset(3);
+                document.getElementById('resetPasswordNueva').focus();
+            } else if (res.status === 429) {
+                msg.style.color = '#b45309';
+                msg.innerText = data.mensaje || 'Demasiados intentos. Espera unos minutos.';
+            } else {
+                msg.style.color = '#c0392b';
+                msg.innerText = data.mensaje || 'Código inválido o expirado';
+            }
+        } catch (err) {
+            msg.style.color = '#c0392b';
+            msg.innerText = 'Error al conectar con el servidor';
+        }
+    }
+
+    async function guardarNuevaPassword(event) {
+        event.preventDefault();
+        const msg = document.getElementById('reset-msg-password');
+        const pw = document.getElementById('resetPasswordNueva').value;
+        const pw2 = document.getElementById('resetPasswordNueva2').value;
+
+        if (pw !== pw2) {
+            msg.style.color = '#c0392b';
+            msg.innerText = 'Las contraseñas no coinciden.';
+            return;
+        }
+        if (pw.length < 8 || !/[A-Z]/.test(pw) || !/[a-z]/.test(pw) || !/[0-9]/.test(pw)) {
+            msg.style.color = '#c0392b';
+            msg.innerText = 'La contraseña debe tener mínimo 8 caracteres, con mayúscula, minúscula y número.';
+            return;
+        }
+
+        msg.style.color = '#15803d';
+        msg.innerText = '⏳ Guardando...';
+
+        try {
+            const res = await fetch(`${API_BASE}/api/reset-password/validar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: tokenCanje, newPassword: pw })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                msg.style.color = '#2e7d32';
+                msg.innerText = '✅ Contraseña actualizada. Se cerraron tus sesiones activas.';
+                document.getElementById('resetPasoPassword').reset();
+                setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+            } else {
+                msg.style.color = '#c0392b';
+                msg.innerText = data.mensaje || 'No se pudo restablecer la contraseña.';
+            }
+        } catch (err) {
+            msg.style.color = '#c0392b';
+            msg.innerText = 'Error al conectar con el servidor';
         }
     }
 

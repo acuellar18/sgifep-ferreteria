@@ -24,6 +24,10 @@ const MAX_FALLOS_IP_POR_HORA = 20;
 // ---------- Restablecimiento ----------
 const RESET_EXPIRA_MINUTOS = 30;
 const RESET_BYTES_TOKEN = 32; // 256 bits criptográficos
+const RESET_CODIGO_DIGITOS = 6;          // OTP numérico que llega por correo
+const RESET_CODIGO_MINUTOS = 15;         // vigencia del código
+const RESET_TOKEN_TRAS_CODIGO_MINUTOS = 10; // token que se emite al verificar el código
+const MAX_INTENTOS_CODIGO = 5;           // intentos por código antes de invalidarlo
 
 // Encabezado antracita sin logo: el título a la izquierda y el subtítulo
 // en naranja a la derecha (línea gráfica del sistema).
@@ -501,8 +505,11 @@ class AuthService {
       return true;
     }
 
-    // Un solo token vivo: invalida los anteriores del usuario.
+    // Un solo código/token vivos: invalida los anteriores del usuario.
     await pool.query('UPDATE password_resets SET usado = 1 WHERE usuario_id = ? AND usado = 0', [
+      u.id
+    ]);
+    await pool.query('UPDATE password_reset_codigos SET usado = 1 WHERE usuario_id = ? AND usado = 0', [
       u.id
     ]);
 
@@ -511,7 +518,19 @@ class AuthService {
       return true;
     }
 
-    // Token aleatorio criptográficamente seguro; en BD solo su hash SHA-256.
+    // Código numérico de 6 dígitos; en BD solo su hash SHA-256.
+    const codigo = String(
+      crypto.randomInt(Math.pow(10, RESET_CODIGO_DIGITOS - 1), Math.pow(10, RESET_CODIGO_DIGITOS))
+    );
+    const codigoHash = crypto.createHash('sha256').update(codigo).digest('hex');
+    const expiraCodigo = new Date(Date.now() + RESET_CODIGO_MINUTOS * 60 * 1000);
+
+    await pool.query(
+      'INSERT INTO password_reset_codigos (usuario_id, codigo_hash, expira_en, usado) VALUES (?, ?, ?, 0)',
+      [u.id, codigoHash, expiraCodigo]
+    );
+
+    // Enlace extra (mismo uso) por si prefiere abrir directamente el formulario.
     const tokenRaw = crypto.randomBytes(RESET_BYTES_TOKEN).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(tokenRaw).digest('hex');
     const expira = new Date(Date.now() + RESET_EXPIRA_MINUTOS * 60 * 1000);
@@ -521,8 +540,8 @@ class AuthService {
       [u.id, tokenHash, expira]
     );
 
-    await this.enviarEnlaceRestablecimiento(u, tokenRaw);
-    await this.registrarIntentoReset(contexto.ip, 'enlace_enviado');
+    await this.enviarEnlaceRestablecimiento(u, codigo, tokenRaw);
+    await this.registrarIntentoReset(contexto.ip, 'codigo_enviado');
     return true;
   }
 
@@ -537,27 +556,121 @@ class AuthService {
     return base;
   }
 
-  async enviarEnlaceRestablecimiento(u, tokenRaw) {
+  async enviarEnlaceRestablecimiento(u, codigo, tokenRaw) {
     const baseUrl = this.baseUrlRestablecimiento();
     const ruta = process.env.RESET_PASSWORD_URL ? 'reset-password' : 'restablecer.html';
     const link = `${baseUrl}/${ruta}?token=${tokenRaw}`;
-    const minutos = RESET_EXPIRA_MINUTOS;
 
     await enviarMail({
       from: remitente(),
       to: u.email, // SIEMPRE el correo guardado en la base de datos
-      subject: 'Restablecer contraseña - Ferretería El Puente',
+      subject: 'Código para restablecer contraseña - Ferretería El Puente',
       html: cuerpoCorreo(`
              <p style="margin:0 0 12px;">Hola <strong>${escaparHtml(u.nombre || u.username)}</strong>,</p>
-             <p style="margin:0 0 16px;">Recibimos una solicitud para restablecer la contraseña de tu cuenta <strong>${escaparHtml(u.username)}</strong>.</p>
-             <p style="margin:0 0 20px;">
-                <a href="${link}" style="display:inline-block; padding:12px 22px; background-color:#ea580c; color:#ffffff; text-decoration:none; font-weight:bold; border-radius:8px;">Restablecer contraseña</a>
+             <p style="margin:0 0 16px;">Recibimos una solicitud para restablecer la contraseña de tu cuenta <strong>${escaparHtml(u.username)}</strong>. Ingresa este código en el formulario:</p>
+             <p style="margin:0 0 18px; text-align:center;">
+               <span style="display:inline-block; padding:14px 34px; background-color:#fef3ec; border:2px solid #ea580c; border-radius:12px; font-size:32px; font-weight:bold; letter-spacing:10px; color:#141414;">${codigo}</span>
              </p>
-             <p style="margin:0 0 10px;">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
+             <p style="margin:0 0 16px; text-align:center;">Expira en <strong>${RESET_CODIGO_MINUTOS} minutos</strong> y solo puede usarse una vez.</p>
+             <p style="margin:0 0 10px; color:#71717a;">También puedes abrir directamente el formulario (expira en ${RESET_EXPIRA_MINUTOS} minutos):</p>
              <p style="margin:0 0 16px; word-break:break-all; font-size:12px; color:#71717a;">${link}</p>
-             <p style="margin:0 0 6px;">El enlace expira en <strong>${minutos} minutos</strong> y solo puede usarse una vez.</p>
-             <p style="margin:0;">Si no solicitaste esto, ignora este mensaje y tu contraseña seguirá igual.</p>`)
+             <p style="margin:0;">Si no solicitaste esto, ignora este mensaje y tu contraseña seguirá igual.</p>`,
+             'Restablecimiento de contraseña')
     });
+  }
+
+  // Verifica el código (OTP): busca al usuario por username, toma su código
+  // activo más reciente y compara hashes. Máximo 5 intentos por código; al
+  // acertar emite un token de restablecimiento de 10 minutos (un solo uso).
+  async verificarCodigoRestablecer({ usuario, codigo }, contexto = {}) {
+    const nombreUsuario = String(usuario || '').trim().toLowerCase();
+    const codigoLimpio = String(codigo || '').replace(/\D/g, '').slice(0, 10);
+
+    const [filas] = await pool.query(
+      `SELECT c.id, c.usado, c.expira_en, c.intentos
+       FROM password_reset_codigos c
+       JOIN usuarios u ON u.id = c.usuario_id
+       WHERE LOWER(u.username) = ?
+       ORDER BY c.id DESC
+       LIMIT 1`,
+      [nombreUsuario]
+    );
+    const fila = filas[0];
+
+    const fallar = async (invalidar) => {
+      if (invalidar && fila) {
+        await pool.query('UPDATE password_reset_codigos SET usado = 1 WHERE id = ?', [fila.id]);
+      }
+      await this.registrarIntentoReset(contexto.ip, 'codigo_invalido');
+      throw new HttpError(400, 'Código inválido o expirado');
+    };
+
+    if (!fila || !codigoLimpio) return fallar(false);
+    if (Number(fila.usado) === 1) return fallar(false);
+    if (new Date(fila.expira_en) <= new Date()) return fallar(true);
+    if (Number(fila.intentos) >= MAX_INTENTOS_CODIGO) return fallar(true);
+
+    const codigoHash = crypto.createHash('sha256').update(codigoLimpio).digest('hex');
+    const [coincide] = await pool.query(
+      'SELECT id FROM password_reset_codigos WHERE id = ? AND codigo_hash = ? LIMIT 1',
+      [fila.id, codigoHash]
+    );
+    if (!coincide.length) {
+      await pool.query(
+        'UPDATE password_reset_codigos SET intentos = intentos + 1 WHERE id = ?',
+        [fila.id]
+      );
+      const [post] = await pool.query('SELECT intentos FROM password_reset_codigos WHERE id = ?', [fila.id]);
+      return fallar(Number(post[0]?.intentos || 0) >= MAX_INTENTOS_CODIGO);
+    }
+
+    // Código correcto: quema el código y emite el token de canje.
+    const tokenRaw = crypto.randomBytes(RESET_BYTES_TOKEN).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(tokenRaw).digest('hex');
+    const expira = new Date(Date.now() + RESET_TOKEN_TRAS_CODIGO_MINUTOS * 60 * 1000);
+
+    const connection = await pool.getConnection();
+    let usuarioId;
+    try {
+      await connection.beginTransaction();
+      const [activo] = await connection.query(
+        `UPDATE password_reset_codigos SET usado = 1
+         WHERE id = ? AND usado = 0`,
+        [fila.id]
+      );
+      if (activo.affectedRows === 0) throw new HttpError(400, 'Código inválido o expirado');
+      const [u] = await connection.query('SELECT id, username FROM usuarios WHERE LOWER(username) = ? LIMIT 1', [nombreUsuario]);
+      if (!u.length) throw new HttpError(400, 'Código inválido o expirado');
+      usuarioId = u[0].id;
+      await connection.query(
+        'INSERT INTO password_resets (usuario_id, token_hash, expira_en, usado) VALUES (?, ?, ?, 0)',
+        [usuarioId, tokenHash, expira]
+      );
+      // Un solo token vivo: el resto queda invalidado.
+      await connection.query(
+        'UPDATE password_resets SET usado = 1 WHERE usuario_id = ? AND token_hash != ?',
+        [usuarioId, tokenHash]
+      );
+      await connection.commit();
+    } catch (err) {
+      await connection.rollback();
+      throw err;
+    } finally {
+      connection.release();
+    }
+
+    await this.registrarIntentoReset(contexto.ip, 'codigo_verificado');
+    await registrarAuditoria(null, {
+      username: nombreUsuario,
+      accion: 'auth.reset.codigo.verificado',
+      entidad: 'usuarios',
+      entidadId: usuarioId,
+      descripcion: 'Código de restablecimiento verificado; token de canje emitido (10 min)',
+      ip: contexto.ip,
+      userAgent: contexto.userAgent
+    });
+
+    return { ok: true, token: tokenRaw, minutos: RESET_TOKEN_TRAS_CODIGO_MINUTOS };
   }
 
   // Registro de solicitudes: fecha, IP y resultado; sin identificadores en claro.

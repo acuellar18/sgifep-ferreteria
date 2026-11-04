@@ -11,6 +11,9 @@ router.post('/registro', authController.registrarse);
 // Solicitar restablecimiento (respuesta siempre indiferente para no revelar usuarios)
 router.post('/reset-password/solicitar', authController.solicitarRestablecer);
 
+// Verificar código de un solo uso (OTP) y obtener el token de canje
+router.post('/reset-password/verificar-codigo', authController.verificarCodigo);
+
 // Validar token + actualizar contraseña (token de un uso, 30 min)
 router.post('/reset-password/validar', authController.validarRestablecer);
 
