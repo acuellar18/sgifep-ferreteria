@@ -138,11 +138,17 @@ export default function ProveedoresPage() {
   }
 
   async function verFicha(proveedor) {
+    setDetalleAbierto(true);
+    setFicha(null);
+    await cargarFichaModal(proveedor.id);
+  }
+
+  async function cargarFichaModal(proveedorId) {
     try {
-      const res = await api.get(`/proveedores/${proveedor.id}/ficha`);
+      const res = await api.get(`/proveedores/${proveedorId}/ficha`);
       setFicha(res.data);
-      setDetalleAbierto(true);
     } catch (err) {
+      setDetalleAbierto(false);
       notificar.error(err.message);
     }
   }
@@ -156,9 +162,11 @@ export default function ProveedoresPage() {
         await api.patch(`/proveedores/${target.id}/estado`, { activo: target.activo ? 0 : 1 });
         notificar.exito(target.activo ? 'Proveedor inactivado' : 'Proveedor activado');
         if (esFicha) await cargarFicha(id);
+        else if (detalleAbierto && ficha?.id === target.id) await cargarFichaModal(target.id);
       } else if (target.accion === 'eliminar') {
         await api.delete(`/proveedores/${target.id}`);
         notificar.exito('Proveedor eliminado correctamente');
+        setDetalleAbierto(false);
         navigate('/compras/proveedores');
       }
       setConfirmando(null);
@@ -174,8 +182,12 @@ export default function ProveedoresPage() {
     setModalAbierto(false);
     setEditando(null);
     notificar.exito(mensaje || 'Proveedor guardado correctamente');
-    if (!esFicha) await cargarProveedores(filtros, pagina, orden);
-    else await cargarFicha(id);
+    if (!esFicha) {
+      await cargarProveedores(filtros, pagina, orden);
+      if (detalleAbierto && ficha) await cargarFichaModal(ficha.id);
+    } else {
+      await cargarFicha(id);
+    }
   }
 
   function formatearFecha(fecha) {
@@ -189,13 +201,8 @@ export default function ProveedoresPage() {
     return new Intl.NumberFormat('es-GT', { style: 'currency', currency: 'GTQ', minimumFractionDigits: 2 }).format(valor);
   }
 
-  if (esFicha) {
-    if (cargando) return <p className="estado">Cargando ficha del proveedor...</p>;
-    if (error) return <div className="alerta alerta-error">{error}</div>;
-    if (!ficha) return <p className="estado">Proveedor no encontrado</p>;
-
-    return (
-      <section>
+  const contenidoFicha = ficha ? (
+    <section>
         <div className="encabezado-pagina">
           <div>
             <h2>{ficha.nombre}</h2>
@@ -229,6 +236,16 @@ export default function ProveedoresPage() {
             >
               WhatsApp
             </a>
+            {permisos.eliminarProveedor && (
+              <button
+                type="button"
+                className="btn btn-secundario btn-danger"
+                title={ficha.saldo_pendiente === 0 && !ficha.activo ? 'Eliminar proveedor' : 'Solo puede eliminarse si está inactivo y sin saldo pendiente'}
+                onClick={() => setConfirmando({ accion: 'eliminar', ...ficha })}
+              >
+                Eliminar
+              </button>
+            )}
           </div>
         </div>
 
@@ -336,8 +353,14 @@ export default function ProveedoresPage() {
             <p className="estado">Sin compras registradas</p>
           )}
         </div>
-      </section>
-    );
+    </section>
+  ) : null;
+
+  if (esFicha) {
+    if (cargando) return <p className="estado">Cargando ficha del proveedor...</p>;
+    if (error) return <div className="alerta alerta-error">{error}</div>;
+    if (!ficha) return <p className="estado">Proveedor no encontrado</p>;
+    return contenidoFicha;
   }
 
   return (
@@ -462,11 +485,11 @@ export default function ProveedoresPage() {
                             </button>
                           </>
                         )}
-                        {permisos.eliminarProveedor && p.saldo_pendiente === 0 && !p.activo && (
+                        {permisos.eliminarProveedor && (
                           <button
                             type="button"
                             className="btn btn-opcion btn-danger"
-                            title="Eliminar proveedor"
+                            title={p.saldo_pendiente === 0 && !p.activo ? 'Eliminar proveedor' : 'Solo puede eliminarse si está inactivo y sin saldo pendiente'}
                             onClick={() => setConfirmando({ accion: 'eliminar', ...p })}
                           >
                             Eliminar
@@ -483,6 +506,15 @@ export default function ProveedoresPage() {
           <Paginacion pagina={pagina} totalPaginas={totalPaginas} total={total} onCambiar={setPagina} />
         </>
       )}
+
+      <Modal
+        abierto={detalleAbierto}
+        titulo="Ficha del proveedor"
+        onCerrar={() => setDetalleAbierto(false)}
+        ancho="1000px"
+      >
+        {contenidoFicha || <p className="estado">Cargando ficha del proveedor...</p>}
+      </Modal>
 
       <ProveedorFormModal
         abierto={modalAbierto}

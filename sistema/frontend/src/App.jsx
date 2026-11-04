@@ -103,6 +103,7 @@ export default function App() {
                 Las páginas y endpoints de Órdenes de Compra se conservan, pero
                 quedan fuera del menú y del router (módulo inactivo). */}
             <Route path="/compras/proveedores" element={<RequierePermiso><ProveedoresPage /></RequierePermiso>} />
+            <Route path="/compras/proveedores/:id" element={<RequierePermiso><ProveedoresPage /></RequierePermiso>} />
             <Route path="/compras/facturas" element={<RequierePermiso><ComprasPage /></RequierePermiso>} />
             <Route path="/compras/facturas/nueva" element={<RequierePermiso permiso="crearCompra"><NuevaCompraPage /></RequierePermiso>} />
             <Route path="/compras" element={<Navigate to="/compras/facturas" replace />} />
