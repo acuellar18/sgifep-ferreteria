@@ -40,6 +40,7 @@ function baseValidacion(datos = {}) {
     throw new HttpError(400, 'Debe agregar al menos un producto a la compra');
   }
 
+  const codigosBarra = new Map();
   for (let i = 0; i < detalles.length; i++) {
     const d = detalles[i];
     const producto_id = d.producto_id !== undefined && d.producto_id !== null && d.producto_id !== ''
@@ -63,6 +64,55 @@ function baseValidacion(datos = {}) {
     if (precio_venta !== null && Number.isFinite(precio_venta) && precio_venta < precio_compra) {
       throw new HttpError(400, `Línea ${i + 1}: El precio de venta no puede ser menor al precio de compra`);
     }
+
+    // Datos extra opcionales para la creación automática de productos nuevos
+    const presentacion = typeof d.presentacion === 'string' ? d.presentacion.trim() : '';
+    const codigo_barras = typeof d.codigo_barras === 'string' ? d.codigo_barras.trim() : '';
+    const ubicacion = typeof d.ubicacion === 'string' ? d.ubicacion.trim() : '';
+    const descripcion = typeof d.descripcion === 'string' ? d.descripcion.trim() : '';
+    if (presentacion.length > 100) {
+      throw new HttpError(400, `Línea ${i + 1}: La presentación no puede exceder 100 caracteres`);
+    }
+    if (codigo_barras.length > 80) {
+      throw new HttpError(400, `Línea ${i + 1}: El código de barra no puede exceder 80 caracteres`);
+    }
+    if (ubicacion.length > 100) {
+      throw new HttpError(400, `Línea ${i + 1}: La ubicación no puede exceder 100 caracteres`);
+    }
+    if (descripcion.length > 500) {
+      throw new HttpError(400, `Línea ${i + 1}: La descripción no puede exceder 500 caracteres`);
+    }
+
+    if (producto_id === null) {
+      // Producto nuevo: categoría y presentación son obligatorias
+      if (!d.producto_nombre || !String(d.producto_nombre).trim()) {
+        throw new HttpError(400, `Línea ${i + 1}: Falta el nombre del producto nuevo`);
+      }
+      const categoria_nueva = Number(d.categoria_id);
+      if (!categoria_nueva || !Number.isInteger(categoria_nueva)) {
+        throw new HttpError(400, `Línea ${i + 1}: La categoría es obligatoria para productos nuevos`);
+      }
+      if (!presentacion) {
+        throw new HttpError(400, `Línea ${i + 1}: La presentación es obligatoria para productos nuevos`);
+      }
+      if (!Number.isFinite(precio_compra) || precio_compra <= 0) {
+        throw new HttpError(400, `Línea ${i + 1}: El precio de compra debe ser mayor a 0 para productos nuevos`);
+      }
+      if (precio_venta === null || !Number.isFinite(precio_venta) || precio_venta <= 0) {
+        throw new HttpError(400, `Línea ${i + 1}: El precio de venta debe ser mayor a 0 para productos nuevos`);
+      }
+    }
+
+    if (codigo_barras && !producto_id) {
+      const clave = codigo_barras.toLowerCase();
+      if (codigosBarra.has(clave)) {
+        throw new HttpError(
+          400,
+          `Línea ${i + 1}: El código de barra ${codigo_barras} está duplicado en esta compra`
+        );
+      }
+      codigosBarra.set(clave, i + 1);
+    }
   }
 
   return {
@@ -84,6 +134,10 @@ function baseValidacion(datos = {}) {
       categoria_id: d.categoria_id !== undefined && d.categoria_id !== null && d.categoria_id !== ''
         ? Number(d.categoria_id)
         : null,
+      presentacion: typeof d.presentacion === 'string' ? d.presentacion.trim() : null,
+      codigo_barras: typeof d.codigo_barras === 'string' && d.codigo_barras.trim() ? d.codigo_barras.trim() : null,
+      ubicacion: typeof d.ubicacion === 'string' ? d.ubicacion.trim() : null,
+      descripcion: typeof d.descripcion === 'string' ? d.descripcion.trim() : null,
       cantidad: Number(d.cantidad),
       precio_compra: Number(d.precio_compra !== undefined ? d.precio_compra : d.costo_unitario),
       precio_venta: d.precio_venta !== undefined ? Number(d.precio_venta) : null,

@@ -1389,3 +1389,148 @@ textarea.control {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Acciones del detalle de la compra: agregar línea + importar Excel */
+.acciones-detalle-compra {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Enlace "Más datos" en líneas de producto nuevo */
+.enlace-mas-datos {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: 4px;
+  color: var(--color-primario);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.enlace-mas-datos:hover {
+  text-decoration: underline;
+}
+
+/* Panel desplegable de "Más datos" (fila extra bajo la línea) */
+.fila-mas-datos td {
+  background: #fafafa;
+  border-bottom: 1px solid var(--color-borde);
+  padding: 8px 12px 12px;
+}
+
+.mas-datos-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 16px;
+}
+
+.mas-datos-grid .campo {
+  margin: 0;
+  min-width: 0;
+}
+
+.mas-datos-grid label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-texto-suave);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.mas-datos-grid .control {
+  width: 100%;
+}
+
+/* Modal de importación desde Excel */
+.importar-ayuda {
+  margin: 0 0 12px;
+  color: var(--color-texto-suave);
+  font-size: 13px;
+}
+
+.importar-barra {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.importar-barra label.btn {
+  cursor: pointer;
+}
+
+.btn-deshabilitado {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.importar-cargando {
+  color: var(--color-texto-suave);
+  font-size: 13px;
+}
+
+.importar-archivo {
+  color: var(--color-texto);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.importar-preview {
+  max-height: 380px;
+  overflow-y: auto;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+}
+
+.importar-preview th {
+  position: sticky;
+  top: 0;
+  background: #f9fafb;
+  z-index: 1;
+}
+
+.importar-fila-error {
+  background: var(--color-peligro-fondo);
+}
+
+.importar-motivos {
+  margin: 0;
+  padding-left: 14px;
+  color: var(--color-peligro);
+  font-size: 12px;
+}
+
+.importar-estado-ok {
+  color: var(--color-ok);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.importar-resultado {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--color-texto-suave);
+}
+
+.importar-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+@media (max-width: 900px) {
+  .mas-datos-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .mas-datos-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

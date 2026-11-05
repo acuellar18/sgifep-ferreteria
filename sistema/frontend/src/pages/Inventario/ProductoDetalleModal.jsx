@@ -50,7 +50,7 @@ export default function ProductoDetalleModal({
       onCerrar={onCerrar}
       ancho="900px"
     >
-      <p className="inventario-detalle-subtitulo">Informaci\u00f3n completa e imagen del producto</p>
+      <p className="inventario-detalle-subtitulo">Información completa e imagen del producto</p>
 
       <div className="inventario-detalle">
         <div className="inventario-detalle-imagen">
@@ -58,7 +58,7 @@ export default function ProductoDetalleModal({
             producto={producto}
             variante="imagen"
             alt={producto.nombre}
-            textoVacio="Este producto todav\u00eda no tiene imagen."
+            textoVacio="Este producto todavía no tiene imagen."
           />
         </div>
 
@@ -72,11 +72,11 @@ export default function ProductoDetalleModal({
 
           <dl className="inventario-detalle-datos">
             <div>
-              <dt>C\u00f3digo</dt>
+              <dt>Código</dt>
               <dd>{producto.codigo || '—'}</dd>
             </div>
             <div>
-              <dt>C\u00f3digo de barra</dt>
+              <dt>Código de barra</dt>
               <dd>{producto.codigo_barras || '—'}</dd>
             </div>
             <div>
@@ -84,8 +84,8 @@ export default function ProductoDetalleModal({
               <dd>{producto.proveedor_nombre || '—'}</dd>
             </div>
             <div>
-              <dt>Categor\u00eda</dt>
-              <dd>{producto.categoria_nombre || 'Sin categor\u00eda'}</dd>
+              <dt>Categoría</dt>
+              <dd>{producto.categoria_nombre || 'Sin categoría'}</dd>
             </div>
             <div>
               <dt>Tipo</dt>
@@ -96,11 +96,11 @@ export default function ProductoDetalleModal({
               </dd>
             </div>
             <div>
-              <dt>Presentaci\u00f3n</dt>
+              <dt>Presentación</dt>
               <dd>{producto.presentacion || '—'}</dd>
             </div>
             <div>
-              <dt>Ubicaci\u00f3n</dt>
+              <dt>Ubicación</dt>
               <dd>{producto.ubicacion || '—'}</dd>
             </div>
             <div>
@@ -117,7 +117,7 @@ export default function ProductoDetalleModal({
             {verCostos && !esServicio && (
               <>
                 <div>
-                  <dt>Costo \u00faltimo</dt>
+                  <dt>Costo último</dt>
                   <dd>{formatearMoneda(producto.costo_ultimo)}</dd>
                 </div>
                 <div>
@@ -132,7 +132,7 @@ export default function ProductoDetalleModal({
             </div>
             <div className="inventario-detalle-full">
               <dt>Detalle</dt>
-              <dd>{producto.descripcion || 'Sin descripci\u00f3n'}</dd>
+              <dd>{producto.descripcion || 'Sin descripción'}</dd>
             </div>
           </dl>
         </div>

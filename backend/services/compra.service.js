@@ -265,12 +265,48 @@ class CompraService {
           if (existentes.length > 0) {
             productoId = existentes[0].id;
           } else {
-            const codigo = generarCodigoProducto();
+            // Categoría obligatoria y activa para productos nuevos
             const categoriaId = d.categoria_id ? Number(d.categoria_id) : null;
+            if (!categoriaId) {
+              throw new HttpError(400, `Línea ${i + 1}: La categoría es obligatoria para productos nuevos`);
+            }
+            const [catRows] = await connection.query(
+              'SELECT id FROM categorias WHERE id = ? AND activo = 1',
+              [categoriaId]
+            );
+            if (catRows.length === 0) {
+              throw new HttpError(400, `Línea ${i + 1}: La categoría seleccionada no existe o está inactiva`);
+            }
+
+            // Código de barra repetido contra productos existentes
+            if (d.codigo_barras) {
+              const [barraRows] = await connection.query(
+                'SELECT id, nombre FROM productos WHERE codigo_barras = ? LIMIT 1',
+                [d.codigo_barras]
+              );
+              if (barraRows.length > 0) {
+                throw new HttpError(
+                  409,
+                  `Línea ${i + 1}: El código de barra ${d.codigo_barras} ya está asignado al producto ${barraRows[0].nombre}`
+                );
+              }
+            }
+
+            const codigo = generarCodigoProducto();
             const [resProd] = await connection.query(
-              `INSERT INTO productos (codigo, nombre, tipo, unidad_medida, stock_actual, stock_minimo, costo_ultimo, costo_promedio, precio_venta, activo, proveedor_id, categoria_id)
-               VALUES (?, ?, 'producto', 'UNI', 0, 0, 0, 0, ?, 1, ?, ?)`,
-              [codigo, nombreProducto, precioVenta, dto.proveedor_id, categoriaId]
+              `INSERT INTO productos (codigo, codigo_barras, nombre, descripcion, presentacion, ubicacion, tipo, unidad_medida, stock_actual, stock_minimo, costo_ultimo, costo_promedio, precio_venta, activo, proveedor_id, categoria_id)
+               VALUES (?, ?, ?, ?, ?, ?, 'producto', 'UNI', 0, 0, 0, 0, ?, 1, ?, ?)`,
+              [
+                codigo,
+                d.codigo_barras || null,
+                nombreProducto,
+                d.descripcion || null,
+                d.presentacion || null,
+                d.ubicacion || null,
+                precioVenta,
+                dto.proveedor_id,
+                categoriaId
+              ]
             );
             productoId = resProd.insertId;
           }

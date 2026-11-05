@@ -5,7 +5,9 @@ import { useNotificacion } from '../../components/Toast';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import ProveedorAutocompletar from './ProveedorAutocompletar';
 import ProductoAutocompletar from './ProductoAutocompletar';
+import ImportarCompraModal from './ImportarCompraModal';
 import FlujoCompras from './FlujoCompras';
+import { permisosCompras } from '../../utils/permisosCompras';
 
 // Fecha de hoy en hora local (evita que en la noche salga el día siguiente)
 function hoyLocal() {
@@ -41,6 +43,11 @@ const FORM_INICIAL = {
   adjunto_factura: null
 };
 
+const PRESENTACIONES_SUGERIDAS = [
+  'UNI', 'CAJA', 'LIBRA', 'GALÓN', 'KILO', 'METRO', 'LITRO', 'DOCENA',
+  'PAR', 'JUEGO', 'PAQUETE', 'BULTO', 'SACA', 'CUBETA', 'BOTELLA', 'LATA', 'TUBO', 'ROL'
+];
+
 const LINEA_INICIAL = {
   producto_id: '',
   producto_codigo: '',
@@ -52,6 +59,11 @@ const LINEA_INICIAL = {
   margen: '',
   es_nuevo: false,
   categoria_id: '',
+  presentacion: '',
+  codigo_barras: '',
+  ubicacion: '',
+  descripcion: '',
+  expandido: false,
   costo_anterior: 0
 };
 
@@ -71,6 +83,8 @@ export default function NuevaCompraPage() {
   const [erroresCampos, setErroresCampos] = useState({});
   const [confirmandoSalir, setConfirmandoSalir] = useState(false);
   const [categorias, setCategorias] = useState([]);
+  const [importarAbierto, setImportarAbierto] = useState(false);
+  const puedeRegistrar = permisosCompras().crearCompra;
 
   const inputCantidadRefs = useRef([]);
   const inputCostoRefs = useRef([]);
@@ -223,6 +237,14 @@ export default function NuevaCompraPage() {
     });
   }
 
+  function alternarMasDatos(index) {
+    setLineas(prev => {
+      const nuevas = [...prev];
+      nuevas[index] = { ...nuevas[index], expandido: !nuevas[index].expandido };
+      return nuevas;
+    });
+  }
+
   function calcularTotales() {
     let subtotal = 0;
     for (const l of lineas) {
@@ -246,6 +268,58 @@ export default function NuevaCompraPage() {
   function eliminarLinea(index) {
     if (lineas.length <= 1) return;
     setLineas(prev => prev.filter((_, i) => i !== index));
+  }
+
+  // Recibe las filas ya validadas del modal de importación de Excel
+  // y las convierte en líneas del detalle (existentes vinculadas, nuevas marcadas).
+  function agregarLineasImportadas(filas) {
+    setLineas(prev => {
+      const previas = prev.filter(l => tieneLineaConProducto(l));
+      const importadas = filas.map((f) => {
+        const precioCompra = Number(f.precio_compra);
+        const precioVenta = Number(f.precio_venta);
+        if (f.producto) {
+          const prod = f.producto;
+          const costoAnterior = Number(prod.costo_ultimo || 0);
+          return {
+            ...LINEA_INICIAL,
+            producto_id: prod.id,
+            producto_codigo: prod.codigo,
+            producto_nombre: String(f.nombre).trim(),
+            unidad_medida: prod.unidad_medida || 'UNI',
+            cantidad: String(f.cantidad),
+            precio_compra: String(precioCompra),
+            precio_venta: precioVenta.toFixed(2),
+            margen: costoAnterior > 0 && precioVenta >= costoAnterior
+              ? ((precioVenta / costoAnterior - 1) * 100).toFixed(2)
+              : '',
+            es_nuevo: false,
+            costo_anterior: costoAnterior
+          };
+        }
+        return {
+          ...LINEA_INICIAL,
+          producto_nombre: String(f.nombre).trim(),
+          cantidad: String(f.cantidad),
+          precio_compra: String(precioCompra),
+          precio_venta: precioVenta.toFixed(2),
+          margen: precioCompra > 0 && precioVenta >= precioCompra
+            ? ((precioVenta / precioCompra - 1) * 100).toFixed(2)
+            : '',
+          es_nuevo: true,
+          categoria_id: f.categoria ? String(f.categoria.id) : '',
+          presentacion: f.presentacion || '',
+          codigo_barras: f.codigo_barras || '',
+          ubicacion: f.ubicacion || '',
+          descripcion: f.descripcion || '',
+          expandido: !f.categoria || !f.presentacion
+        };
+      });
+      return [...previas, ...importadas, { ...LINEA_INICIAL }];
+    });
+    setImportarAbierto(false);
+    setErroresCampos({});
+    notificar.exito(`${filas.length} líneas cargadas desde Excel. Revísalas antes de guardar.`);
   }
 
   function enfocarCampo(index, campo) {
@@ -293,6 +367,28 @@ export default function NuevaCompraPage() {
         erroresLineas[i] = 'El precio de venta no puede ser negativo';
       } else if (precioVenta < precioCompra) {
         erroresLineas[i] = 'El precio de venta no puede ser menor al precio de compra';
+      } else if (l.es_nuevo && !l.categoria_id) {
+        erroresLineas[i] = 'Seleccione la categoría del producto nuevo';
+      } else if (l.es_nuevo && !String(l.presentacion || '').trim()) {
+        erroresLineas[i] = 'Indique la presentación del producto nuevo';
+      }
+    });
+    // Código de barra duplicado entre líneas de la misma compra
+    const contadoresBarra = new Map();
+    lineas.forEach((l, idx) => {
+      const clave = String(l.codigo_barras || '').trim().toLowerCase();
+      if (clave) {
+        if (!contadoresBarra.has(clave)) contadoresBarra.set(clave, []);
+        contadoresBarra.get(clave).push(idx);
+      }
+    });
+    contadoresBarra.forEach((indices) => {
+      if (indices.length > 1 && indices.some(idx => lineas[idx].es_nuevo)) {
+        indices.forEach(idx => {
+          if (lineas[idx].es_nuevo && !erroresLineas[idx]) {
+            erroresLineas[idx] = 'El código de barra está duplicado en otra línea de esta compra';
+          }
+        });
       }
     });
     if (Object.keys(erroresLineas).length > 0) {
@@ -342,10 +438,15 @@ export default function NuevaCompraPage() {
     for (let i = 0; i < lineas.length; i++) {
       const l = lineas[i];
       if (!tieneLineaConProducto(l)) continue;
+      const esNueva = Boolean(l.es_nuevo && !l.producto_id);
       lineasValidas.push({
         producto_id: l.producto_id ? Number(l.producto_id) : null,
-        producto_nombre: l.es_nuevo || !l.producto_id ? l.producto_nombre.trim() : undefined,
-        categoria_id: l.es_nuevo && l.categoria_id ? Number(l.categoria_id) : undefined,
+        producto_nombre: l.producto_id ? undefined : l.producto_nombre.trim(),
+        categoria_id: esNueva ? Number(l.categoria_id) : undefined,
+        presentacion: esNueva && String(l.presentacion || '').trim() ? l.presentacion.trim() : undefined,
+        codigo_barras: esNueva && String(l.codigo_barras || '').trim() ? l.codigo_barras.trim() : undefined,
+        ubicacion: esNueva && String(l.ubicacion || '').trim() ? l.ubicacion.trim() : undefined,
+        descripcion: esNueva && String(l.descripcion || '').trim() ? l.descripcion.trim() : undefined,
         cantidad: Number(l.cantidad),
         precio_compra: Number(l.precio_compra),
         precio_venta: Number(l.precio_venta),
@@ -493,9 +594,16 @@ export default function NuevaCompraPage() {
           <div className="tarjeta tarjeta-sombra">
             <div className="tarjeta-cabecera tarjeta-cabecera-flex">
               <h2>Detalle de productos</h2>
-              <button type="button" className="btn btn-secundario btn-agregar-linea" onClick={agregarLinea}>+ Agregar línea</button>
+              <div className="acciones-detalle-compra">
+                {puedeRegistrar && (
+                  <button type="button" className="btn btn-secundario" onClick={() => setImportarAbierto(true)}>
+                    Importar líneas desde Excel
+                  </button>
+                )}
+                <button type="button" className="btn btn-secundario btn-agregar-linea" onClick={agregarLinea}>+ Agregar línea</button>
+              </div>
             </div>
-            <p className="ayuda-texto">Si el producto no existe, escribe el nombre y completa precio de compra y precio de venta para crearlo automáticamente.</p>
+            <p className="ayuda-texto">Si el producto no existe, escribe el nombre y completa precio de compra y precio de venta para crearlo automáticamente. Usa "Más datos" para categoría, presentación y otros datos del producto nuevo.</p>
             <div className="tabla-contenedor tabla-compras-contenedor">
               <table className="tabla tabla-compras">
                 <thead>
@@ -543,12 +651,13 @@ export default function NuevaCompraPage() {
                             />
                             {linea.es_nuevo && <small className="texto-nuevo">Se creará como producto nuevo</small>}
                             {linea.es_nuevo && (
-                              <select style={{ width: '100%', marginTop: '4px', padding: '4px 6px', fontSize: '12px', border: '1px solid var(--color-borde, #d1d5db)', borderRadius: '6px' }} value={linea.categoria_id} onChange={(e) => actualizarLinea(index, 'categoria_id', e.target.value)}>
-                                <option value="">Sin categoría</option>
-                                {categorias.map((cat) => (
-                                  <option key={cat.id} value={cat.id}>{cat.nombre}</option>
-                                ))}
-                              </select>
+                              <button
+                                type="button"
+                                className="enlace-mas-datos"
+                                onClick={() => alternarMasDatos(index)}
+                              >
+                                {linea.expandido ? '− Menos datos' : '+ Más datos'}
+                              </button>
                             )}
                             {linea.producto_codigo && <small className="texto-suave">Código: {linea.producto_codigo}</small>}
                             {linea.costo_anterior > 0 && indicadorCosto(linea.precio_compra, linea.costo_anterior)}
@@ -577,6 +686,71 @@ export default function NuevaCompraPage() {
                         {errorLinea && (
                           <tr className="fila-linea-error">
                             <td colSpan={7}>Línea {index + 1}: {errorLinea}</td>
+                          </tr>
+                        )}
+                        {linea.es_nuevo && linea.expandido && (
+                          <tr className="fila-mas-datos">
+                            <td colSpan={7}>
+                              <div className="mas-datos-grid">
+                                <div className="campo">
+                                  <label>Categoría <span className="requerido">*</span></label>
+                                  <select
+                                    className="control control-tabla"
+                                    value={linea.categoria_id}
+                                    onChange={(e) => actualizarLinea(index, 'categoria_id', e.target.value)}
+                                  >
+                                    <option value="">Seleccione categoría</option>
+                                    {categorias.map((cat) => (
+                                      <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div className="campo">
+                                  <label>Presentación <span className="requerido">*</span></label>
+                                  <input
+                                    type="text"
+                                    className="control control-tabla"
+                                    list="lista-presentaciones"
+                                    value={linea.presentacion}
+                                    onChange={(e) => actualizarLinea(index, 'presentacion', e.target.value)}
+                                    placeholder="UNI, caja, libra, galón..."
+                                  />
+                                </div>
+                                <div className="campo">
+                                  <label>Código de barra</label>
+                                  <input
+                                    type="text"
+                                    className="control control-tabla"
+                                    value={linea.codigo_barras}
+                                    onChange={(e) => actualizarLinea(index, 'codigo_barras', e.target.value)}
+                                    placeholder="Opcional"
+                                    maxLength={80}
+                                  />
+                                </div>
+                                <div className="campo">
+                                  <label>Ubicación</label>
+                                  <input
+                                    type="text"
+                                    className="control control-tabla"
+                                    value={linea.ubicacion}
+                                    onChange={(e) => actualizarLinea(index, 'ubicacion', e.target.value)}
+                                    placeholder="Opcional"
+                                    maxLength={100}
+                                  />
+                                </div>
+                                <div className="campo" style={{ gridColumn: '1 / -1' }}>
+                                  <label>Descripción</label>
+                                  <input
+                                    type="text"
+                                    className="control control-tabla"
+                                    value={linea.descripcion}
+                                    onChange={(e) => actualizarLinea(index, 'descripcion', e.target.value)}
+                                    placeholder="Opcional"
+                                    maxLength={500}
+                                  />
+                                </div>
+                              </div>
+                            </td>
                           </tr>
                         )}
                       </Fragment>
@@ -642,6 +816,17 @@ export default function NuevaCompraPage() {
         confirmarTexto="Salir sin guardar"
         onConfirmar={confirmarSalir}
         onCancelar={() => setConfirmandoSalir(false)}
+      />
+
+      <datalist id="lista-presentaciones">
+        {PRESENTACIONES_SUGERIDAS.map((p) => <option key={p} value={p} />)}
+      </datalist>
+
+      <ImportarCompraModal
+        abierto={importarAbierto}
+        categorias={categorias}
+        onCerrar={() => setImportarAbierto(false)}
+        onAceptar={agregarLineasImportadas}
       />
     </div>
   );

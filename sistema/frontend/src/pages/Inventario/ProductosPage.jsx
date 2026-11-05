@@ -305,7 +305,7 @@ export default function ProductosPage() {
         titulo="Eliminar producto"
         mensaje={
           productoAEliminar
-            ? `\u00bfSeguro que desea eliminar el producto "${productoAEliminar.nombre}"? Solo es posible si no tiene movimientos distintos al inventario inicial. Esta acci\u00f3n no se puede deshacer.`
+            ? `¿Seguro que desea eliminar el producto "${productoAEliminar.nombre}"? Solo es posible si no tiene movimientos distintos al inventario inicial. Esta acción no se puede deshacer.`
             : ''
         }
         confirmarTexto="Eliminar"
