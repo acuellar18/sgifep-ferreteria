@@ -92,7 +92,6 @@ export function construirTicket(venta, empresa = {}) {
   const negocio = datosNegocio(empresa);
 
   lineas.push(centrar(negocio.nombre, ancho));
-  if (negocio.nit) lineas.push(centrar(`NIT: ${negocio.nit}`, ancho));
   if (negocio.direccion) lineas.push(centrar(negocio.direccion, ancho));
   if (negocio.telefono) lineas.push(centrar(`Tel: ${negocio.telefono}`, ancho));
   lineas.push(separador(ancho));

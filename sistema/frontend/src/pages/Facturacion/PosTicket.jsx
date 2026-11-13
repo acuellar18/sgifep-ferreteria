@@ -25,7 +25,6 @@ export default function PosTicket({ venta, empresa }) {
 
       <div className="pos-ticket-cabecera">
         <strong className="pos-ticket-negocio">{negocio.nombre}</strong>
-        {negocio.nit && <span>NIT: {negocio.nit}</span>}
         {negocio.direccion && <span>{negocio.direccion}</span>}
         {negocio.telefono && <span>Tel: {negocio.telefono}</span>}
       </div>
