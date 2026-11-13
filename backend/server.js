@@ -95,10 +95,18 @@ app.use(manejarErrores);
 // ---------- Inicio del servidor ----------
 
 if (require.main === module) {
+  const db = require('./db');
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    console.log(`Servidor SGIFEP corriendo en el puerto ${PORT}`);
-  });
+  db.iniciar()
+    .then(() => {
+      app.listen(PORT, () => {
+        console.log(`Servidor SGIFEP corriendo en el puerto ${PORT}`);
+      });
+    })
+    .catch((err) => {
+      console.error('No se pudo iniciar la conexión a la base de datos:', err.message);
+      process.exit(1);
+    });
 }
 
 module.exports = app;

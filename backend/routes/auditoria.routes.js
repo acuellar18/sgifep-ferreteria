@@ -1,12 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const auditoriaController = require('../controllers/auditoria.controller');
-const { autenticar, cargarPermisos, requerirPermiso } = require('../middlewares/auth.middleware');
+const { autenticar, requerirRoles } = require('../middlewares/auth.middleware');
 
-router.use(autenticar, cargarPermisos);
+// La auditoría es exclusiva del rol administrador (los superadmins conservan
+// acceso total). No basta con el permiso granular: aunque se asigne a otro
+// rol, el endpoint seguirá bloqueado.
+router.use(autenticar, requerirRoles(['administrador']));
 
-router.get('/resumen', requerirPermiso('seguridad.auditoria.ver'), auditoriaController.resumen);
-router.get('/acciones', requerirPermiso('seguridad.auditoria.ver'), auditoriaController.acciones);
-router.get('/', requerirPermiso('seguridad.auditoria.ver'), auditoriaController.listar);
+router.get('/resumen', auditoriaController.resumen);
+router.get('/acciones', auditoriaController.acciones);
+router.get('/', auditoriaController.listar);
 
 module.exports = router;

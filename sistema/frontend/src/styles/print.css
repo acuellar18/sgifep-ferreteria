@@ -175,6 +175,14 @@ body.print-body {
   color: #6b7280;
 }
 
+.print-subtitulo {
+  margin: 6mm 0 2mm;
+  color: #16a34a;
+  font-size: 9pt;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .print-tabla {
   width: 100%;
   border-collapse: collapse;

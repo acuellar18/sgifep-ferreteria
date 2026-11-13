@@ -23,10 +23,10 @@ export default function ReporteDespachosPage() {
     <div className="pagina reporte-page">
       <div className="pagina-cabecera"><h1>Reporte de Despachos</h1></div>
       <div className="tarjetas" style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
-        <div className="tarjeta tarjeta-valor" style={{ flex: '1 1 160px', textAlign: 'center' }}><div style={{ fontSize: 28, fontWeight: 700, color: '#16a34a' }}>{data.total}</div><div style={{ fontSize: 13, color: '#6b7280' }}>Total</div></div>
-        <div className="tarjeta tarjeta-valor" style={{ flex: '1 1 160px', textAlign: 'center', background: '#dcfce7' }}><div style={{ fontSize: 28, fontWeight: 700, color: '#16a34a' }}>{data.entregados}</div><div style={{ fontSize: 13, color: '#6b7280' }}>Entregados</div></div>
-        <div className="tarjeta tarjeta-valor" style={{ flex: '1 1 160px', textAlign: 'center', background: '#fef3c7' }}><div style={{ fontSize: 28, fontWeight: 700, color: '#92400e' }}>{data.parciales}</div><div style={{ fontSize: 13, color: '#6b7280' }}>Parciales</div></div>
-        <div className="tarjeta tarjeta-valor" style={{ flex: '1 1 160px', textAlign: 'center', background: '#fee2e2' }}><div style={{ fontSize: 28, fontWeight: 700, color: '#dc2626' }}>{data.fallidos}</div><div style={{ fontSize: 13, color: '#6b7280' }}>Fallidos</div></div>
+        <div className="tarjeta tarjeta-valor" style={{ flex: '1 1 160px', textAlign: 'center' }}><div style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-primario)' }}>{data.total}</div><div style={{ fontSize: 13, color: 'var(--color-texto-suave)' }}>Total</div></div>
+        <div className="tarjeta tarjeta-valor" style={{ flex: '1 1 160px', textAlign: 'center', background: 'var(--color-primario-suave)' }}><div style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-primario)' }}>{data.entregados}</div><div style={{ fontSize: 13, color: 'var(--color-texto-suave)' }}>Entregados</div></div>
+        <div className="tarjeta tarjeta-valor" style={{ flex: '1 1 160px', textAlign: 'center', background: 'var(--color-aviso-fondo)' }}><div style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-aviso)' }}>{data.parciales}</div><div style={{ fontSize: 13, color: 'var(--color-texto-suave)' }}>Parciales</div></div>
+        <div className="tarjeta tarjeta-valor" style={{ flex: '1 1 160px', textAlign: 'center', background: 'var(--color-peligro-fondo)' }}><div style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-peligro)' }}>{data.fallidos}</div><div style={{ fontSize: 13, color: 'var(--color-texto-suave)' }}>Fallidos</div></div>
       </div>
       <div className="tarjeta tarjeta-sombra"><h3>Detalle</h3><p>Exportación y gráficos disponibles tras configurar endpoint de reportes agregados (`/api/reportes-despachos`).</p></div>
     </div>

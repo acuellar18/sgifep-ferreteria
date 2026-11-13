@@ -14,8 +14,8 @@ const COLUMNAS_ORDENABLES = {
 const CAMPOS_FACTURA = `
   f.id, f.numero, f.cliente_id, f.cliente_nombre, f.cliente_nit,
   f.cliente_telefono, f.cliente_correo, f.cliente_direccion,
-  f.fecha, f.condicion, f.fecha_vencimiento,
-  f.subtotal, f.iva, f.total, f.monto_pagado, f.saldo_pendiente,
+  f.fecha, f.condicion, f.contra_entrega, f.fecha_vencimiento,
+  f.subtotal, f.iva, f.total, f.costo_envio, f.monto_pagado, f.saldo_pendiente,
   f.estado, f.estado_pago, f.notas, f.usuario_id,
   f.creado_en, f.actualizado_en, f.anulada_en, f.anulada_por,
   f.anulacion_motivo
@@ -292,10 +292,12 @@ class FacturaRepository {
       cliente_direccion,
       fecha,
       condicion,
+      contra_entrega,
       fecha_vencimiento,
       subtotal,
       iva,
       total,
+      costo_envio,
       monto_pagado,
       saldo_pendiente,
       estado,
@@ -307,10 +309,10 @@ class FacturaRepository {
     const [result] = await conn.query(
       `INSERT INTO facturas
          (numero, cliente_id, cliente_nombre, cliente_nit, cliente_telefono,
-          cliente_correo, cliente_direccion, fecha, condicion, fecha_vencimiento,
-          subtotal, iva, total, monto_pagado, saldo_pendiente, estado, estado_pago,
-          notas, usuario_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          cliente_correo, cliente_direccion, fecha, condicion, contra_entrega,
+          fecha_vencimiento, subtotal, iva, total, costo_envio, monto_pagado,
+          saldo_pendiente, estado, estado_pago, notas, usuario_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         numero,
         cliente_id,
@@ -321,10 +323,12 @@ class FacturaRepository {
         cliente_direccion,
         fecha,
         condicion,
+        contra_entrega ? 1 : 0,
         fecha_vencimiento,
         subtotal,
         iva,
         total,
+        costo_envio || 0,
         monto_pagado,
         saldo_pendiente,
         estado,

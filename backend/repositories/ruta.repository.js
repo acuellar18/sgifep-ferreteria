@@ -13,10 +13,8 @@ module.exports = {
     const orden = ['creado_en','fecha','estado'].includes(sortBy) ? sortBy : 'creado_en';
     const dir = sortDir === 'asc' ? 'ASC' : 'DESC';
     const offset = (page - 1) * pageSize;
-    const sql = `SELECT r.*, c.nombre AS conductor_nombre, v.placa AS vehiculo_placa
+    const sql = `SELECT r.*
       FROM rutas r
-      LEFT JOIN conductores c ON c.id = r.conductor_id
-      LEFT JOIN vehiculos v ON v.id = r.vehiculo_id
       WHERE ${where.join(' AND ')}
       ORDER BY r.${orden} ${dir} LIMIT ? OFFSET ?`;
     params.push(Number(pageSize), offset);
@@ -37,10 +35,8 @@ module.exports = {
 
   buscarPorId(id) {
     return pool.query(
-      `SELECT r.*, c.nombre AS conductor_nombre, v.placa AS vehiculo_placa, v.descripcion AS vehiculo_descripcion
+      `SELECT r.*
        FROM rutas r
-       LEFT JOIN conductores c ON c.id = r.conductor_id
-       LEFT JOIN vehiculos v ON v.id = r.vehiculo_id
        WHERE r.id = ? LIMIT 1`, [id]);
   },
 
@@ -55,13 +51,13 @@ module.exports = {
   crear(conn, datos) {
     const dest = conn || pool;
     return dest.query(
-      `INSERT INTO rutas (codigo, fecha, conductor_id, vehiculo_id, zona, estado, usuario_id)
+      `INSERT INTO rutas (codigo, fecha, conductor_nombre, tipo_vehiculo, zona, estado, usuario_id)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         datos.codigo,
         datos.fecha,
-        datos.conductor_id || null,
-        datos.vehiculo_id || null,
+        datos.conductor_nombre || null,
+        datos.tipo_vehiculo || null,
         datos.zona || null,
         datos.estado || 'planificada',
         datos.usuario_id || null

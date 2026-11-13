@@ -8,13 +8,15 @@ const METODOS = [
   { valor: '', etiqueta: 'Todos los métodos' },
   { valor: 'efectivo', etiqueta: 'Efectivo' },
   { valor: 'tarjeta', etiqueta: 'Tarjeta' },
-  { valor: 'transferencia', etiqueta: 'Transferencia' }
+  { valor: 'transferencia', etiqueta: 'Transferencia' },
+  { valor: 'credito', etiqueta: 'Crédito' }
 ];
 
 const ETIQUETAS_METODO = {
   efectivo: 'Efectivo',
   tarjeta: 'Tarjeta',
-  transferencia: 'Transferencia'
+  transferencia: 'Transferencia',
+  credito: 'Crédito'
 };
 
 const TIPOS_DEVOLUCION = [

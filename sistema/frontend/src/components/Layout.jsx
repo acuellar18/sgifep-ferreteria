@@ -64,18 +64,20 @@ export default function Layout() {
   // "No tiene permiso para este módulo" al abrirlo.
   const rolesSesion = Array.isArray(sesion?.roles) ? sesion.roles : [];
   const sinRoles = !sesion?.superadmin && rolesSesion.length === 0;
+  const esAdmin = Boolean(sesion?.superadmin) || rolesSesion.includes('administrador');
 
-  const modulosVisibles = sinRoles
-    ? MODULOS_SISTEMA
-    : MODULOS_SISTEMA.filter(
-        (modulo) => !modulo.permiso || permisos[modulo.permiso]
-      );
+  const modulosVisibles = MODULOS_SISTEMA.filter((modulo) => {
+    if (modulo.soloAdmin && !esAdmin) return false;
+    if (sinRoles) return true;
+    return !modulo.permiso || permisos[modulo.permiso];
+  });
 
   function subitemsVisibles(modulo) {
-    if (sinRoles) return modulo.subitems || [];
-    return (modulo.subitems || []).filter(
-      (subitem) => !subitem.permiso || permisos[subitem.permiso]
-    );
+    return (modulo.subitems || []).filter((subitem) => {
+      if (subitem.soloAdmin && !esAdmin) return false;
+      if (sinRoles) return true;
+      return !subitem.permiso || permisos[subitem.permiso];
+    });
   }
 
   function cerrarMenuSiMovil() {

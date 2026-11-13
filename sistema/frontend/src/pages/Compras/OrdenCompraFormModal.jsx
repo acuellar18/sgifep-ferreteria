@@ -237,7 +237,7 @@ export default function OrdenCompraFormModal({ abierto, orden, proveedores, onCe
                       ref={el => inputProductoRefs.current[i] = el}
                     />
                     {linea.producto_id && (
-                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--color-texto-suave)', marginTop: '4px' }}>
                         Código: {linea.producto_codigo}
                       </div>
                     )}

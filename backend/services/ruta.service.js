@@ -4,31 +4,27 @@ const repo = require('../repositories/ruta.repository');
 
 const ESTADOS_ACTIVOS = ['planificada', 'en_curso'];
 
+const TIPOS_VEHICULO = ['motocicleta', 'mototaxi', 'carro'];
+
 function formatearCodigo(id) {
   return `RTA-${String(id).padStart(6, '0')}`;
 }
 
 class RutaService {
   async crear(datos, usuarioId) {
+    const conductorNombre = typeof datos.conductor_nombre === 'string'
+      ? datos.conductor_nombre.trim()
+      : '';
+    if (!conductorNombre) throw new HttpError(400, 'El nombre del conductor es obligatorio');
+    if (conductorNombre.length > 150) throw new HttpError(400, 'El nombre del conductor es demasiado largo');
+    if (!TIPOS_VEHICULO.includes(datos.tipo_vehiculo)) {
+      throw new HttpError(400, 'Seleccione un tipo de vehículo válido');
+    }
+    if (!datos.fecha) throw new HttpError(400, 'La fecha es obligatoria');
+
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
-
-      // Regla: conductor o vehículo no pueden tener ruta activa la misma fecha
-      if (datos.conductor_id) {
-        const [chk] = await conn.query(
-          'SELECT id FROM rutas WHERE conductor_id = ? AND fecha = ? AND estado IN (?,?) LIMIT 1',
-          [datos.conductor_id, datos.fecha, 'planificada', 'en_curso']
-        );
-        if (chk && chk.length) throw new HttpError(400, 'El conductor ya tiene una ruta activa en esta fecha');
-      }
-      if (datos.vehiculo_id) {
-        const [chk] = await conn.query(
-          'SELECT id FROM rutas WHERE vehiculo_id = ? AND fecha = ? AND estado IN (?,?) LIMIT 1',
-          [datos.vehiculo_id, datos.fecha, 'planificada', 'en_curso']
-        );
-        if (chk && chk.length) throw new HttpError(400, 'El vehículo ya tiene una ruta activa en esta fecha');
-      }
 
       // Cada parada debe ser un despacho programado o pendiente, y no en otra ruta activa
       if (datos.paradas && datos.paradas.length) {
@@ -44,7 +40,7 @@ class RutaService {
         }
       }
 
-      const [res] = await repo.crear(conn, datos);
+      const [res] = await repo.crear(conn, { ...datos, conductor_nombre: conductorNombre });
       const rutaId = res.insertId;
 
       // Código

@@ -107,16 +107,16 @@ export default function ProveedorAutocompletar({
                 borderRadius: '6px',
                 transition: 'background 0.1s'
               }}
-              onMouseEnter={(e) => e.target.style.background = '#dcfce7'}
+              onMouseEnter={(e) => e.target.style.background = 'var(--color-primario-suave)'}
               onMouseLeave={(e) => e.target.style.background = 'transparent'}
             >
               <strong>{p.nombre}</strong>
-              {p.nit && <span style={{ marginLeft: '8px', fontSize: '12px', color: '#6b7280' }}>NIT: {p.nit}</span>}
-              <div style={{ fontSize: '12px', color: '#6b7280' }}>
+              {p.nit && <span style={{ marginLeft: '8px', fontSize: '12px', color: 'var(--color-texto-suave)' }}>NIT: {p.nit}</span>}
+              <div style={{ fontSize: '12px', color: 'var(--color-texto-suave)' }}>
                 {p.telefono && `Tel: ${p.telefono}`} {p.correo && ` | ${p.correo}`}
               </div>
               {p.dias_credito > 0 && (
-                <span style={{ fontSize: '11px', background: '#dcfce7', color: '#16a34a', padding: '1px 6px', borderRadius: '999px' }}>
+                <span style={{ fontSize: '11px', background: 'var(--color-primario-suave)', color: 'var(--color-primario)', padding: '1px 6px', borderRadius: '999px' }}>
                   Crédito: {p.dias_credito} días
                 </span>
               )}

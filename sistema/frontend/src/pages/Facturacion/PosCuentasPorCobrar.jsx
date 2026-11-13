@@ -145,11 +145,15 @@ export default function PosCuentasPorCobrar() {
                     <td>{formatearMoneda(cuenta.total)}</td>
                     <td><strong>{formatearMoneda(cuenta.saldo_pendiente)}</strong></td>
                     <td>
-                      <span className={`chip ${vencida ? 'chip-peligro' : 'chip-ok'}`}>
-                        {vencida
-                          ? `Vencida ${cuenta.dias_vencido} d`
-                          : cuenta.estado_pago === 'parcial' ? 'Parcial' : 'Pendiente'}
-                      </span>
+                      {cuenta.contra_entrega ? (
+                        <span className="chip chip-aviso">Contra entrega</span>
+                      ) : (
+                        <span className={`chip ${vencida ? 'chip-peligro' : 'chip-ok'}`}>
+                          {vencida
+                            ? `Vencida ${cuenta.dias_vencido} d`
+                            : cuenta.estado_pago === 'parcial' ? 'Parcial' : 'Pendiente'}
+                        </span>
+                      )}
                     </td>
                     <td>
                       <button

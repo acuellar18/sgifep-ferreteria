@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import api, { leerSesion } from '../../services/api';
 import { useNotificacion } from '../../components/Toast';
+import { aplicarTema, leerTema } from '../../utils/tema';
 
 const FORM_VACIO = { nombre: '', apellido: '', correo: '' };
 
@@ -51,6 +52,15 @@ export default function PerfilPage() {
   const [fotoUrl, setFotoUrl] = useState('');
   const [fotoRevision, setFotoRevision] = useState(0);
   const [error, setError] = useState('');
+  const [tema, setTema] = useState(leerTema);
+
+  function cambiarTema(nuevoTema) {
+    if (nuevoTema === tema) return;
+    setTema(aplicarTema(nuevoTema));
+    notificar.exito(
+      nuevoTema === 'oscuro' ? 'Modo oscuro activado' : 'Modo claro activado'
+    );
+  }
 
   async function cargar() {
     setCargando(true);
@@ -346,26 +356,37 @@ export default function PerfilPage() {
           <section className="perfil-panel">
             <header className="perfil-panel-cabecera">
               <h3>Apariencia</h3>
-              <p>La paleta institucional se mantiene en todos los módulos del sistema.</p>
+              <p>Elige cómo se ve el sistema. Tu preferencia se recuerda en este navegador.</p>
             </header>
 
             <div className="perfil-temas">
-              <div className="perfil-tema perfil-tema-activo">
+              <button
+                type="button"
+                className={`perfil-tema${tema === 'claro' ? ' perfil-tema-activo' : ''}`}
+                onClick={() => cambiarTema('claro')}
+                aria-pressed={tema === 'claro'}
+              >
                 <span className="perfil-tema-icono"><IconoSol /></span>
                 <div>
                   <strong>Claro institucional</strong>
-                  <small>Fondos neutros y acentos naranja</small>
+                  <small>Fondos neutros y acentos verdes</small>
                 </div>
-                <span className="perfil-tema-check">✓</span>
-              </div>
+                {tema === 'claro' && <span className="perfil-tema-check">✓</span>}
+              </button>
 
-              <div className="perfil-tema perfil-tema-deshabilitado" aria-disabled="true">
+              <button
+                type="button"
+                className={`perfil-tema${tema === 'oscuro' ? ' perfil-tema-activo' : ''}`}
+                onClick={() => cambiarTema('oscuro')}
+                aria-pressed={tema === 'oscuro'}
+              >
                 <span className="perfil-tema-icono"><IconoLuna /></span>
                 <div>
                   <strong>Oscuro</strong>
-                  <small>Disponible próximamente</small>
+                  <small>Fondos oscuros con acentos verdes</small>
                 </div>
-              </div>
+                {tema === 'oscuro' && <span className="perfil-tema-check">✓</span>}
+              </button>
             </div>
           </section>
         </div>

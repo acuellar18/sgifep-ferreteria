@@ -117,6 +117,9 @@ function serializarSesion(fila, resumen = null) {
 
   return {
     id: Number(fila.id),
+    numero_caja: fila.numero_caja === null || fila.numero_caja === undefined
+      ? null
+      : Number(fila.numero_caja),
     estado: fila.estado,
     monto_inicial: redondear2(fila.monto_inicial),
     fecha_apertura: fila.fecha_apertura,
@@ -150,9 +153,25 @@ function serializarSesion(fila, resumen = null) {
   };
 }
 
+function serializarMovimiento(fila) {
+  return {
+    id: Number(fila.id),
+    tipo: fila.tipo,
+    fecha: fila.fecha,
+    referencia: fila.referencia,
+    cliente: fila.cliente || null,
+    metodo_pago: fila.metodo_pago,
+    monto: redondear2(fila.monto),
+    estado: fila.estado,
+    motivo: fila.motivo || null,
+    subtipo: fila.subtipo || null
+  };
+}
+
 module.exports = {
   redondear2,
   validarApertura,
   validarCierre,
-  serializarSesion
+  serializarSesion,
+  serializarMovimiento
 };

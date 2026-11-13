@@ -108,7 +108,7 @@
   padding: 12px 14px;
   border: 1px solid var(--color-borde);
   border-radius: 12px;
-  background: #f9fafb;
+  background: var(--color-fondo-suave);
   cursor: pointer;
   font-size: 14px;
 }
@@ -128,9 +128,9 @@
   gap: 18px;
   margin-bottom: 16px;
   padding: 16px;
-  border: 1px solid #bbf7d0;
+  border: 1px solid var(--color-primario-claro);
   border-radius: 14px;
-  background: linear-gradient(135deg, #dcfce7, #ffffff 62%);
+  background: linear-gradient(135deg, var(--color-primario-suave), #ffffff 62%);
 }
 
 .facturacion-detalle-titulo {
@@ -235,7 +235,7 @@
 .facturacion-historial-vacio {
   padding: 22px;
   border: 1px dashed var(--color-borde);
-  background: #fafafa;
+  background: var(--color-fondo-suave);
   box-shadow: none;
 }
 
@@ -283,7 +283,7 @@
 }
 
 .facturacion-fila-anulada {
-  background: #fff7f7;
+  background: var(--color-peligro-fondo);
 }
 
 .facturacion-fila-anulada td {
@@ -333,7 +333,7 @@
   overflow-y: auto;
   border: 1px solid var(--color-borde);
   border-radius: 10px;
-  background: #fff;
+  background: var(--color-superficie);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   list-style: none;
 }
@@ -345,7 +345,7 @@
 }
 
 .facturacion-sugerencias li:hover {
-  background: #dcfce7;
+  background: var(--color-primario-suave);
 }
 
 .facturacion-sugerencia-titulo {
@@ -398,7 +398,7 @@
   padding: 14px 16px;
   border: 1px solid var(--color-borde);
   border-radius: 12px;
-  background: #fafafa;
+  background: var(--color-fondo-suave);
 }
 
 .facturacion-totales > div {
@@ -433,7 +433,7 @@
   padding: 14px 16px;
   border: 1px solid var(--color-borde);
   border-radius: 12px;
-  background: #fff;
+  background: var(--color-superficie);
 }
 
 .facturacion-notas h4 {
@@ -447,8 +447,8 @@
 }
 
 .facturacion-notas-anulada {
-  border-color: #fecaca;
-  background: #fff7f7;
+  border-color: var(--color-peligro);
+  background: var(--color-peligro-fondo);
 }
 
 .facturacion-confirmar-anulacion p {
@@ -553,7 +553,7 @@
   margin-top: 8px;
   padding: 8px 10px;
   border-radius: 8px;
-  background: #dcfce7;
+  background: var(--color-primario-suave);
   color: var(--color-texto-suave);
   font-size: 12px;
 }
@@ -619,7 +619,7 @@
   margin-top: 12px;
   padding: 10px;
   border-radius: 8px;
-  background: #dcfce7;
+  background: var(--color-primario-suave);
   font-size: 12px;
 }
 

@@ -1,6 +1,6 @@
 const { HttpError } = require('../utils/http-error');
 
-const METODOS_PAGO = ['efectivo', 'tarjeta', 'transferencia'];
+const METODOS_PAGO = ['efectivo', 'tarjeta', 'transferencia', 'credito'];
 const ESTADOS = ['completada', 'anulada'];
 
 function redondear2(valor) {
@@ -79,10 +79,57 @@ function validarDetalles(detalles) {
   });
 }
 
+function validarEntrega(datos = {}) {
+  const entrega = datos.entrega && typeof datos.entrega === 'object' ? datos.entrega : {};
+  if (!entrega.domicilio) {
+    return {
+      domicilio: false,
+      direccion: null,
+      telefono: null,
+      fecha_programada: null,
+      costo_envio: 0,
+      contra_entrega: false
+    };
+  }
+
+  const direccion = texto(entrega.direccion);
+  const telefono = texto(entrega.telefono);
+  if (!direccion) {
+    throw new HttpError(400, 'La dirección de entrega es obligatoria para envío a domicilio');
+  }
+  if (!telefono) {
+    throw new HttpError(400, 'El teléfono de contacto es obligatorio para envío a domicilio');
+  }
+  if (direccion.length > 500) throw new HttpError(400, 'La dirección de entrega es demasiado larga');
+  if (telefono.length > 50) throw new HttpError(400, 'El teléfono de contacto es demasiado largo');
+
+  const fechaProgramada = texto(entrega.fecha_programada);
+  if (fechaProgramada && !/^\d{4}-\d{2}-\d{2}$/.test(fechaProgramada)) {
+    throw new HttpError(400, 'La fecha programada no es válida');
+  }
+
+  const costoEnvio = Number(entrega.costo_envio ?? 0);
+  if (!Number.isFinite(costoEnvio) || costoEnvio < 0) {
+    throw new HttpError(400, 'El costo de envío no es válido');
+  }
+  if (costoEnvio > 99999999.99) {
+    throw new HttpError(400, 'El costo de envío es demasiado alto');
+  }
+
+  return {
+    domicilio: true,
+    direccion,
+    telefono,
+    fecha_programada: fechaProgramada || null,
+    costo_envio: redondear2(costoEnvio),
+    contra_entrega: Boolean(entrega.contra_entrega)
+  };
+}
+
 function validarCrear(datos = {}) {
   const metodoPago = texto(datos.metodo_pago).toLowerCase();
   if (!METODOS_PAGO.includes(metodoPago)) {
-    throw new HttpError(400, 'El método de pago debe ser efectivo, tarjeta o transferencia');
+    throw new HttpError(400, 'El método de pago debe ser efectivo, tarjeta, transferencia o crédito');
   }
 
   const referencia = texto(datos.referencia);
@@ -105,13 +152,16 @@ function validarCrear(datos = {}) {
     throw new HttpError(400, 'El monto recibido debe ser un número mayor o igual a 0');
   }
 
+  const entrega = validarEntrega(datos);
+
   return {
     cliente: normalizarCliente(datos),
     metodo_pago: metodoPago,
     referencia: referencia || null,
     observaciones: observaciones || null,
     monto_recibido: montoRecibido,
-    detalles: validarDetalles(datos.detalles)
+    detalles: validarDetalles(datos.detalles),
+    entrega
   };
 }
 
@@ -231,7 +281,10 @@ function serializarCliente(fila) {
     telefono: fila.telefono || null,
     correo: fila.correo || null,
     direccion: fila.direccion || null,
-    estado: fila.estado || 'activo'
+    estado: fila.estado || 'activo',
+    dias_credito: Number(fila.dias_credito || 0),
+    limite_credito: Number(fila.limite_credito || 0),
+    saldo_credito: Number(fila.saldo_credito || 0)
   };
 }
 
@@ -241,6 +294,9 @@ function serializarVenta(fila) {
     id: Number(fila.id),
     numero: fila.numero,
     caja_id: Number(fila.caja_id),
+    caja_numero: fila.caja_numero === undefined || fila.caja_numero === null
+      ? null
+      : Number(fila.caja_numero),
     factura_id: fila.factura_id ? Number(fila.factura_id) : null,
     factura_numero: fila.factura_numero || null,
     cliente_id: Number(fila.cliente_id),
@@ -254,6 +310,7 @@ function serializarVenta(fila) {
     subtotal: Number(fila.subtotal || 0),
     iva: Number(fila.iva || 0),
     descuento: Number(fila.descuento || 0),
+    costo_envio: Number(fila.costo_envio || 0),
     total: Number(fila.total || 0),
     metodo_pago: fila.metodo_pago,
     monto_recibido: Number(fila.monto_recibido || 0),
@@ -267,6 +324,9 @@ function serializarVenta(fila) {
     observaciones: fila.observaciones || null,
     caja_fecha_apertura: fila.caja_fecha_apertura || null,
     caja_estado: fila.caja_estado || null,
+    despacho_codigo: fila.despacho_codigo || null,
+    despacho_direccion: fila.despacho_direccion || null,
+    despacho_forma_pago: fila.despacho_forma_pago || null,
     lineas: fila.lineas === undefined ? undefined : Number(fila.lineas || 0),
     unidades: fila.unidades === undefined ? undefined : Number(fila.unidades || 0),
     creado_en: fila.creado_en
@@ -325,6 +385,7 @@ function serializarCuenta(fila) {
     monto_pagado: Number(fila.monto_pagado || 0),
     saldo_pendiente: Number(fila.saldo_pendiente || 0),
     estado_pago: fila.estado_pago,
+    contra_entrega: Boolean(fila.contra_entrega),
     dias_vencido: fila.dias_vencido === null || fila.dias_vencido === undefined
       ? null
       : Number(fila.dias_vencido)

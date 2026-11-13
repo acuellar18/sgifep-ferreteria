@@ -5,8 +5,8 @@
 .modal-overlay { background: rgba(20, 20, 20, 0.55); }
 .modal { border-radius: 14px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6); }
 .modal-body { padding: 16px 20px; max-height: 70vh; overflow-y: auto; }
-.modal-header { border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; margin-bottom: 12px; }
-.modal-footer { border-top: 1px solid #e5e7eb; padding-top: 12px; margin-top: 12px; display: flex; justify-content: flex-end; gap: 10px; }
+.modal-header { border-bottom: 1px solid var(--color-borde); padding-bottom: 12px; margin-bottom: 12px; }
+.modal-footer { border-top: 1px solid var(--color-borde); padding-top: 12px; margin-top: 12px; display: flex; justify-content: flex-end; gap: 10px; }
 
 .formulario-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 @media (max-width: 900px) { .formulario-grid-3 { grid-template-columns: 1fr; } }
@@ -34,43 +34,59 @@
 
 /* Badges de estado */
 .badge { font-size: 12px; padding: 4px 8px; border-radius: 8px; font-weight: 600; text-transform: capitalize; }
-.badge.bg-success { background: #dcfce7; color: #16a34a; }
-.badge.bg-primary { background: #dbeafe; color: #2563eb; }
-.badge.bg-warning { background: #fef3c7; color: #92400e; }
-.badge.bg-secondary { background: #f3f4f6; color: #4b5563; }
-.badge.bg-danger { background: #fee2e2; color: #dc2626; }
+.badge.bg-success { background: var(--color-primario-suave); color: var(--color-primario); }
+.badge.bg-primary { background: var(--color-primario-suave); color: var(--color-primario); }
+.badge.bg-warning { background: var(--color-aviso-fondo); color: var(--color-aviso); }
+.badge.bg-secondary { background: var(--color-fondo-suave); color: var(--color-texto-suave); }
+.badge.bg-danger { background: var(--color-peligro-fondo); color: var(--color-peligro); }
 
-/* Botones primarios en verde (#16a34a) dentro del módulo de Despacho */
+/* Botones primarios en verde (var(--color-primario)) dentro del módulo de Despacho */
 .despacho-page .btn-primario,
 .ruta-page .btn-primario {
-  background: #16a34a;
-  border-color: #16a34a;
+  background: var(--color-primario);
+  border-color: var(--color-primario);
 }
 .despacho-page .btn-primario:hover:not(:disabled),
 .ruta-page .btn-primario:hover:not(:disabled) {
-  background: #15803d;
-  border-color: #15803d;
+  background: var(--color-primario-oscuro);
+  border-color: var(--color-primario-oscuro);
 }
 .despacho-page .btn-primario:focus-visible,
 .ruta-page .btn-primario:focus-visible {
-  outline-color: #16a34a;
+  outline-color: var(--color-primario);
 }
 .despacho-page .control:focus,
 .ruta-page .control:focus {
-  outline-color: #16a34a;
-  border-color: #16a34a;
+  outline-color: var(--color-primario);
+  border-color: var(--color-primario);
 }
 .despacho-page .btn-agregar-linea,
 .ruta-page .btn-agregar-linea {
-  border-color: #16a34a;
-  color: #16a34a;
+  border-color: var(--color-primario);
+  color: var(--color-primario);
 }
 .despacho-page .btn-agregar-linea:hover,
 .ruta-page .btn-agregar-linea:hover {
-  background: #dcfce7;
+  background: var(--color-primario-suave);
 }
 .despacho-page .btn-secundario:hover:not(:disabled),
 .ruta-page .btn-secundario:hover:not(:disabled) {
-  border-color: #16a34a;
-  color: #16a34a;
+  border-color: var(--color-primario);
+  color: var(--color-primario);
+}
+
+/* Acciones por despacho en el listado */
+.despacho-acciones {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.despacho-acciones .btn-sm {
+  white-space: nowrap;
+}
+
+.despacho-revision {
+  margin-left: 6px;
 }

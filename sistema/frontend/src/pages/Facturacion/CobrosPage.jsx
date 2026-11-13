@@ -19,6 +19,12 @@ const METODOS = [
   { valor: 'tarjeta', etiqueta: 'Tarjeta', ayuda: 'Tarjeta débito o crédito' },
   { valor: 'transferencia', etiqueta: 'Transferencia', ayuda: 'Transferencia bancaria' }
 ];
+const ETIQUETAS_METODO = {
+  efectivo: 'Efectivo',
+  tarjeta: 'Tarjeta',
+  transferencia: 'Transferencia',
+  credito: 'Crédito'
+};
 
 function redondear2(valor) {
   return Math.round((Number(valor) + Number.EPSILON) * 100) / 100;
@@ -98,27 +104,67 @@ export default function CobrosPage() {
   const [historialRecarga, setHistorialRecarga] = useState(0);
   const temporizadorBusqueda = useRef(null);
 
+  // Entrega a domicilio
+  const [domicilio, setDomicilio] = useState(false);
+  const [direccionEntrega, setDireccionEntrega] = useState('');
+  const [telefonoEntrega, setTelefonoEntrega] = useState('');
+  const [fechaProgramada, setFechaProgramada] = useState(fechaLocal());
+  const [costoEnvio, setCostoEnvio] = useState('0');
+  const [contraEntrega, setContraEntrega] = useState(false);
+  const [avisoDespacho, setAvisoDespacho] = useState(null);
+
   const caja = contexto?.caja || null;
   const empresa = contexto?.empresa || null;
 
   const totales = useMemo(() => {
     const descuento = redondear2(carrito.reduce((suma, linea) => suma + Number(linea.descuento || 0), 0));
-    const total = redondear2(
+    const subtotalProductos = redondear2(
       carrito.reduce(
         (suma, linea) => suma + Number(linea.cantidad) * Number(linea.precio_venta) - Number(linea.descuento || 0),
         0
       )
     );
+    const envio = domicilio ? redondear2(Number(costoEnvio || 0)) : 0;
+    const total = redondear2(subtotalProductos + envio);
     const subtotal = redondear2(total / (1 + IVA_FACTOR));
     const iva = redondear2(total - subtotal);
     const articulos = redondear3(carrito.reduce((suma, linea) => suma + Number(linea.cantidad), 0));
-    return { total: Math.max(0, total), subtotal: Math.max(0, subtotal), iva: Math.max(0, iva), descuento, articulos };
-  }, [carrito]);
+    return { total: Math.max(0, total), subtotal: Math.max(0, subtotal), iva: Math.max(0, iva), descuento, articulos, envio };
+  }, [carrito, domicilio, costoEnvio]);
 
   const cambio = useMemo(() => {
     if (metodoPago !== 'efectivo') return 0;
     return Math.max(0, redondear2(Number(montoRecibido || 0) - totales.total));
   }, [metodoPago, montoRecibido, totales.total]);
+
+  // Crédito del cliente seleccionado (solo clientes registrados con límite).
+  const creditoCliente = useMemo(() => {
+    const limite = Number(cliente?.limite_credito || 0);
+    if (!cliente?.id || limite <= 0) return null;
+    const saldo = Number(cliente?.saldo_credito || 0);
+    return {
+      limite,
+      saldo,
+      disponible: Math.max(0, redondear2(limite - saldo)),
+      dias: Number(cliente?.dias_credito || 0)
+    };
+  }, [cliente]);
+
+  const creditoDisponible = Boolean(
+    creditoCliente && totales.total > 0 && creditoCliente.disponible + 0.001 >= totales.total
+  );
+
+  const metodosPago = useMemo(() => {
+    if (!creditoDisponible) return METODOS;
+    return [
+      ...METODOS,
+      {
+        valor: 'credito',
+        etiqueta: 'Crédito',
+        ayuda: `${creditoCliente.dias} días · Disponible ${formatearMoneda(creditoCliente.disponible)}`
+      }
+    ];
+  }, [creditoDisponible, creditoCliente]);
 
   async function cargarResumen() {
     try {
@@ -146,7 +192,8 @@ export default function CobrosPage() {
           id: predeterminado.id || null,
           nit: predeterminado.nit || 'CF',
           nombre: predeterminado.nombre || 'Consumidor Final',
-          direccion: predeterminado.direccion || ''
+          direccion: predeterminado.direccion || '',
+          telefono: predeterminado.telefono || ''
         });
         setClienteEncontrado(true);
       }
@@ -169,7 +216,8 @@ export default function CobrosPage() {
       id: predeterminado.id || null,
       nit: predeterminado.nit || 'CF',
       nombre: predeterminado.nombre || 'Consumidor Final',
-      direccion: predeterminado.direccion || ''
+      direccion: predeterminado.direccion || '',
+      telefono: predeterminado.telefono || ''
     });
     setClienteEncontrado(true);
   }
@@ -193,7 +241,11 @@ export default function CobrosPage() {
           id: res.data.id,
           nit: res.data.nit,
           nombre: res.data.nombre,
-          direccion: res.data.direccion || ''
+          direccion: res.data.direccion || '',
+          telefono: res.data.telefono || '',
+          limite_credito: Number(res.data.limite_credito || 0),
+          dias_credito: Number(res.data.dias_credito || 0),
+          saldo_credito: Number(res.data.saldo_credito || 0)
         });
         setClienteEncontrado(true);
       } else {
@@ -325,7 +377,7 @@ export default function CobrosPage() {
       prev.map((linea) => {
         if (linea.producto_id !== productoId) return linea;
         const limite = linea.tipo === 'servicio' ? Infinity : linea.stock;
-        const cantidad = redondear3(Math.min(numero, limite));
+        const cantidad = Math.min(Math.round(numero), limite);
         if (numero > limite) {
           notificar.error(`Solo hay ${formatearNumero(linea.stock, 3)} disponibles de "${linea.nombre}"`);
         }
@@ -355,6 +407,14 @@ export default function CobrosPage() {
     setSugerencias([]);
   }
 
+  function cambiarDomicilio(activo) {
+    setDomicilio(activo);
+    if (activo) {
+      setDireccionEntrega(cliente.direccion || '');
+      setTelefonoEntrega(cliente.telefono || '');
+    }
+  }
+
   function abrirPago() {
     if (!caja) {
       notificar.error('Abre la caja antes de cobrar');
@@ -364,7 +424,7 @@ export default function CobrosPage() {
       notificar.error('Agrega al menos un producto');
       return;
     }
-    setMetodoPago('efectivo');
+    setMetodoPago(contraEntrega ? 'credito' : 'efectivo');
     setMontoRecibido(totales.total.toFixed(2));
     setReferencia('');
     setErrorVenta('');
@@ -375,13 +435,31 @@ export default function CobrosPage() {
     evento.preventDefault();
     setErrorVenta('');
 
-    if (metodoPago === 'efectivo' && Number(montoRecibido || 0) + 0.001 < totales.total) {
+    if (domicilio && !direccionEntrega.trim()) {
+      setErrorVenta('La dirección de entrega es obligatoria');
+      return;
+    }
+    if (domicilio && !telefonoEntrega.trim()) {
+      setErrorVenta('El teléfono de contacto es obligatorio');
+      return;
+    }
+    if (!contraEntrega && metodoPago === 'efectivo' && Number(montoRecibido || 0) + 0.001 < totales.total) {
       setErrorVenta('El monto recibido es menor que el total de la venta');
       return;
     }
-    if (metodoPago === 'transferencia' && !referencia.trim()) {
+    if (!contraEntrega && metodoPago === 'transferencia' && !referencia.trim()) {
       setErrorVenta('La referencia o autorización es obligatoria para transferencias');
       return;
+    }
+    if (!contraEntrega && metodoPago === 'credito') {
+      if (!cliente.id) {
+        setErrorVenta('La venta a crédito requiere un cliente registrado');
+        return;
+      }
+      if (!creditoDisponible) {
+        setErrorVenta('El crédito disponible del cliente no cubre el total de la venta');
+        return;
+      }
     }
     if (cliente.nit.trim() && cliente.nit.trim().toUpperCase() !== 'CF' && !cliente.nombre.trim()) {
       setErrorVenta('Escribe el nombre del cliente para registrarlo');
@@ -397,26 +475,48 @@ export default function CobrosPage() {
           nombre: cliente.nombre.trim(),
           direccion: cliente.direccion.trim()
         },
-        metodo_pago: metodoPago,
-        monto_recibido: metodoPago === 'efectivo' ? Number(montoRecibido) : totales.total,
+        metodo_pago: contraEntrega ? 'credito' : metodoPago,
+        monto_recibido: contraEntrega
+          ? null
+          : metodoPago === 'efectivo'
+            ? Number(montoRecibido)
+            : metodoPago === 'credito' ? null : totales.total,
         referencia: referencia.trim(),
         detalles: carrito.map((linea) => ({
           producto_id: linea.producto_id,
           cantidad: linea.cantidad,
           descuento: linea.descuento
-        }))
+        })),
+        entrega: domicilio
+          ? {
+              domicilio: true,
+              direccion: direccionEntrega.trim(),
+              telefono: telefonoEntrega.trim(),
+              fecha_programada: fechaProgramada,
+              costo_envio: redondear2(Number(costoEnvio || 0)),
+              contra_entrega: contraEntrega
+            }
+          : { domicilio: false }
       });
 
       setVentaConfirmada(res.data?.venta || null);
       setEmpresaTicket(res.data?.empresa || empresa);
+      setAvisoDespacho(res.data?.despacho || null);
       setModalPago(false);
       vaciarCarrito();
+      setDomicilio(false);
+      setDireccionEntrega('');
+      setTelefonoEntrega('');
+      setCostoEnvio('0');
+      setContraEntrega(false);
+      setFechaProgramada(fechaLocal());
       const predeterminado = contexto?.cliente_predeterminado || CLIENTE_FINAL;
       setCliente({
         id: predeterminado.id || null,
         nit: predeterminado.nit || 'CF',
         nombre: predeterminado.nombre || 'Consumidor Final',
-        direccion: predeterminado.direccion || ''
+        direccion: predeterminado.direccion || '',
+        telefono: predeterminado.telefono || ''
       });
       setClienteEncontrado(true);
       setHistorialRecarga((prev) => prev + 1);
@@ -441,6 +541,7 @@ export default function CobrosPage() {
 
   function nuevaVenta() {
     setVentaConfirmada(null);
+    setAvisoDespacho(null);
     setTab('pos');
   }
 
@@ -471,7 +572,7 @@ export default function CobrosPage() {
         </div>
         <div className="pos-encabezado-acciones">
           <span className={`chip ${caja ? 'chip-ok' : 'chip-peligro'}`}>
-            {caja ? `Caja #${caja.id} abierta` : 'Caja cerrada'}
+            {caja ? `Caja ${caja.numero_caja || caja.id} abierta` : 'Caja cerrada'}
           </span>
           {!caja && <Link className="btn btn-secundario btn-mini" to="/caja">Abrir caja</Link>}
         </div>
@@ -509,7 +610,7 @@ export default function CobrosPage() {
         <article className="pos-estadistica">
           <span className="pos-estadistica-icono"><IconoCaja /></span>
           <div>
-            <strong>{caja ? `#${caja.id}` : '—'}</strong>
+            <strong>{caja ? `Caja ${caja.numero_caja || caja.id}` : '—'}</strong>
             <span>Caja actual</span>
           </div>
         </article>
@@ -635,8 +736,8 @@ export default function CobrosPage() {
                             <input
                               type="number"
                               className="control pos-input-cantidad"
-                              min="0.001"
-                              step={linea.tipo === 'servicio' ? '1' : '0.001'}
+                              min="1"
+                              step="1"
                               value={linea.cantidad}
                               onChange={(e) => cambiarCantidad(linea.producto_id, e.target.value)}
                               aria-label={`Cantidad de ${linea.nombre}`}
@@ -738,6 +839,82 @@ export default function CobrosPage() {
                   placeholder="Dirección (opcional)"
                 />
               </label>
+
+              {creditoCliente && (
+                <div className="pos-cliente-credito">
+                  <strong>Crédito disponible: {formatearMoneda(creditoCliente.disponible)}</strong>
+                  <span>
+                    Límite {formatearMoneda(creditoCliente.limite)} · Saldo {formatearMoneda(creditoCliente.saldo)} ·
+                    Pago a {creditoCliente.dias} día(s)
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="pos-panel pos-entrega">
+              <label className="pos-switch">
+                <input
+                  type="checkbox"
+                  checked={domicilio}
+                  onChange={(e) => cambiarDomicilio(e.target.checked)}
+                />
+                <span>Entrega a domicilio</span>
+              </label>
+
+              {domicilio && (
+                <>
+                  <label className="campo">
+                    <span>Dirección de entrega *</span>
+                    <input
+                      type="text"
+                      className="control"
+                      maxLength={500}
+                      value={direccionEntrega}
+                      onChange={(e) => setDireccionEntrega(e.target.value)}
+                      placeholder="Dirección de entrega"
+                    />
+                  </label>
+                  <label className="campo">
+                    <span>Teléfono de contacto *</span>
+                    <input
+                      type="text"
+                      className="control"
+                      maxLength={50}
+                      value={telefonoEntrega}
+                      onChange={(e) => setTelefonoEntrega(e.target.value)}
+                      placeholder="Teléfono"
+                    />
+                  </label>
+                  <label className="campo">
+                    <span>Fecha programada</span>
+                    <input
+                      type="date"
+                      className="control"
+                      value={fechaProgramada}
+                      onChange={(e) => setFechaProgramada(e.target.value)}
+                    />
+                  </label>
+                  <label className="campo">
+                    <span>Costo de envío</span>
+                    <input
+                      type="number"
+                      className="control"
+                      min="0"
+                      step="0.01"
+                      value={costoEnvio}
+                      onChange={(e) => setCostoEnvio(e.target.value)}
+                    />
+                  </label>
+                  <label className="pos-switch">
+                    <input
+                      type="checkbox"
+                      checked={contraEntrega}
+                      onChange={(e) => setContraEntrega(e.target.checked)}
+                    />
+                    <span>Cobro contra entrega (se cobra al entregar)</span>
+                  </label>
+                </>
+              )}
             </div>
 
             <div className="pos-panel pos-totales">
@@ -750,6 +927,12 @@ export default function CobrosPage() {
                 <span>Subtotal</span>
                 <strong>{formatearMoneda(totales.subtotal)}</strong>
               </div>
+              {totales.envio > 0 && (
+                <div className="pos-total-linea">
+                  <span>Envío</span>
+                  <strong>{formatearMoneda(totales.envio)}</strong>
+                </div>
+              )}
               <div className="pos-total-linea">
                 <span>IVA 12% (incluido)</span>
                 <strong>{formatearMoneda(totales.iva)}</strong>
@@ -816,73 +999,88 @@ export default function CobrosPage() {
 
           {errorVenta && <div className="alerta alerta-error">{errorVenta}</div>}
 
-          <div className="pos-metodos">
-            {METODOS.map((metodo) => (
-              <button
-                key={metodo.valor}
-                type="button"
-                className={`pos-metodo${metodoPago === metodo.valor ? ' activo' : ''}`}
-                onClick={() => {
-                  setMetodoPago(metodo.valor);
-                  setMontoRecibido(metodo.valor === 'efectivo' ? totales.total.toFixed(2) : totales.total.toFixed(2));
-                  setErrorVenta('');
-                }}
-              >
-                <strong>{metodo.etiqueta}</strong>
-                <span>{metodo.ayuda}</span>
-              </button>
-            ))}
-          </div>
-
-          {metodoPago === 'efectivo' ? (
+          {contraEntrega ? (
+            <div className="alerta alerta-info">
+              <strong>Cobro contra entrega.</strong> La venta queda pendiente de cobro y se
+              cobrará {formatearMoneda(totales.total)} al entregar el pedido.
+            </div>
+          ) : (
             <>
-              <label className="campo">
-                <span>Monto recibido *</span>
-                <input
-                  type="number"
-                  className="control pos-input-recibido"
-                  min="0"
-                  step="0.01"
-                  value={montoRecibido}
-                  onChange={(e) => setMontoRecibido(e.target.value)}
-                  required
-                />
-              </label>
-              <div className="pos-pago-rapido">
-                <button type="button" className="btn btn-secundario btn-mini" onClick={() => setMontoRecibido(totales.total.toFixed(2))}>
-                  Exacto
-                </button>
-                {[50, 100, 200, 500].filter((monto) => monto > totales.total).map((monto) => (
+              <div className="pos-metodos">
+                {metodosPago.map((metodo) => (
                   <button
-                    key={monto}
+                    key={metodo.valor}
                     type="button"
-                    className="btn btn-secundario btn-mini"
-                    onClick={() => setMontoRecibido(monto.toFixed(2))}
+                    className={`pos-metodo${metodoPago === metodo.valor ? ' activo' : ''}`}
+                    onClick={() => {
+                      setMetodoPago(metodo.valor);
+                      setMontoRecibido(metodo.valor === 'efectivo' ? totales.total.toFixed(2) : totales.total.toFixed(2));
+                      setErrorVenta('');
+                    }}
                   >
-                    Q{monto}
+                    <strong>{metodo.etiqueta}</strong>
+                    <span>{metodo.ayuda}</span>
                   </button>
                 ))}
               </div>
-              <div className="pos-pago-cambio">
-                <span>Cambio</span>
-                <strong>{formatearMoneda(cambio)}</strong>
-              </div>
+
+              {metodoPago === 'credito' && creditoCliente ? (
+                <div className="alerta alerta-info">
+                  Venta a crédito para <strong>{cliente.nombre}</strong>. La factura queda como
+                  cuenta por cobrar con vencimiento a {creditoCliente.dias} día(s). Disponible
+                  después de esta venta: {formatearMoneda(redondear2(creditoCliente.disponible - totales.total))}.
+                </div>
+              ) : metodoPago === 'efectivo' ? (
+                <>
+                  <label className="campo">
+                    <span>Monto recibido *</span>
+                    <input
+                      type="number"
+                      className="control pos-input-recibido"
+                      min="0"
+                      step="0.01"
+                      value={montoRecibido}
+                      onChange={(e) => setMontoRecibido(e.target.value)}
+                      required
+                    />
+                  </label>
+                  <div className="pos-pago-rapido">
+                    <button type="button" className="btn btn-secundario btn-mini" onClick={() => setMontoRecibido(totales.total.toFixed(2))}>
+                      Exacto
+                    </button>
+                    {[50, 100, 200, 500].filter((monto) => monto > totales.total).map((monto) => (
+                      <button
+                        key={monto}
+                        type="button"
+                        className="btn btn-secundario btn-mini"
+                        onClick={() => setMontoRecibido(monto.toFixed(2))}
+                      >
+                        Q{monto}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="pos-pago-cambio">
+                    <span>Cambio</span>
+                    <strong>{formatearMoneda(cambio)}</strong>
+                  </div>
+                </>
+              ) : (
+                <label className="campo">
+                  <span>
+                    Referencia / autorización {metodoPago === 'transferencia' ? '*' : '(opcional)'}
+                  </span>
+                  <input
+                    type="text"
+                    className="control"
+                    maxLength={100}
+                    value={referencia}
+                    onChange={(e) => setReferencia(e.target.value)}
+                    placeholder={metodoPago === 'transferencia' ? 'Número de boleta o autorización' : 'Últimos dígitos o autorización'}
+                    required={metodoPago === 'transferencia'}
+                  />
+                </label>
+              )}
             </>
-          ) : (
-            <label className="campo">
-              <span>
-                Referencia / autorización {metodoPago === 'transferencia' ? '*' : '(opcional)'}
-              </span>
-              <input
-                type="text"
-                className="control"
-                maxLength={100}
-                value={referencia}
-                onChange={(e) => setReferencia(e.target.value)}
-                placeholder={metodoPago === 'transferencia' ? 'Número de boleta o autorización' : 'Últimos dígitos o autorización'}
-                required={metodoPago === 'transferencia'}
-              />
-            </label>
           )}
 
           <div className="modal-acciones">
@@ -890,7 +1088,7 @@ export default function CobrosPage() {
               Cancelar
             </button>
             <button type="submit" className="btn btn-primario" disabled={enviando}>
-              {enviando ? 'Registrando...' : 'Confirmar cobro'}
+              {enviando ? 'Registrando...' : contraEntrega ? 'Registrar venta' : 'Confirmar cobro'}
             </button>
           </div>
         </form>
@@ -905,6 +1103,12 @@ export default function CobrosPage() {
         <div className="pos-ticket-contenedor">
           <PosTicket venta={ventaConfirmada} empresa={empresaTicket} />
         </div>
+        {avisoDespacho && (
+          <div className="alerta alerta-info pos-aviso-despacho">
+            Se generó el despacho <strong>{avisoDespacho.codigo}</strong> para entrega a domicilio.
+            Puedes gestionarlo en Despacho.
+          </div>
+        )}
         <div className="modal-acciones pos-ticket-acciones">
           <button type="button" className="btn btn-secundario" onClick={nuevaVenta}>
             Nueva venta

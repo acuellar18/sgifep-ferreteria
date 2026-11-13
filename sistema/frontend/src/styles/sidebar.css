@@ -6,6 +6,7 @@
   --color-primario-oscuro: #15803d;
   --color-primario-claro: #bbf7d0;
   --color-primario-suave: #dcfce7;
+  --color-fondo-suave: #f3f4f6;
   --color-superficie: #ffffff;
   --color-texto: #1f2937;
   --color-texto-suave: #6b7280;
@@ -185,7 +186,7 @@
   min-width: 0;
   overflow: hidden;
   flex-shrink: 0;
-  background: #ffffff;
+  background: var(--color-superficie);
   border-right: 1px solid var(--color-borde);
   transition: width 0.25s ease;
 }
@@ -303,7 +304,7 @@
   border: none;
   background: transparent;
   border-radius: 8px;
-  color: #374151;
+  color: var(--color-texto-suave);
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   cursor: pointer;

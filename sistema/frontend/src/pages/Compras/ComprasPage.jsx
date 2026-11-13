@@ -635,7 +635,7 @@ export default function ComprasPage() {
               <div className="campo"><span>IVA (12%)</span> <strong>{formatearMoneda(detalleCompra.iva)}</strong></div>
               <div className="campo"><span>Total</span> <strong style={{ fontSize: '18px' }}>{formatearMoneda(detalleCompra.total)}</strong></div>
               <div className="campo"><span>Pagado</span> <strong>{formatearMoneda(detalleCompra.monto_pagado)}</strong></div>
-              <div className="campo"><span>Saldo pendiente</span> <strong style={{ color: detalleCompra.saldo_pendiente > 0 ? '#dc2626' : '#16a34a' }}>{formatearMoneda(detalleCompra.saldo_pendiente)}</strong></div>
+              <div className="campo"><span>Saldo pendiente</span> <strong style={{ color: detalleCompra.saldo_pendiente > 0 ? 'var(--color-peligro)' : 'var(--color-primario)' }}>{formatearMoneda(detalleCompra.saldo_pendiente)}</strong></div>
             </div>
 
             {detalleCompra.pagos?.length > 0 && (

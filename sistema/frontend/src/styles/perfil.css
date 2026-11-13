@@ -54,7 +54,7 @@
   min-height: 110px;
   padding: 22px;
   overflow: hidden;
-  background: linear-gradient(135deg, #16a34a, #bbf7d0 70%, #b45309);
+  background: linear-gradient(135deg, var(--color-primario), var(--color-primario-claro) 70%, #b45309);
   color: #ffffff;
 }
 
@@ -105,8 +105,8 @@
   overflow: hidden;
   border: 5px solid var(--color-superficie);
   border-radius: 50%;
-  background: #fef3c7;
-  color: #9a3412;
+  background: var(--color-aviso-fondo);
+  color: var(--color-aviso);
   font-family: 'Poppins', sans-serif;
   font-size: 30px;
   font-weight: 700;
@@ -278,7 +278,7 @@
 }
 
 .perfil-form-grid .control[readonly] {
-  background: #f9fafb;
+  background: var(--color-fondo-suave);
   color: var(--color-texto-suave);
 }
 
@@ -312,7 +312,7 @@
   padding: 16px;
   border: 1px solid var(--color-borde);
   border-radius: 12px;
-  background: #f9fafb;
+  background: var(--color-fondo-suave);
 }
 
 .perfil-tema-activo {
@@ -323,6 +323,19 @@
 .perfil-tema-deshabilitado {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+button.perfil-tema {
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  color: var(--color-texto);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+button.perfil-tema:hover {
+  border-color: var(--color-primario-claro);
 }
 
 .perfil-tema-icono {

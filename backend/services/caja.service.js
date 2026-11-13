@@ -33,6 +33,10 @@ function resumenConEsperado(sesion, ventas, cobros = {}, devoluciones = {}) {
 }
 
 class CajaService {
+  // Cajas físicas de la ferretería: se asigna el primer número libre (1 o 2)
+  // entre TODAS las sesiones abiertas, de cualquier usuario.
+  static TOTAL_CAJAS = 2;
+
   // Filtra el historial por fechas de apertura. Solo valores YYYY-MM-DD;
   // si los parámetros no son válidos se ignoran (sin filtro).
   leerFiltrosFechas(filtros = {}) {
@@ -77,6 +81,68 @@ class CajaService {
     };
   }
 
+  // Listado de todas las cajas abiertas (de cualquier usuario) con el
+  // resumen de ventas del turno. Para el panel de control del administrador.
+  async abiertas() {
+    const sesiones = await cajaRepository.listarAbiertas();
+    const conResumen = await Promise.all(
+      sesiones.map(async (sesion) => {
+        const [ventas, cobros, devoluciones] = await Promise.all([
+          cajaRepository.calcularVentas(sesion.fecha_apertura, sesion.id),
+          cajaRepository.calcularCobros(sesion.fecha_apertura, sesion.id),
+          cajaRepository.calcularDevoluciones(sesion.fecha_apertura, sesion.id)
+        ]);
+        const resumen = resumenConEsperado(sesion, ventas, cobros, devoluciones);
+        return {
+          ...cajaDto.serializarSesion(sesion, resumen),
+          usuario_nombre: sesion.usuario_nombre || null,
+          usuario_username: sesion.usuario_username || null
+        };
+      })
+    );
+    return {
+      cajas: conResumen,
+      total_cajas: CajaService.TOTAL_CAJAS,
+      total_ventas: cajaDto.redondear2(
+        conResumen.reduce((suma, sesion) => suma + Number(sesion.ventas_total || 0), 0)
+      )
+    };
+  }
+
+  // Detalle de actividad de una sesión de caja para la supervisión del
+  // administrador: resumen monetario + línea de tiempo de movimientos.
+  async actividad(sesionId) {
+    const sesion = await cajaRepository.buscarSesionDetalle(sesionId);
+    if (!sesion) throw new HttpError(404, 'La sesión de caja no existe');
+
+    const [ventas, cobros, devoluciones] = await Promise.all([
+      cajaRepository.calcularVentas(sesion.fecha_apertura, sesion.id),
+      cajaRepository.calcularCobros(sesion.fecha_apertura, sesion.id),
+      cajaRepository.calcularDevoluciones(sesion.fecha_apertura, sesion.id)
+    ]);
+    const resumen = resumenConEsperado(sesion, ventas, cobros, devoluciones);
+
+    const movimientos = await cajaRepository.listarMovimientos({
+      cajaId: sesion.id,
+      usuarioId: sesion.usuario_id,
+      desde: sesion.fecha_apertura
+    });
+
+    const anulaciones = movimientos.filter(
+      (movimiento) => movimiento.estado === 'anulada' || movimiento.estado === 'anulado'
+    );
+
+    return {
+      sesion: {
+        ...cajaDto.serializarSesion(sesion, resumen),
+        usuario_nombre: sesion.usuario_nombre || null,
+        usuario_username: sesion.usuario_username || null
+      },
+      anulaciones_count: anulaciones.length,
+      movimientos: movimientos.map((movimiento) => cajaDto.serializarMovimiento(movimiento))
+    };
+  }
+
   async abrir(usuarioId, datos, filtros = {}) {
     const dto = cajaDto.validarApertura(datos);
     const connection = await pool.getConnection();
@@ -92,10 +158,29 @@ class CajaService {
       );
       if (abiertas.length) throw new HttpError(409, 'Ya tiene una caja abierta');
 
+      const [numeradas] = await connection.query(
+        `SELECT numero_caja FROM sesiones_caja
+         WHERE estado = 'abierta' AND numero_caja IS NOT NULL`
+      );
+      const usados = new Set(numeradas.map((fila) => Number(fila.numero_caja)));
+      let numeroCaja = null;
+      for (let indice = 1; indice <= CajaService.TOTAL_CAJAS; indice += 1) {
+        if (!usados.has(indice)) {
+          numeroCaja = indice;
+          break;
+        }
+      }
+      if (!numeroCaja) {
+        throw new HttpError(
+          409,
+          `Ya hay ${CajaService.TOTAL_CAJAS} cajas abiertas. Cierra una antes de abrir otra.`
+        );
+      }
+
       await connection.query(
-        `INSERT INTO sesiones_caja (usuario_id, estado, monto_inicial, fecha_apertura)
-         VALUES (?, 'abierta', ?, CURRENT_TIMESTAMP)`,
-        [usuarioId, dto.monto_inicial]
+        `INSERT INTO sesiones_caja (usuario_id, estado, numero_caja, monto_inicial, fecha_apertura)
+         VALUES (?, 'abierta', ?, ?, CURRENT_TIMESTAMP)`,
+        [usuarioId, numeroCaja, dto.monto_inicial]
       );
       await connection.commit();
     } catch (err) {

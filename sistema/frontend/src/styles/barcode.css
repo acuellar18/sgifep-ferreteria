@@ -11,7 +11,7 @@
   gap: 4px;
   padding: 4px;
   border-radius: 10px;
-  background: #f1f1f1;
+  background: var(--color-fondo-suave);
   border: 1px solid var(--color-borde, #e3e3e3);
 }
 
@@ -29,12 +29,12 @@
 
 .barcode-pestana:hover:not(:disabled) {
   color: var(--color-texto, #1c1c1c);
-  background: #ffffff;
+  background: var(--color-superficie);
 }
 
 .barcode-pestana.activa {
   color: #ffffff;
-  background: var(--color-acento, #16a34a);
+  background: var(--color-acento, var(--color-primario));
 }
 
 .barcode-pestana:disabled {
@@ -113,7 +113,7 @@
   padding: 8px;
   border: 1px dashed var(--color-borde, #d8d8d8);
   border-radius: 8px;
-  background: #fafafa;
+  background: var(--color-fondo-suave);
   font-size: 12px;
   cursor: pointer;
 }

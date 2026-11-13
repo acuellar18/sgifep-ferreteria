@@ -1,7 +1,7 @@
 /* ============================================================
    SGIFEP · Módulo de Usuarios — línea gráfica del panel de control
    Encabezado superior negro/antracita + border naranja, menú drawer,
-   paleta institucional NARANJA (#16a34a / #bbf7d0), sin tonos azules.
+   paleta institucional NARANJA (var(--color-primario) / var(--color-primario-claro)), sin tonos azules.
    ============================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap');
@@ -12,6 +12,7 @@
   --color-primario-claro: #bbf7d0;
   --color-primario-suave: #dcfce7;
   --color-fondo: #f8f9fa;             /* gris claro neutro */
+  --color-fondo-suave: #f3f4f6;       /* gris para tablas/paneles internos */
   --color-superficie: #ffffff;
   --color-texto: #1f2937;
   --color-texto-suave: #6b7280;
@@ -20,6 +21,8 @@
   --color-ok-fondo: #dcfce7;
   --color-peligro: #dc2626;
   --color-peligro-fondo: #fee2e2;
+  --color-aviso: #b45309;
+  --color-aviso-fondo: #fef3c7;
   --color-acento-linea: #16a34a;      /* borde inferior del header */
   --radio: 10px;
   --sombra: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -97,8 +100,8 @@ h1, h2, h3, h4 {
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  color: #ea580c;
-  background: #fdeee4;
+  color: var(--color-aviso);
+  background: var(--color-aviso-fondo);
 }
 
 /* ============================================================
@@ -227,7 +230,7 @@ h1, h2, h3, h4 {
 }
 
 .tabla th {
-  background: #f9fafb;
+  background: var(--color-fondo-suave);
   font-weight: 600;
   color: var(--color-texto-suave);
   white-space: nowrap;
@@ -238,7 +241,7 @@ h1, h2, h3, h4 {
 }
 
 .tabla tbody tr:hover {
-  background: #fafaf9;
+  background: var(--color-fondo-suave);
 }
 
 .acciones-fila {
@@ -366,7 +369,7 @@ h1, h2, h3, h4 {
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
-  background: #f3f4f6;
+  background: var(--color-fondo-suave);
   color: var(--color-texto);
   border: 1px solid var(--color-borde);
 }
@@ -380,6 +383,12 @@ h1, h2, h3, h4 {
 .chip-peligro {
   background: var(--color-peligro-fondo);
   color: var(--color-peligro);
+  border-color: transparent;
+}
+
+.chip-aviso {
+  background: var(--color-aviso-fondo);
+  color: var(--color-aviso);
   border-color: transparent;
 }
 
@@ -415,13 +424,13 @@ h1, h2, h3, h4 {
 .alerta-error {
   background: var(--color-peligro-fondo);
   color: var(--color-peligro);
-  border: 1px solid #fecaca;
+  border: 1px solid var(--color-peligro);
 }
 
 .alerta-info {
-  background: #dcfce7;
-  color: #9a3412;
-  border: 1px solid #bbf7d0;
+  background: var(--color-primario-suave);
+  color: var(--color-aviso);
+  border: 1px solid var(--color-primario-claro);
 }
 
 .estado {
@@ -771,7 +780,7 @@ textarea.control {
 
 .flujo-paso:hover {
   background: var(--color-primario-suave);
-  border-color: #bbf7d0;
+  border-color: var(--color-primario-claro);
 }
 
 .flujo-paso-activo {
@@ -787,7 +796,7 @@ textarea.control {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: #f3f4f6;
+  background: var(--color-fondo-suave);
   color: var(--color-texto-suave);
   font-size: 13px;
   font-weight: 700;
@@ -889,7 +898,7 @@ textarea.control {
    encabezado, menú ni controles del modal. */
 @media print {
   body.imprimo-modal {
-    background: #fff;
+    background: var(--color-superficie);
   }
 
   body.imprimo-modal * {
@@ -909,7 +918,7 @@ textarea.control {
     height: auto;
     display: block;
     padding: 0;
-    background: #fff;
+    background: var(--color-superficie);
     overflow: visible;
   }
 
@@ -954,7 +963,7 @@ textarea.control {
     display: block !important;
     padding: 0;
     margin: 0;
-    background: #fff;
+    background: var(--color-superficie);
     color: #000;
   }
 
@@ -1107,14 +1116,14 @@ textarea.control {
 
 .toast-exito {
   background: var(--color-ok-fondo);
-  color: #14532d;
-  border: 1px solid #bbf7d0;
+  color: var(--color-primario-oscuro);
+  border: 1px solid var(--color-primario-claro);
 }
 
 .toast-error {
   background: var(--color-peligro-fondo);
   color: var(--color-peligro);
-  border: 1px solid #fecaca;
+  border: 1px solid var(--color-peligro);
 }
 
 .toast span {
@@ -1136,7 +1145,7 @@ textarea.control {
 }
 
 /* NUEVA COMPRA Y PRODUCTOS */
-.compra-nueva .pagina-cabecera h1{margin:0;font-size:24px}.compra-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;align-items:start}.compra-col{display:flex;flex-direction:column;gap:16px}.tarjeta-sombra{box-shadow:var(--sombra-media);border-radius:12px}.tarjeta-cabecera-flex{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.formulario-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}.campo-completo{grid-column:1/-1}.ayuda-texto{margin:0 16px 10px;color:var(--color-texto-suave);font-size:13px}.btn-agregar-linea{border-color:var(--color-primario);color:var(--color-primario)}.btn-agregar-linea:hover{background:var(--color-primario-suave)}.tabla-compras-contenedor{margin:0 16px 16px}.tabla-compras thead th{background:#f9fafb;font-weight:600}.control-tabla{padding:6px 8px;font-size:13px}.col-subtotal{text-align:right;font-weight:600}.btn-icono-eliminar{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;border:1px solid var(--color-borde);background:var(--color-superficie);color:var(--color-texto-suave);cursor:pointer}.btn-icono-eliminar:hover:not(:disabled){border-color:var(--color-peligro);color:var(--color-peligro);background:var(--color-peligro-fondo)}.btn-icono-eliminar:disabled{opacity:.4;cursor:not-allowed}.texto-nuevo{color:var(--color-primario);display:block}.texto-suave{color:var(--color-texto-suave);display:block}.tarjeta-totales{position:sticky;top:16px}.totales-lista{display:flex;flex-direction:column;gap:10px;padding:0 16px 12px}.totales-fila{display:flex;align-items:center;justify-content:space-between}.totales-separador{height:1px;background:var(--color-borde)}.totales-total{font-size:18px;font-weight:700}.acciones-compra{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px}.costo-indicador{font-size:12px}.costo-indicador.subio{color:var(--color-peligro)}.costo-indicador.bajo{color:var(--color-ok)}.filtros-productos{margin-bottom:16px}.filtros-grid-responsive{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;padding:12px}.tabla-productos thead th{background:#f9fafb}.etiqueta-info{background:#e0f2fe;color:#075985}.etiqueta-advertencia{background:#fef3c7;color:#92400e}.estado-vacio-inline{display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px;text-align:center}.estado-vacio-inline span{color:var(--color-texto-suave)}.boton-link{background:none;border:none;padding:0;color:var(--color-primario);font:inherit;cursor:pointer;text-align:left}.boton-link:hover{text-decoration:underline}@media (max-width:1200px){.compra-grid{grid-template-columns:1fr}.tarjeta-totales{position:static}.formulario-grid-3{grid-template-columns:repeat(2,minmax(0,1fr))}.filtros-grid-responsive{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (max-width:720px){.formulario-grid-3{grid-template-columns:1fr}.filtros-grid-responsive{grid-template-columns:1fr}.acciones-compra{justify-content:stretch}.acciones-compra .btn{width:100%}}
+.compra-nueva .pagina-cabecera h1{margin:0;font-size:24px}.compra-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;align-items:start}.compra-col{display:flex;flex-direction:column;gap:16px}.tarjeta-sombra{box-shadow:var(--sombra-media);border-radius:12px}.tarjeta-cabecera-flex{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.formulario-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}.campo-completo{grid-column:1/-1}.ayuda-texto{margin:0 16px 10px;color:var(--color-texto-suave);font-size:13px}.btn-agregar-linea{border-color:var(--color-primario);color:var(--color-primario)}.btn-agregar-linea:hover{background:var(--color-primario-suave)}.tabla-compras-contenedor{margin:0 16px 16px}.tabla-compras thead th{background:var(--color-fondo-suave);font-weight:600}.control-tabla{padding:6px 8px;font-size:13px}.col-subtotal{text-align:right;font-weight:600}.btn-icono-eliminar{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;border:1px solid var(--color-borde);background:var(--color-superficie);color:var(--color-texto-suave);cursor:pointer}.btn-icono-eliminar:hover:not(:disabled){border-color:var(--color-peligro);color:var(--color-peligro);background:var(--color-peligro-fondo)}.btn-icono-eliminar:disabled{opacity:.4;cursor:not-allowed}.texto-nuevo{color:var(--color-primario);display:block}.texto-suave{color:var(--color-texto-suave);display:block}.tarjeta-totales{position:sticky;top:16px}.totales-lista{display:flex;flex-direction:column;gap:10px;padding:0 16px 12px}.totales-fila{display:flex;align-items:center;justify-content:space-between}.totales-separador{height:1px;background:var(--color-borde)}.totales-total{font-size:18px;font-weight:700}.acciones-compra{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px}.costo-indicador{font-size:12px}.costo-indicador.subio{color:var(--color-peligro)}.costo-indicador.bajo{color:var(--color-ok)}.filtros-productos{margin-bottom:16px}.filtros-grid-responsive{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;padding:12px}.tabla-productos thead th{background:var(--color-fondo-suave)}.etiqueta-info{background:#e0f2fe;color:#075985}.etiqueta-advertencia{background:var(--color-aviso-fondo);color: var(--color-aviso)}.estado-vacio-inline{display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px;text-align:center}.estado-vacio-inline span{color:var(--color-texto-suave)}.boton-link{background:none;border:none;padding:0;color:var(--color-primario);font:inherit;cursor:pointer;text-align:left}.boton-link:hover{text-decoration:underline}@media (max-width:1200px){.compra-grid{grid-template-columns:1fr}.tarjeta-totales{position:static}.formulario-grid-3{grid-template-columns:repeat(2,minmax(0,1fr))}.filtros-grid-responsive{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (max-width:720px){.formulario-grid-3{grid-template-columns:1fr}.filtros-grid-responsive{grid-template-columns:1fr}.acciones-compra{justify-content:stretch}.acciones-compra .btn{width:100%}}
 
 /* Cabecera de página compartida (Compras e Inventario). */
 .pagina-cabecera {
@@ -1313,7 +1322,7 @@ textarea.control {
   height: 18px;
   flex: 0 0 18px;
   border-radius: 50%;
-  background: #f3f4f6;
+  background: var(--color-fondo-suave);
   color: #9ca3af;
   font-size: 12px;
   font-weight: 800;
@@ -1416,7 +1425,7 @@ textarea.control {
 
 /* Panel desplegable de "Más datos" (fila extra bajo la línea) */
 .fila-mas-datos td {
-  background: #fafafa;
+  background: var(--color-fondo-suave);
   border-bottom: 1px solid var(--color-borde);
   padding: 8px 12px 12px;
 }
@@ -1489,7 +1498,7 @@ textarea.control {
 .importar-preview th {
   position: sticky;
   top: 0;
-  background: #f9fafb;
+  background: var(--color-fondo-suave);
   z-index: 1;
 }
 

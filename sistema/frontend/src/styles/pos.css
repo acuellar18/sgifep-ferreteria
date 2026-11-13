@@ -60,7 +60,7 @@
   height: 38px;
   border-radius: 11px;
   background: var(--color-primario-suave, #fff1e7);
-  color: var(--color-primario, #16a34a);
+  color: var(--color-primario, var(--color-primario));
   flex: 0 0 38px;
 }
 
@@ -70,7 +70,7 @@
   line-height: 1.15;
 }
 
-.pos-estadistica span {
+.pos-estadistica div span {
   display: block;
   margin-top: 2px;
   color: var(--color-texto-suave);
@@ -83,7 +83,7 @@
   padding: 4px;
   border: 1px solid var(--color-borde);
   border-radius: 12px;
-  background: #f5f5f4;
+  background: var(--color-fondo-suave);
   width: fit-content;
   max-width: 100%;
   overflow-x: auto;
@@ -102,12 +102,12 @@
 }
 
 .pos-pestana:hover {
-  background: #ffffff;
+  background: var(--color-superficie);
   color: var(--color-texto);
 }
 
 .pos-pestana.activa {
-  background: var(--color-primario, #16a34a);
+  background: var(--color-primario, var(--color-primario));
   color: #ffffff;
 }
 
@@ -171,7 +171,7 @@
 }
 
 .pos-ayuda-alerta {
-  color: #b45309;
+  color: var(--color-aviso);
   font-weight: 600;
 }
 
@@ -193,7 +193,7 @@
   position: sticky;
   top: 0;
   z-index: 1;
-  background: #fafafa;
+  background: var(--color-fondo-suave);
 }
 
 .pos-carrito-producto {
@@ -220,7 +220,7 @@
   height: 26px;
   border: 1px solid var(--color-borde);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--color-superficie);
   color: var(--color-peligro, #c62828);
   font-size: 17px;
   line-height: 1;
@@ -245,6 +245,25 @@
 
 .pos-cliente .campo:last-child {
   margin-bottom: 0;
+}
+
+.pos-cliente-credito {
+  margin-top: 4px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--color-exito-fondo, #e8f5e9);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pos-cliente-credito strong {
+  font-size: 12px;
+}
+
+.pos-cliente-credito span {
+  font-size: 11px;
+  color: var(--color-texto-suave);
 }
 
 .pos-totales h3 {
@@ -278,7 +297,7 @@
 
 .pos-total-general strong {
   font-size: 22px;
-  color: var(--color-primario-oscuro, #15803d);
+  color: var(--color-primario-oscuro, var(--color-primario-oscuro));
 }
 
 .pos-boton-cobrar {
@@ -296,7 +315,7 @@
   padding: 14px;
   border: 1px solid var(--color-borde);
   border-radius: 14px;
-  background: #fafaf9;
+  background: var(--color-fondo-suave);
 }
 
 .pos-filtros-acciones {
@@ -404,9 +423,9 @@
   flex-direction: column;
   gap: 2px;
   padding: 14px;
-  border: 1px solid #bbf7d0;
+  border: 1px solid var(--color-primario-claro);
   border-radius: 12px;
-  background: #dcfce7;
+  background: var(--color-primario-suave);
 }
 
 .pos-pago-total span {
@@ -416,7 +435,7 @@
 
 .pos-pago-total strong {
   font-size: 28px;
-  color: var(--color-primario-oscuro, #15803d);
+  color: var(--color-primario-oscuro, var(--color-primario-oscuro));
 }
 
 .pos-pago-total small {
@@ -437,7 +456,7 @@
   padding: 10px;
   border: 1px solid var(--color-borde);
   border-radius: 10px;
-  background: #ffffff;
+  background: var(--color-superficie);
   text-align: left;
   cursor: pointer;
 }
@@ -452,9 +471,9 @@
 }
 
 .pos-metodo.activo {
-  border-color: var(--color-primario, #16a34a);
-  background: #dcfce7;
-  box-shadow: 0 0 0 1px var(--color-primario, #16a34a) inset;
+  border-color: var(--color-primario, var(--color-primario));
+  background: var(--color-primario-suave);
+  box-shadow: 0 0 0 1px var(--color-primario, var(--color-primario)) inset;
 }
 
 .pos-input-recibido {
@@ -474,7 +493,7 @@
   justify-content: space-between;
   padding: 10px 12px;
   border-radius: 10px;
-  background: #f5f5f4;
+  background: var(--color-fondo-suave);
 }
 
 .pos-pago-cambio span {
@@ -489,7 +508,7 @@
 .pos-ticket-contenedor {
   display: flex;
   justify-content: center;
-  background: #f5f5f4;
+  background: var(--color-fondo-suave);
   padding: 12px;
   border-radius: 12px;
 }
@@ -753,25 +772,25 @@
   gap: 4px 16px;
   padding: 12px 14px;
   margin-bottom: 14px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-borde);
   border-radius: 10px;
-  background: #f8f9fa;
+  background: var(--color-fondo);
 }
 
 .pos-cobro-resumen span {
-  color: #6b7280;
+  color: var(--color-texto-suave);
   font-size: 13px;
 }
 
 .pos-cobro-resumen strong {
   text-align: right;
-  color: #141414;
+  color: var(--color-texto);
 }
 
 .pos-cobro-aviso {
   margin: 10px 0 0;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-texto-suave);
 }
 
 .pos-devolucion-lineas {
@@ -798,17 +817,76 @@
   padding: 12px 14px;
   margin: 12px 0;
   border-radius: 10px;
-  background: #dcfce7;
-  border: 1px solid #bbf7d0;
+  background: var(--color-primario-suave);
+  border: 1px solid var(--color-primario-claro);
 }
 
 .pos-devolucion-total strong {
   font-size: 20px;
-  color: #15803d;
+  color: var(--color-primario-oscuro);
 }
 
 @media (max-width: 640px) {
   .pos-devolucion-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Entrega a domicilio en el POS */
+.pos-entrega {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pos-entrega .campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pos-entrega .campo > span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-texto-suave);
+}
+
+.pos-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-texto);
+  user-select: none;
+}
+
+.pos-switch input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primario);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.pos-aviso-despacho {
+  margin-top: 12px;
+  text-align: center;
+}
+
+.pos-ticket-contra-entrega {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: center;
+  padding: 6px 0;
+}
+
+.pos-ticket-contra-entrega strong {
+  font-size: 12px;
+}
+
+.pos-ticket-contra-entrega span {
+  font-size: 11px;
 }

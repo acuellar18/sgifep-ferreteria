@@ -2,10 +2,23 @@ const pool = require('../db');
 
 const CAMPOS_VENTA = `
   v.id, v.numero, v.caja_id, v.factura_id, v.cliente_id, v.usuario_id,
-  v.subtotal, v.iva, v.descuento, v.total, v.metodo_pago,
+  v.subtotal, v.iva, v.descuento, v.costo_envio, v.total, v.metodo_pago,
   v.monto_recibido, v.cambio, v.referencia, v.estado,
   v.anulada_en, v.anulada_por, v.anulacion_motivo, v.observaciones,
   v.creado_en, v.actualizado_en
+`;
+
+const SELECT_CLIENTE_CREDITO = `
+  c.id, c.nit, c.nombre, c.telefono, c.correo, c.direccion, c.estado,
+  c.dias_credito, c.limite_credito,
+  COALESCE((
+    SELECT SUM(f.saldo_pendiente)
+    FROM facturas f
+    WHERE f.cliente_id = c.id
+      AND f.estado = 'emitida'
+      AND f.estado_pago IN ('pendiente', 'parcial')
+      AND f.contra_entrega = 0
+  ), 0) AS saldo_credito
 `;
 
 class PosRepository {
@@ -55,9 +68,9 @@ class PosRepository {
   async buscarClientePorNit(conn, nit) {
     const destino = conn || pool;
     const [rows] = await destino.query(
-      `SELECT id, nit, nombre, telefono, correo, direccion, estado
-       FROM clientes
-       WHERE nit = ?
+      `SELECT ${SELECT_CLIENTE_CREDITO}
+       FROM clientes c
+       WHERE c.nit = ?
        LIMIT 1`,
       [nit]
     );
@@ -67,9 +80,9 @@ class PosRepository {
   async buscarClientePorId(conn, id) {
     const destino = conn || pool;
     const [rows] = await destino.query(
-      `SELECT id, nit, nombre, telefono, correo, direccion, estado
-       FROM clientes
-       WHERE id = ?
+      `SELECT ${SELECT_CLIENTE_CREDITO}
+       FROM clientes c
+       WHERE c.id = ?
        LIMIT 1`,
       [id]
     );
@@ -79,9 +92,9 @@ class PosRepository {
   async buscarConsumidorFinal(conn) {
     const destino = conn || pool;
     const [rows] = await destino.query(
-      `SELECT id, nit, nombre, telefono, correo, direccion, estado
-       FROM clientes
-       WHERE UPPER(nit) = 'CF'
+      `SELECT ${SELECT_CLIENTE_CREDITO}
+       FROM clientes c
+       WHERE UPPER(c.nit) = 'CF'
        LIMIT 1`
     );
     return rows[0] || null;
@@ -97,13 +110,28 @@ class PosRepository {
     return result.insertId;
   }
 
+  // Saldo pendiente del cliente (facturas a crédito emitidas sin cancelar).
+  async obtenerSaldoCredito(conn, clienteId) {
+    const destino = conn || pool;
+    const [rows] = await destino.query(
+      `SELECT COALESCE(SUM(f.saldo_pendiente), 0) AS saldo
+       FROM facturas f
+       WHERE f.cliente_id = ?
+         AND f.estado = 'emitida'
+         AND f.estado_pago IN ('pendiente', 'parcial')
+         AND f.contra_entrega = 0`,
+      [clienteId]
+    );
+    return Number(rows[0]?.saldo || 0);
+  }
+
   async crearVenta(conn, datos) {
     const [result] = await conn.query(
       `INSERT INTO ventas
          (numero, caja_id, factura_id, cliente_id, usuario_id, subtotal, iva,
-          descuento, total, metodo_pago, monto_recibido, cambio, referencia,
+          descuento, costo_envio, total, metodo_pago, monto_recibido, cambio, referencia,
           estado, observaciones)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completada', ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completada', ?)`,
       [
         datos.numero,
         datos.caja_id,
@@ -113,6 +141,7 @@ class PosRepository {
         datos.subtotal,
         datos.iva,
         datos.descuento,
+        datos.costo_envio || 0,
         datos.total,
         datos.metodo_pago,
         datos.monto_recibido,
@@ -195,13 +224,18 @@ class PosRepository {
               u.nombre AS usuario_nombre,
               a.nombre AS anulada_por_nombre,
               sc.fecha_apertura AS caja_fecha_apertura,
-              sc.estado AS caja_estado
+              sc.estado AS caja_estado,
+              sc.numero_caja AS caja_numero,
+              d.codigo AS despacho_codigo,
+              d.direccion_entrega AS despacho_direccion,
+              d.forma_pago AS despacho_forma_pago
        FROM ventas v
        LEFT JOIN facturas f ON f.id = v.factura_id
        LEFT JOIN clientes c ON c.id = v.cliente_id
        LEFT JOIN usuarios u ON u.id = v.usuario_id
        LEFT JOIN usuarios a ON a.id = v.anulada_por
        LEFT JOIN sesiones_caja sc ON sc.id = v.caja_id
+       LEFT JOIN despachos d ON d.venta_id = f.id
        WHERE v.id = ?
        LIMIT 1`,
       [id]
@@ -468,7 +502,7 @@ class PosRepository {
     const [rows] = await pool.query(
       `SELECT f.id, f.numero, f.cliente_id, f.cliente_nombre, f.cliente_nit,
               f.fecha, f.fecha_vencimiento, f.total, f.monto_pagado,
-              f.saldo_pendiente, f.estado_pago,
+              f.saldo_pendiente, f.estado_pago, f.contra_entrega,
               DATEDIFF(CURDATE(), f.fecha_vencimiento) AS dias_vencido
        FROM facturas f
        WHERE f.estado = 'emitida'

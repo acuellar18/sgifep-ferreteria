@@ -6,6 +6,7 @@ const facturaRepository = require('../repositories/factura.repository');
 const productoRepository = require('../repositories/producto.repository');
 const secuenciaRepository = require('../repositories/secuencia.repository');
 const configuracionRepository = require('../repositories/configuracion-empresa.repository');
+const despachoService = require('./despacho.service');
 const configuracionDto = require('../dtos/configuracion-empresa.dto');
 const facturaDto = require('../dtos/factura.dto');
 const posDto = require('../dtos/pos.dto');
@@ -25,6 +26,12 @@ function fechaHoy() {
   return local.toISOString().slice(0, 10);
 }
 
+function sumarDias(fecha, dias) {
+  const base = new Date(`${fecha}T00:00:00Z`);
+  base.setUTCDate(base.getUTCDate() + Number(dias || 0));
+  return base.toISOString().slice(0, 10);
+}
+
 function validarFecha(fecha) {
   return facturaDto.fechaValida(fecha) ? fecha : fechaHoy();
 }
@@ -41,6 +48,9 @@ class PosService {
       caja: caja
         ? {
             id: Number(caja.id),
+            numero_caja: caja.numero_caja === null || caja.numero_caja === undefined
+              ? null
+              : Number(caja.numero_caja),
             monto_inicial: Number(caja.monto_inicial || 0),
             fecha_apertura: caja.fecha_apertura
           }
@@ -135,6 +145,7 @@ class PosService {
   async crear(datos, usuarioId) {
     const dto = posDto.validarCrear(datos);
     const connection = await pool.getConnection();
+    let despachoCreado = null;
 
     try {
       await connection.beginTransaction();
@@ -196,8 +207,9 @@ class PosService {
         });
       }
 
+      const costoEnvio = dto.entrega.domicilio ? dto.entrega.costo_envio : 0;
       const total = posDto.redondear2(
-        lineas.reduce((suma, linea) => suma + linea.subtotal, 0)
+        lineas.reduce((suma, linea) => suma + linea.subtotal, 0) + costoEnvio
       );
       if (total <= 0) {
         throw new HttpError(400, 'El total de la venta debe ser mayor a 0');
@@ -209,8 +221,15 @@ class PosService {
       const subtotal = posDto.redondear2(total / (1 + IVA_FACTOR));
       const iva = posDto.redondear2(total - subtotal);
 
+      const contraEntrega = dto.entrega.domicilio && dto.entrega.contra_entrega;
+      const esCredito = dto.metodo_pago === 'credito';
+      const esDiferido = esCredito || contraEntrega;
+      const metodoPagoVenta = contraEntrega ? 'credito' : dto.metodo_pago;
+
       let montoRecibido = dto.monto_recibido;
-      if (dto.metodo_pago === 'efectivo') {
+      if (esDiferido) {
+        montoRecibido = 0;
+      } else if (dto.metodo_pago === 'efectivo') {
         if (montoRecibido === null) {
           throw new HttpError(400, 'El monto recibido es obligatorio para pagos en efectivo');
         }
@@ -220,14 +239,39 @@ class PosService {
       } else {
         montoRecibido = total;
       }
-      const cambio = dto.metodo_pago === 'efectivo'
+      const cambio = dto.metodo_pago === 'efectivo' && !esDiferido
         ? posDto.redondear2(Math.max(0, montoRecibido - total))
         : 0;
+
+      let fechaVencimiento = null;
+      let diasCredito = 0;
+      if (esCredito && !contraEntrega) {
+        if (!cliente.id || String(cliente.nit || '').toUpperCase() === 'CF') {
+          throw new HttpError(
+            409,
+            'La venta a crédito requiere un cliente registrado con crédito disponible'
+          );
+        }
+        const limite = Number(cliente.limite_credito || 0);
+        if (limite <= 0) {
+          throw new HttpError(409, 'El cliente no tiene crédito asignado');
+        }
+        const saldoCredito = await posRepository.obtenerSaldoCredito(connection, cliente.id);
+        const disponible = posDto.redondear2(limite - saldoCredito);
+        if (total > disponible + 0.001) {
+          throw new HttpError(
+            409,
+            `Crédito insuficiente para "${cliente.nombre}". Disponible: Q${disponible.toFixed(2)}`
+          );
+        }
+        diasCredito = Number(cliente.dias_credito || 0);
+      }
 
       const [fechaRows] = await connection.query(
         "SELECT DATE_FORMAT(CURDATE(), '%Y-%m-%d') AS fecha"
       );
       const fecha = fechaRows[0]?.fecha || fechaHoy();
+      if (esCredito && !contraEntrega) fechaVencimiento = sumarDias(fecha, diasCredito);
       const anio = Number(fecha.slice(0, 4));
 
       const numero = await secuenciaRepository.obtenerNumero(connection, {
@@ -250,15 +294,17 @@ class PosService {
         cliente_correo: cliente.correo,
         cliente_direccion: cliente.direccion,
         fecha,
-        condicion: 'contado',
-        fecha_vencimiento: null,
+        condicion: esDiferido ? 'credito' : 'contado',
+        contra_entrega: contraEntrega,
+        fecha_vencimiento: fechaVencimiento,
         subtotal,
         iva,
         total,
-        monto_pagado: total,
-        saldo_pendiente: 0,
+        costo_envio: costoEnvio,
+        monto_pagado: esDiferido ? 0 : total,
+        saldo_pendiente: esDiferido ? total : 0,
         estado: 'emitida',
-        estado_pago: 'pagada',
+        estado_pago: esDiferido ? 'pendiente' : 'pagada',
         notas: `Venta POS ${numero}`,
         usuario_id: usuarioId
       });
@@ -305,8 +351,9 @@ class PosService {
         subtotal,
         iva,
         descuento: descuentoTotal,
+        costo_envio: costoEnvio,
         total,
-        metodo_pago: dto.metodo_pago,
+        metodo_pago: metodoPagoVenta,
         monto_recibido: montoRecibido,
         cambio,
         referencia: dto.referencia,
@@ -314,16 +361,39 @@ class PosService {
       });
 
       await posRepository.crearDetalleVenta(connection, ventaId, lineas);
-      await posRepository.crearCobro(connection, {
-        venta_id: ventaId,
-        factura_id: facturaId,
-        cliente_id: cliente.id,
-        usuario_id: usuarioId,
-        caja_id: caja.id,
-        metodo_pago: dto.metodo_pago,
-        monto: total,
-        referencia: dto.referencia
-      });
+      if (!esDiferido) {
+        // A crédito o contra entrega la venta genera una cuenta por cobrar, no un cobro de contado.
+        await posRepository.crearCobro(connection, {
+          venta_id: ventaId,
+          factura_id: facturaId,
+          cliente_id: cliente.id,
+          usuario_id: usuarioId,
+          caja_id: caja.id,
+          metodo_pago: dto.metodo_pago,
+          monto: total,
+          referencia: dto.referencia
+        });
+      }
+
+      // Entrega a domicilio: crear el despacho en la misma transacción.
+      if (dto.entrega.domicilio) {
+        despachoCreado = await despachoService.crearDesdeVenta(connection, {
+          venta_id: facturaId,
+          cliente_id: cliente.id,
+          direccion_entrega: dto.entrega.direccion,
+          telefono_contacto: dto.entrega.telefono,
+          fecha_programada: dto.entrega.fecha_programada || fecha,
+          observaciones: dto.observaciones,
+          usuario_id: usuarioId,
+          costo_envio: costoEnvio,
+          forma_pago: contraEntrega ? 'contra_entrega' : (esCredito ? 'credito' : 'contado'),
+          lineas: lineas.map((linea) => ({
+            producto_id: linea.producto_id,
+            cantidad: linea.cantidad,
+            precio_unitario: linea.precio_unitario
+          }))
+        });
+      }
 
       await connection.commit();
 
@@ -333,7 +403,15 @@ class PosService {
         entidad: 'ventas',
         entidad_id: String(ventaId),
         descripcion: `Venta ${numero} por Q${total.toFixed(2)}`,
-        datos: { numero, factura_id: facturaId, metodo_pago: dto.metodo_pago, total }
+        datos: {
+          numero,
+          factura_id: facturaId,
+          metodo_pago: dto.metodo_pago,
+          condicion: esDiferido ? 'credito' : 'contado',
+          contra_entrega: contraEntrega,
+          costo_envio: costoEnvio,
+          total
+        }
       });
 
       const [venta, empresa] = await Promise.all([
@@ -341,7 +419,7 @@ class PosService {
         configuracionRepository.obtener().then(configuracionDto.serializar)
       ]);
 
-      return { venta, empresa };
+      return { venta, empresa, despacho: despachoCreado };
     } catch (err) {
       await connection.rollback();
       if (err.code === 'ER_DUP_ENTRY') {
@@ -433,6 +511,10 @@ class PosService {
       const actualizadas = await posRepository.anularVenta(connection, id, usuarioId, motivo);
       if (!actualizadas) throw new HttpError(409, 'La venta ya no se puede anular');
       await posRepository.anularCobro(connection, id, motivo);
+
+      if (venta.factura_id) {
+        await despachoService.anularPorVenta(connection, venta.factura_id, { usuarioId });
+      }
 
       await connection.commit();
 
@@ -693,6 +775,10 @@ class PosService {
             estado_pago: estadoPago
           });
         }
+      }
+
+      if (venta.factura_id) {
+        await despachoService.anularPorVenta(connection, venta.factura_id, { usuarioId });
       }
 
       await connection.commit();

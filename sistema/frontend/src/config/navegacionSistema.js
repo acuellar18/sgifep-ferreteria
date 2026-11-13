@@ -65,8 +65,9 @@ export const MODULOS_SISTEMA = [
     titulo: 'Despacho',
     permiso: 'consultarDespacho',
     subitems: [
-      { to: '/despacho', etiqueta: 'Listado de Despachos' },
-      { to: '/despacho/rutas-entregas', etiqueta: 'Rutas y Entregas' }
+      { to: '/despacho', etiqueta: 'Listado de Despachos' }
+      // "Rutas y Entregas" queda oculto del menú (negocio pequeño, no agrupa
+      // viajes); el código y las tablas se conservan para reactivarlo después.
     ]
   },
   {
@@ -77,7 +78,7 @@ export const MODULOS_SISTEMA = [
       { to: '/reportes/ventas', etiqueta: 'Reporte de Ventas', permiso: 'consultarReporteFacturacion' },
       { to: '/reportes/compras', etiqueta: 'Reporte de Compras', permiso: 'consultarReportes' },
       { to: '/reportes/inventario', etiqueta: 'Reporte de Inventario', permiso: 'consultarReporteInventario' },
-      { to: '/seguridad/auditoria', etiqueta: 'Auditoría', permiso: 'consultarAuditoria' }
+      { to: '/seguridad/auditoria', etiqueta: 'Auditoría', permiso: 'consultarAuditoria', soloAdmin: true }
     ]
   },
   {

@@ -450,7 +450,7 @@ async function imprimir() {
             <div className="reporte-atajos" style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
               {ATAJOS.map(a => (
                 <button key={a.id} type="button" className={`reporte-atajo${atajoActivo === a.id ? '' : ''}`}
-                  style={atajoActivo === a.id ? { borderColor: '#16a34a', color: '#16a34a', fontWeight: 700 } : {}}
+                  style={atajoActivo === a.id ? { borderColor: 'var(--color-primario)', color: 'var(--color-primario)', fontWeight: 700 } : {}}
                   onClick={() => aplicarAtajo(a)}>{a.etiqueta}</button>
               ))}
             </div>

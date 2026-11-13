@@ -319,7 +319,7 @@ export default function OrdenesCompraPage() {
                   <td style={{textAlign:'center'}}>{Number(d.cantidad_solicitada).toLocaleString('es-GT', {minimumFractionDigits: 2})} {d.unidad_medida}</td>
                   <td style={{textAlign:'center'}}>{Number(d.cantidad_recibida).toLocaleString('es-GT', {minimumFractionDigits: 2})} {d.unidad_medida}</td>
                   <td style={{textAlign:'center'}}>
-                    <span style={{color: d.pendiente > 0 ? '#dc2626' : '#16a34a', fontWeight: 600}}>
+                    <span style={{color: d.pendiente > 0 ? 'var(--color-peligro)' : 'var(--color-primario)', fontWeight: 600}}>
                       {d.pendiente.toLocaleString('es-GT', {minimumFractionDigits: 2})} {d.unidad_medida}
                     </span>
                   </td>

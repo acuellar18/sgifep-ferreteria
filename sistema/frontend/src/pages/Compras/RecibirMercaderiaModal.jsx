@@ -135,12 +135,12 @@ export default function RecibirMercaderiaModal({ abierto, orden, proveedores, on
                 <tr key={i}>
                   <td>
                     <strong>{l.producto_nombre}</strong>
-                    <br /><small style={{color:'#6b7280'}}>Código: {l.producto_codigo}</small>
+                    <br /><small style={{color:'var(--color-texto-suave)'}}>Código: {l.producto_codigo}</small>
                   </td>
                   <td style={{textAlign:'center'}}>{l.cantidad_solicitada.toLocaleString('es-GT', {minimumFractionDigits: 2})} {l.unidad_medida}</td>
                   <td style={{textAlign:'center'}}>{l.cantidad_recibida.toLocaleString('es-GT', {minimumFractionDigits: 2})} {l.unidad_medida}</td>
                   <td style={{textAlign:'center'}}>
-                    <span style={{color: l.pendiente > 0 ? '#dc2626' : '#16a34a', fontWeight: 600}}>
+                    <span style={{color: l.pendiente > 0 ? 'var(--color-peligro)' : 'var(--color-primario)', fontWeight: 600}}>
                       {l.pendiente.toLocaleString('es-GT', {minimumFractionDigits: 2})} {l.unidad_medida}
                     </span>
                   </td>
@@ -167,7 +167,7 @@ export default function RecibirMercaderiaModal({ abierto, orden, proveedores, on
         </div>
 
         <div className="form-grid" style={{ marginTop: '16px', gap: '12px' }}>
-          <div className="campo"><span>Total a recibir</span> <strong style={{fontSize:'18px',color:'#16a34a'}}>{formatearMoneda(totalRecibir())}</strong></div>
+          <div className="campo"><span>Total a recibir</span> <strong style={{fontSize:'18px',color:'var(--color-primario)'}}>{formatearMoneda(totalRecibir())}</strong></div>
           <label className="campo" style={{ gridColumn: '1 / -1' }}>
             <span>Notas</span>
             <textarea className="control" rows={2} value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Observaciones de la recepción..." />

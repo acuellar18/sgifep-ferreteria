@@ -1,7 +1,7 @@
 const pool = require('../db');
 
 const CAMPOS_SESION = `
-  id, usuario_id, estado, monto_inicial, fecha_apertura, fecha_cierre,
+  id, numero_caja, usuario_id, estado, monto_inicial, fecha_apertura, fecha_cierre,
   ventas_total, ventas_efectivo, ventas_tarjeta, ventas_transferencia,
   ventas_count, cobros_total, cobros_efectivo, cobros_tarjeta,
   cobros_transferencia, cobros_count, devoluciones_total,
@@ -82,6 +82,7 @@ class CajaRepository {
          LEFT JOIN facturas fv ON fv.id = v.factura_id
          WHERE v.estado = 'completada'
            AND (v.factura_id IS NULL OR fv.estado = 'emitida')
+           AND (v.factura_id IS NULL OR fv.condicion = 'contado')
            ${filtroVentas}
          UNION ALL
          SELECT f.total, 'efectivo' AS metodo_pago
@@ -256,6 +257,84 @@ class CajaRepository {
       ]
     );
     return result.affectedRows;
+  }
+
+  async listarAbiertas() {
+    const [rows] = await pool.query(
+      `SELECT sc.id, sc.numero_caja, sc.usuario_id, sc.estado, sc.monto_inicial,
+              sc.fecha_apertura, u.nombre AS usuario_nombre, u.username AS usuario_username
+       FROM sesiones_caja sc
+       LEFT JOIN usuarios u ON u.id = sc.usuario_id
+       WHERE sc.estado = 'abierta'
+       ORDER BY sc.numero_caja IS NULL, sc.numero_caja ASC, sc.id ASC`
+    );
+    return rows;
+  }
+
+  async buscarSesionDetalle(id) {
+    const [rows] = await pool.query(
+      `SELECT sc.id, sc.numero_caja, sc.usuario_id, sc.estado, sc.monto_inicial,
+              sc.fecha_apertura, sc.fecha_cierre, sc.observaciones,
+              u.nombre AS usuario_nombre, u.username AS usuario_username
+       FROM sesiones_caja sc
+       LEFT JOIN usuarios u ON u.id = sc.usuario_id
+       WHERE sc.id = ?
+       LIMIT 1`,
+      [id]
+    );
+    return rows[0] || null;
+  }
+
+  // Movimientos de una sesión de caja en una línea de tiempo unificada:
+  // ventas POS (completadas y anuladas), cobros de crédito (registrados y
+  // anulados), devoluciones y facturas manuales de contado del cajero.
+  async listarMovimientos({ cajaId, usuarioId, desde }) {
+    const [rows] = await pool.query(
+      `SELECT mov.* FROM (
+         SELECT 'venta' AS tipo, v.id, v.creado_en AS fecha, v.numero AS referencia,
+                v.metodo_pago, v.total AS monto, v.estado,
+                v.anulacion_motivo AS motivo, cl.nombre AS cliente, NULL AS subtipo
+         FROM ventas v
+         LEFT JOIN clientes cl ON cl.id = v.cliente_id
+         WHERE v.caja_id = ?
+
+         UNION ALL
+
+         SELECT 'cobro' AS tipo, cb.id, cb.creado_en AS fecha,
+                COALESCE(f.numero, CONCAT('Venta #', cb.venta_id)) AS referencia,
+                cb.metodo_pago, cb.monto AS monto, cb.estado,
+                cb.anulacion_motivo AS motivo, cl.nombre AS cliente, NULL AS subtipo
+         FROM cobros cb
+         LEFT JOIN facturas f ON f.id = cb.factura_id
+         LEFT JOIN clientes cl ON cl.id = cb.cliente_id
+         WHERE cb.caja_id = ?
+
+         UNION ALL
+
+         SELECT 'devolucion' AS tipo, d.id, d.creado_en AS fecha, d.numero AS referencia,
+                d.metodo_pago, d.total AS monto, 'registrado' AS estado,
+                d.motivo AS motivo, cl.nombre AS cliente,
+                IF(d.tipo = 'nota_credito', 'nota_credito', 'reembolso') AS subtipo
+         FROM devoluciones_venta d
+         LEFT JOIN clientes cl ON cl.id = d.cliente_id
+         WHERE d.caja_id = ?
+
+         UNION ALL
+
+         SELECT 'factura' AS tipo, fc.id, fc.creado_en AS fecha, fc.numero AS referencia,
+                'efectivo' AS metodo_pago, fc.total AS monto, fc.estado,
+                fc.anulacion_motivo AS motivo, fc.cliente_nombre AS cliente, NULL AS subtipo
+         FROM facturas fc
+         WHERE fc.usuario_id = ?
+           AND fc.condicion = 'contado'
+           AND fc.creado_en >= ?
+           AND NOT EXISTS (SELECT 1 FROM ventas v2 WHERE v2.factura_id = fc.id)
+       ) mov
+       ORDER BY mov.fecha DESC, mov.id DESC
+       LIMIT 300`,
+      [cajaId, cajaId, cajaId, usuarioId, desde]
+    );
+    return rows;
   }
 
   async listarHistorial(usuarioId, limite = 25, filtros = {}) {

@@ -3,10 +3,22 @@ import api from '../../services/api';
 import Modal from '../../components/Modal';
 import { useNotificacion } from '../../components/Toast';
 
+const TIPOS_VEHICULO = [
+  { value: 'motocicleta', label: 'Motocicleta' },
+  { value: 'mototaxi', label: 'Mototaxi' },
+  { value: 'carro', label: 'Carro' }
+];
+
+const ETIQUETA_VEHICULO = {
+  motocicleta: 'Motocicleta',
+  mototaxi: 'Mototaxi',
+  carro: 'Carro'
+};
+
 const FORM_VACIO = {
   fecha: '',
-  conductor_id: '',
-  vehiculo_id: '',
+  conductor_nombre: '',
+  tipo_vehiculo: '',
   zona: '',
   paradas: [{ despacho_id: '', orden: 1 }]
 };
@@ -36,8 +48,6 @@ export default function RutasEntregasPage() {
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(FORM_VACIO);
-  const [conductores, setConductores] = useState([]);
-  const [vehiculos, setVehiculos] = useState([]);
   const [despachosDisponibles, setDespachosDisponibles] = useState([]);
   const [error, setError] = useState('');
 
@@ -55,9 +65,8 @@ export default function RutasEntregasPage() {
   }
 
   useEffect(() => {
-    api.get('/rutas/conductores').then(r => setConductores(r.data || [])).catch(() => {});
-    api.get('/rutas/vehiculos').then(r => setVehiculos(r.data || [])).catch(() => {});
-  }, []);
+    cargar();
+  }, [page]);
 
   function abrirModal() {
     setError('');
@@ -149,7 +158,7 @@ export default function RutasEntregasPage() {
                 <td><strong>{r.codigo}</strong></td>
                 <td>{r.fecha ? r.fecha.slice(0, 10) : '—'}</td>
                 <td>{r.conductor_nombre || '—'}</td>
-                <td>{r.vehiculo_placa || '—'}</td>
+                <td>{ETIQUETA_VEHICULO[r.tipo_vehiculo] || '—'}</td>
                 <td><span className={`badge ${claseBadge(r.estado)}`}>{r.estado}</span></td>
                 <td>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -162,7 +171,7 @@ export default function RutasEntregasPage() {
             {rutas.length === 0 && <tr><td colSpan="6" className="text-center text-muted">No hay rutas</td></tr>}
           </tbody>
         </table>
-        <div style={{ textAlign: 'right', fontSize: 13, color: '#6b7280', padding: '10px 16px' }}>Total: {total}</div>
+        <div style={{ textAlign: 'right', fontSize: 13, color: 'var(--color-texto-suave)', padding: '10px 16px' }}>Total: {total}</div>
       </div>
 
       <Modal abierto={modal} titulo="Nueva ruta" onCerrar={() => setModal(false)} ancho="720px">
@@ -175,17 +184,14 @@ export default function RutasEntregasPage() {
               <input className="control" type="date" required value={form.fecha} onChange={e => setForm({ ...form, fecha: e.target.value })} />
             </div>
             <div className="campo">
-              <label>Conductor *</label>
-              <select className="control" value={form.conductor_id} onChange={e => setForm({ ...form, conductor_id: e.target.value })} required>
-                <option value="">— Seleccionar —</option>
-                {conductores.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-              </select>
+              <label>Nombre del conductor *</label>
+              <input className="control" value={form.conductor_nombre} onChange={e => setForm({ ...form, conductor_nombre: e.target.value })} placeholder="Nombre completo" required />
             </div>
             <div className="campo">
-              <label>Vehículo *</label>
-              <select className="control" value={form.vehiculo_id} onChange={e => setForm({ ...form, vehiculo_id: e.target.value })} required>
+              <label>Tipo de vehículo *</label>
+              <select className="control" value={form.tipo_vehiculo} onChange={e => setForm({ ...form, tipo_vehiculo: e.target.value })} required>
                 <option value="">— Seleccionar —</option>
-                {vehiculos.map(v => <option key={v.id} value={v.id}>{v.placa}{v.descripcion ? ` — ${v.descripcion}` : ''}</option>)}
+                {TIPOS_VEHICULO.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
             <div className="campo">
@@ -216,15 +222,15 @@ export default function RutasEntregasPage() {
                     </option>
                   ))}
               </select>
-              <span style={{ fontSize: 12, color: '#6b7280', minWidth: 40 }}>#{p.orden}</span>
+              <span style={{ fontSize: 12, color: 'var(--color-texto-suave)', minWidth: 40 }}>#{p.orden}</span>
               <button type="button" className="btn-icono-eliminar" onClick={() => eliminarParada(i)} disabled={form.paradas.length === 1} title="Quitar">✕</button>
             </div>
           ))}
           {form.paradas.some(p => !p.despacho_id) && form.paradas.length > 0 && (
-            <p style={{ fontSize: 12, color: '#dc2626', margin: 0 }}>Complete o quite las paradas vacías.</p>
+            <p style={{ fontSize: 12, color: 'var(--color-peligro)', margin: 0 }}>Complete o quite las paradas vacías.</p>
           )}
           {hayDuplicado && (
-            <p style={{ fontSize: 12, color: '#dc2626', margin: 0 }}>No puede repetir el mismo despacho en la ruta.</p>
+            <p style={{ fontSize: 12, color: 'var(--color-peligro)', margin: 0 }}>No puede repetir el mismo despacho en la ruta.</p>
           )}
           <button type="button" className="btn btn-secundario btn-agregar-linea" style={{ alignSelf: 'flex-start' }} onClick={agregarParada}>+ Parada</button>
 

@@ -104,7 +104,11 @@ export function construirTicket(venta, empresa = {}) {
   }
   lineas.push(linea('Fecha', formatearFechaHora(venta.creado_en), ancho));
   lineas.push(linea('Cajero', venta.usuario_nombre || '', ancho));
+  lineas.push(linea('Caja', venta.caja_numero ? `Caja ${venta.caja_numero}` : '', ancho));
   lineas.push(linea('Cliente', recortar(venta.cliente_nombre || 'Consumidor Final', ancho - 8), ancho));
+  if (venta.despacho_direccion) {
+    lineas.push(linea('Entrega', recortar(venta.despacho_direccion, ancho - 8), ancho));
+  }
   lineas.push(separador(ancho));
 
   for (const detalle of venta.detalles || []) {
@@ -121,12 +125,24 @@ export function construirTicket(venta, empresa = {}) {
   lineas.push(separador(ancho));
   lineas.push(linea('Subtotal', formatearMoneda(venta.subtotal), ancho));
   lineas.push(linea('IVA 12% incluido', formatearMoneda(venta.iva), ancho));
+  if (Number(venta.costo_envio || 0) > 0) {
+    lineas.push(linea('Envio', formatearMoneda(venta.costo_envio), ancho));
+  }
   if (Number(venta.descuento || 0) > 0) {
     lineas.push(linea('Descuento', `-${formatearMoneda(venta.descuento)}`, ancho));
   }
   lineas.push(linea('TOTAL', formatearMoneda(venta.total), ancho));
   lineas.push(separador(ancho));
-  lineas.push(linea('Método', venta.metodo_pago || '', ancho));
+  const etiquetasMetodo = {
+    efectivo: 'Efectivo',
+    tarjeta: 'Tarjeta',
+    transferencia: 'Transferencia',
+    credito: 'Crédito (cuenta por cobrar)'
+  };
+  lineas.push(linea('Método', etiquetasMetodo[venta.metodo_pago] || venta.metodo_pago || '', ancho));
+  if (venta.despacho_forma_pago === 'contra_entrega') {
+    lineas.push(linea('Pago contra entrega', `${formatearMoneda(venta.total)} por cobrar`, ancho));
+  }
   if (venta.referencia) lineas.push(linea('Referencia', venta.referencia, ancho));
   if (venta.estado === 'anulada') {
     lineas.push(separador(ancho, '='));

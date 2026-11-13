@@ -1,0 +1,91 @@
+/* ============================================================
+   SGIFEP · Tema oscuro
+   Se activa con <html data-tema="oscuro"> (util tema.js).
+   Redefine las variables de la línea gráfica; los módulos que
+   usan las variables se adaptan automáticamente.
+   ============================================================ */
+
+:root[data-tema='oscuro'] {
+  --color-primario: #22c55e;
+  --color-primario-oscuro: #16a34a;
+  --color-primario-claro: #166534;
+  --color-primario-suave: #12291b;
+  --color-fondo: #101413;
+  --color-fondo-suave: #1b211e;
+  --color-superficie: #171d1a;
+  --color-texto: #e6e9e7;
+  --color-texto-suave: #9aa3a0;
+  --color-borde: #2b332f;
+  --color-ok: #22c55e;
+  --color-ok-fondo: #12291b;
+  --color-peligro: #f87171;
+  --color-peligro-fondo: #331717;
+  --color-aviso: #fcd34d;
+  --color-aviso-fondo: #33260c;
+  --color-acento-linea: #22c55e;
+  --sombra: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --sombra-media: 0 10px 25px rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}
+
+:root[data-tema='oscuro'] body {
+  background: var(--color-fondo);
+  color: var(--color-texto);
+}
+
+/* Aparición suave al alternar el tema */
+:root[data-tema] body {
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+/* Etiquetas con tonos claros fijos (compras) */
+:root[data-tema='oscuro'] .etiqueta-info {
+  background: #0c2432;
+  color: #7dd3fc;
+}
+
+:root[data-tema='oscuro'] .etiqueta-advertencia {
+  background: #33260c;
+  color: #fcd34d;
+}
+
+/* Insignias de despachos */
+:root[data-tema='oscuro'] .badge.bg-success {
+  background: #12291b;
+  color: #4ade80;
+}
+
+:root[data-tema='oscuro'] .badge.bg-secondary {
+  background: #262b28;
+  color: #cbd5d1;
+}
+
+:root[data-tema='oscuro'] .badge.bg-danger {
+  background: #331717;
+  color: #f87171;
+}
+
+:root[data-tema='oscuro'] .badge.bg-warning {
+  background: #33260c;
+  color: #fcd34d;
+}
+
+/* Avisos "próximo a vencer" y anillo del avatar del perfil */
+:root[data-tema='oscuro'] .reporte-badge-proxima,
+:root[data-tema='oscuro'] .perfil-avatar {
+  background: #33260c;
+  color: #fcd34d;
+}
+
+/* Banda de la tarjeta del perfil con degradado claro → versión sobria */
+:root[data-tema='oscuro'] .perfil-tarjeta-banda {
+  background: linear-gradient(135deg, #14532d, #1f2937 70%, #14532d);
+}
+
+/* Los documentos de impresión siempre salen en blanco (papel) */
+@media print {
+  :root[data-tema='oscuro'] body {
+    background: #ffffff;
+    color: #1f2937;
+  }
+}

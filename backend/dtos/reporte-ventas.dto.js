@@ -1,6 +1,6 @@
 const { HttpError } = require('../utils/http-error');
 
-const METODOS = ['efectivo', 'tarjeta', 'transferencia'];
+const METODOS = ['efectivo', 'tarjeta', 'transferencia', 'credito'];
 const ESTADOS = ['todas', 'completada', 'anulada'];
 
 function redondear2(valor) {

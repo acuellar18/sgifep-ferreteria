@@ -94,16 +94,16 @@ export default function ProductoAutocompletar({
                 borderRadius: '6px',
                 transition: 'background 0.1s'
               }}
-              onMouseEnter={(e) => e.target.style.background = '#dcfce7'}
+              onMouseEnter={(e) => e.target.style.background = 'var(--color-primario-suave)'}
               onMouseLeave={(e) => e.target.style.background = 'transparent'}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <strong>{p.nombre}</strong>
-                <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: 600 }}>
+                <span style={{ fontSize: '12px', color: 'var(--color-primario)', fontWeight: 600 }}>
                   {new Intl.NumberFormat('es-GT', { style: 'currency', currency: 'GTQ', minimumFractionDigits: 2 }).format(p.costo_ultimo || 0)}
                 </span>
               </div>
-              <div style={{ fontSize: '12px', color: '#6b7280', display: 'flex', gap: '12px', marginTop: '2px' }}>
+              <div style={{ fontSize: '12px', color: 'var(--color-texto-suave)', display: 'flex', gap: '12px', marginTop: '2px' }}>
                 <span>Código: {p.codigo}</span>
                 <span>Stock: {Number(p.stock_actual || 0).toLocaleString('es-GT', {minimumFractionDigits: 2})} {p.unidad_medida}</span>
               </div>

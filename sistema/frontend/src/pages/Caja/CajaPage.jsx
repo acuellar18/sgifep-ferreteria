@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import api from '../../services/api';
+import api, { leerSesion } from '../../services/api';
 import Modal from '../../components/Modal';
 import { useNotificacion } from '../../components/Toast';
 import { permisosCaja } from '../../utils/permisosCaja';
@@ -74,10 +74,40 @@ function EstadoCaja({ estado }) {
   );
 }
 
+const ETIQUETA_METODO = {
+  efectivo: 'Efectivo',
+  tarjeta: 'Tarjeta',
+  transferencia: 'Transferencia',
+  credito: 'Crédito'
+};
+
+function etiquetaMovimiento(mov) {
+  if (mov.tipo === 'venta') return mov.estado === 'anulada' ? 'Venta anulada' : 'Venta';
+  if (mov.tipo === 'cobro') return mov.estado === 'anulado' ? 'Cobro anulado' : 'Cobro crédito';
+  if (mov.tipo === 'devolucion') return mov.subtipo === 'nota_credito' ? 'Nota de crédito' : 'Devolución';
+  if (mov.tipo === 'factura') return mov.estado === 'anulada' ? 'Factura anulada' : 'Factura contado';
+  return mov.tipo;
+}
+
+function esMovimientoNegativo(mov) {
+  if (mov.tipo === 'devolucion') return true;
+  return mov.estado === 'anulada' || mov.estado === 'anulado';
+}
+
+function chipMovimiento(mov) {
+  if (esMovimientoNegativo(mov)) return 'chip-peligro';
+  return 'chip-ok';
+}
+
 export default function CajaPage() {
   const notificar = useNotificacion();
   const permisos = permisosCaja();
+  const sesion = leerSesion();
+  const esAdmin = Boolean(
+    sesion?.superadmin || (Array.isArray(sesion?.roles) && sesion.roles.includes('administrador'))
+  );
   const [data, setData] = useState({ actual: null, historial: [] });
+  const [abiertas, setAbiertas] = useState(null);
   const [filtrosFechas, setFiltrosFechas] = useState(fechasUltimosDias(5));
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
@@ -90,6 +120,9 @@ export default function CajaPage() {
   const [montoContadoTransferencia, setMontoContadoTransferencia] = useState('');
   const [observaciones, setObservaciones] = useState('');
   const [guardando, setGuardando] = useState(false);
+  const [modalActividad, setModalActividad] = useState(false);
+  const [actividad, setActividad] = useState(null);
+  const [cargandoActividad, setCargandoActividad] = useState(false);
 
   const actual = data.actual;
   const esperado = Number(actual?.efectivo_esperado || 0);
@@ -115,6 +148,14 @@ export default function CajaPage() {
     try {
       const res = await api.get('/caja', { params: filtros });
       setData({ actual: res.data?.actual || null, historial: res.data?.historial || [] });
+      if (esAdmin) {
+        try {
+          const resAbiertas = await api.get('/caja/abiertas');
+          setAbiertas(resAbiertas?.data || null);
+        } catch {
+          setAbiertas(null);
+        }
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -143,6 +184,21 @@ export default function CajaPage() {
 
   function cambiarDenominacion(denominacion, valor) {
     setDenominaciones((prev) => ({ ...prev, [denominacion]: valor }));
+  }
+
+  async function verActividad(cajaAbierta) {
+    setModalActividad(true);
+    setCargandoActividad(true);
+    setActividad(null);
+    try {
+      const res = await api.get(`/caja/${cajaAbierta.id}/actividad`);
+      setActividad(res.data || null);
+    } catch (err) {
+      setActividad(null);
+      notificar.error(err.message);
+    } finally {
+      setCargandoActividad(false);
+    }
   }
 
   async function abrirCaja(evento) {
@@ -252,6 +308,82 @@ export default function CajaPage() {
           </div>
         </article>
       </div>
+
+      {esAdmin && abiertas && (
+        <div className="caja-panel">
+          <header className="caja-panel-cabecera">
+            <div>
+              <h3>Cajas abiertas ahora</h3>
+              <p>
+                {(abiertas.cajas || []).length} de {abiertas.total_cajas || 2} cajas en
+                operación · Ventas del día: {formatearMoneda(abiertas.total_ventas || 0)}
+              </p>
+            </div>
+            <button type="button" className="btn btn-secundario" onClick={() => cargar()}>
+              Actualizar
+            </button>
+          </header>
+
+          <div className="tabla-wrapper caja-tabla-wrapper">
+            <table className="tabla caja-tabla">
+              <thead>
+                <tr>
+                  <th>Caja</th>
+                  <th>Cajero</th>
+                  <th>Apertura</th>
+                  <th>Inicial</th>
+                  <th>Ventas</th>
+                  <th>Efectivo</th>
+                  <th>Tarjeta</th>
+                  <th>Transferencia</th>
+                  <th>Cobros crédito</th>
+                  <th>Devoluciones</th>
+                  <th>Efectivo esperado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(abiertas.cajas || []).length === 0 ? (
+                  <tr>
+                    <td colSpan="11" className="caja-tabla-vacia">
+                      No hay cajas abiertas en este momento.
+                    </td>
+                  </tr>
+                ) : (
+                  abiertas.cajas.map((cajaAbierta) => (
+                    <tr
+                      key={cajaAbierta.id}
+                      className="caja-fila-clicable"
+                      onClick={() => verActividad(cajaAbierta)}
+                      title="Ver movimientos del cajero"
+                    >
+                      <td><strong>Caja {cajaAbierta.numero_caja || cajaAbierta.id}</strong></td>
+                      <td>{cajaAbierta.usuario_nombre || '—'}</td>
+                      <td>{formatearFechaHora(cajaAbierta.fecha_apertura)}</td>
+                      <td>{formatearMoneda(cajaAbierta.monto_inicial)}</td>
+                      <td>
+                        {formatearMoneda(cajaAbierta.ventas_total)}
+                        <small> ({cajaAbierta.ventas_count})</small>
+                      </td>
+                      <td>{formatearMoneda(cajaAbierta.ventas_efectivo)}</td>
+                      <td>{formatearMoneda(cajaAbierta.ventas_tarjeta)}</td>
+                      <td>{formatearMoneda(cajaAbierta.ventas_transferencia)}</td>
+                      <td>
+                        {formatearMoneda(cajaAbierta.cobros_total || 0)}
+                        <small> ({cajaAbierta.cobros_count || 0})</small>
+                      </td>
+                      <td>
+                        {formatearMoneda(cajaAbierta.devoluciones_total || 0)}
+                        <small> ({cajaAbierta.devoluciones_count || 0})</small>
+                      </td>
+                      <td>{formatearMoneda(cajaAbierta.efectivo_esperado)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {actual ? (
         <div className="caja-panel">
@@ -400,7 +532,7 @@ export default function CajaPage() {
               ) : (
                 data.historial.map((sesion) => (
                   <tr key={sesion.id}>
-                    <td>{sesion.id}</td>
+                    <td>{sesion.numero_caja ? `Caja ${sesion.numero_caja}` : sesion.id}</td>
                     <td>{formatearFechaHora(sesion.fecha_apertura)}</td>
                     <td>{sesion.fecha_cierre ? formatearFechaHora(sesion.fecha_cierre) : '—'}</td>
                     <td>{formatearMoneda(sesion.monto_inicial)}</td>
@@ -549,6 +681,98 @@ export default function CajaPage() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        abierto={modalActividad}
+        titulo={
+          actividad
+            ? `Caja ${actividad.sesion.numero_caja || actividad.sesion.id} · ${actividad.sesion.usuario_nombre || 'Cajero'}`
+            : 'Actividad de caja'
+        }
+        onCerrar={() => setModalActividad(false)}
+        ancho="880px"
+      >
+        {cargandoActividad ? (
+          <div className="caja-actividad-cargando">Cargando movimientos del cajero...</div>
+        ) : actividad ? (
+          <div className="caja-actividad">
+            <div className="caja-actividad-resumen">
+              <div>
+                <span>Cajero</span>
+                <strong>{actividad.sesion.usuario_nombre || '—'}</strong>
+              </div>
+              <div>
+                <span>Apertura</span>
+                <strong>{formatearFechaHora(actividad.sesion.fecha_apertura)}</strong>
+              </div>
+              <div>
+                <span>Monto inicial</span>
+                <strong>{formatearMoneda(actividad.sesion.monto_inicial)}</strong>
+              </div>
+              <div>
+                <span>Ventas</span>
+                <strong>{formatearMoneda(actividad.sesion.ventas_total)} ({actividad.sesion.ventas_count})</strong>
+              </div>
+              <div>
+                <span>Cobros crédito</span>
+                <strong>{formatearMoneda(actividad.sesion.cobros_total)} ({actividad.sesion.cobros_count})</strong>
+              </div>
+              <div>
+                <span>Devoluciones</span>
+                <strong>{formatearMoneda(actividad.sesion.devoluciones_total)} ({actividad.sesion.devoluciones_count})</strong>
+              </div>
+              <div>
+                <span>Anulaciones</span>
+                <strong>{actividad.anulaciones_count}</strong>
+              </div>
+            </div>
+
+            <div className="tabla-wrapper caja-actividad-tabla-wrapper">
+              <table className="tabla caja-tabla">
+                <thead>
+                  <tr>
+                    <th>Hora</th>
+                    <th>Tipo</th>
+                    <th>Referencia</th>
+                    <th>Cliente</th>
+                    <th>Método</th>
+                    <th className="col-numero">Monto</th>
+                    <th>Detalle</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {actividad.movimientos.length === 0 ? (
+                    <tr>
+                      <td colSpan="7" className="caja-tabla-vacia">
+                        Aún no hay movimientos registrados en esta caja.
+                      </td>
+                    </tr>
+                  ) : (
+                    actividad.movimientos.map((mov) => (
+                      <tr key={`${mov.tipo}-${mov.id}`}>
+                        <td>{formatearFechaHora(mov.fecha)}</td>
+                        <td>
+                          <span className={`chip ${chipMovimiento(mov)}`}>{etiquetaMovimiento(mov)}</span>
+                        </td>
+                        <td>{mov.referencia || '—'}</td>
+                        <td>{mov.cliente || '—'}</td>
+                        <td>{ETIQUETA_METODO[mov.metodo_pago] || mov.metodo_pago}</td>
+                        <td className={`col-numero ${esMovimientoNegativo(mov) ? 'caja-movimiento-negativo' : 'caja-movimiento-positivo'}`}>
+                          {esMovimientoNegativo(mov) ? '-' : ''}
+                          {formatearMoneda(Math.abs(mov.monto))}
+                        </td>
+                        <td>{mov.motivo || '—'}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <div className="caja-actividad-vacia">No se pudo cargar la actividad de esta caja.</div>
+        )}
       </Modal>
     </section>
   );

@@ -42,7 +42,8 @@ const RESUMEN_INICIAL = {
 const ETIQUETAS_METODO = {
   efectivo: 'Efectivo',
   tarjeta: 'Tarjeta',
-  transferencia: 'Transferencia'
+  transferencia: 'Transferencia',
+  credito: 'Crédito'
 };
 
 export default function ReporteVentasPage() {
@@ -339,6 +340,7 @@ async function imprimirReporte() {
             <option value="efectivo">Efectivo</option>
             <option value="tarjeta">Tarjeta</option>
             <option value="transferencia">Transferencia</option>
+            <option value="credito">Crédito</option>
           </select>
         </label>
         <label className="campo">

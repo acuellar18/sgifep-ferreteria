@@ -236,6 +236,7 @@
         },
         {
           id: 'auditoria',
+          soloAdmin: true,
           etiqueta: 'Auditoría',
           ruta: 'seguridad/auditoria',
           titulo: 'Auditoría',
@@ -487,6 +488,17 @@
   if (!sesion || !sesion.token) {
     window.location.href = RUTA_LOGIN;
     return;
+  }
+
+  // Auditoría: solo para administradores (los superadmins también).
+  var rolesSesion = sesion.roles && sesion.roles.length ? sesion.roles : [sesion.rol || 'usuario'];
+  var esAdmin = Boolean(sesion.superadmin) || rolesSesion.indexOf('administrador') !== -1 || rolesSesion.indexOf('admin') !== -1;
+  if (!esAdmin) {
+    MODULOS.forEach(function (m) {
+      if (m.subpaginas) {
+        m.subpaginas = m.subpaginas.filter(function (sub) { return !sub.soloAdmin; });
+      }
+    });
   }
 
   var modulo = buscarModulo(moduloActivo);

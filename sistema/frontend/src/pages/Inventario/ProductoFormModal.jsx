@@ -258,10 +258,10 @@ export default function ProductoFormModal({
                   onChange={(e) => actualizarCampo('codigo_barras', e.target.value)}
                   placeholder="Escanear o escribir"
                 />
-                <BarcodeScanner onDetectado={alDetectarCodigo} />
+                <BarcodeScanner onDetectar={alDetectarCodigo} />
               </div>
-              {verificandoCodigo && <small style={{ color: '#6b7280' }}>Verificando...</small>}
-              {codigoDuplicado && <small style={{ color: '#dc2626' }}>Código duplicado</small>}
+              {verificandoCodigo && <small style={{ color: 'var(--color-texto-suave)' }}>Verificando...</small>}
+              {codigoDuplicado && <small style={{ color: 'var(--color-peligro)' }}>Código duplicado</small>}
             </div>
             <div className="campo campo-completo">
               <label>Nombre *</label>
@@ -386,7 +386,7 @@ export default function ProductoFormModal({
             </div>
             {!esAlta && verCostos && (
               <div className="campo campo-completo">
-                <small style={{ color: '#6b7280' }}>
+                <small style={{ color: 'var(--color-texto-suave)' }}>
                   Los costos se actualizan automáticamente desde las compras.
                 </small>
               </div>

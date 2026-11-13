@@ -4,17 +4,48 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Módulos del Sistema - SGIFEP</title>
+<script>
+    (function () {
+        try {
+            var t = localStorage.getItem('sgifep.tema');
+            if (t === 'oscuro' || t === 'claro') {
+                document.documentElement.setAttribute('data-tema', t);
+            }
+        } catch (e) {}
+    })();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets-modulos/sidebar.css">
 <style>
+    :root {
+        --color-fondo: #f4f2ef;
+        --color-icono-fondo: #fff7ed;
+    }
+
+    :root[data-tema='oscuro'] {
+        --color-primario: #22c55e;
+        --color-primario-oscuro: #16a34a;
+        --color-primario-claro: #166534;
+        --color-primario-suave: #12291b;
+        --color-fondo: #101413;
+        --color-fondo-suave: #1b211e;
+        --color-superficie: #171d1a;
+        --color-texto: #e6e9e7;
+        --color-texto-suave: #9aa3a0;
+        --color-borde: #2b332f;
+        --color-acento-linea: #22c55e;
+        --color-icono-fondo: #12291b;
+        color-scheme: dark;
+    }
+
     * { box-sizing: border-box; }
 
     body {
         margin: 0;
         font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        color: #1a1a1a;
-        background: #f4f2ef;
+        color: var(--color-texto);
+        background: var(--color-fondo);
     }
 
     .modulos-main {
@@ -28,7 +59,7 @@
         font-family: 'Poppins', sans-serif;
         font-weight: 800;
         font-size: 2.7rem;
-        color: #111111;
+        color: var(--color-texto);
         margin: 0 0 40px;
     }
 
@@ -42,7 +73,7 @@
     }
 
     .card-modulo {
-        background: #ffffff;
+        background: var(--color-superficie);
         border-radius: 16px;
         padding: 24px 22px;
         display: flex;
@@ -64,8 +95,8 @@
         height: 60px;
         min-width: 60px;
         border-radius: 50%;
-        background: #fff7ed;
-        color: #16a34a;
+        background: var(--color-icono-fondo);
+        color: var(--color-primario);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -80,14 +111,14 @@
         font-family: 'Poppins', sans-serif;
         font-size: 1.02rem;
         font-weight: 700;
-        color: #111111;
+        color: var(--color-texto);
         margin: 0 0 5px;
         line-height: 1.2;
     }
 
     .card-modulo p {
         font-size: 0.84rem;
-        color: #555555;
+        color: var(--color-texto-suave);
         line-height: 1.4;
         margin: 0;
     }
@@ -97,7 +128,7 @@
         margin-top: 10px;
         font-size: 0.76rem;
         font-weight: 700;
-        color: #16a34a;
+        color: var(--color-primario);
         letter-spacing: 0.3px;
     }
 
@@ -279,7 +310,6 @@
                 </button>
                 <div class="drawer-subitems" id="subitems-despacho" hidden>
                     <a class="drawer-subitem" href="/usuarios/despacho">Listado de Despachos</a>
-                    <a class="drawer-subitem" href="/usuarios/despacho/rutas-entregas">Rutas y Entregas</a>
                 </div>
 
                 <button type="button" class="drawer-item" data-menu-toggle="reportes" aria-expanded="false" aria-controls="subitems-reportes">
@@ -292,7 +322,7 @@
                 <div class="drawer-subitems" id="subitems-reportes" hidden>
                     <a class="drawer-subitem" href="/usuarios/reportes">Reporte General</a>
                     <a class="drawer-subitem" href="/usuarios/reportes/ventas">Reporte de Ventas</a>
-                    <a class="drawer-subitem" href="/usuarios/seguridad/auditoria">Auditoría</a>
+                    <a class="drawer-subitem" href="/usuarios/seguridad/auditoria" data-solo-admin>Auditoría</a>
                     <a class="drawer-subitem" href="/usuarios/reportes/compras">Reporte de Compras</a>
                     <a class="drawer-subitem" href="/usuarios/reportes/inventario">Reporte de Inventario</a>
                 </div>
@@ -396,6 +426,12 @@
         const nombreMostrar = sesion.nombre || sesion.username || 'Usuario';
         const roles = sesion.roles?.length ? sesion.roles : [sesion.rol || 'usuario'];
         const esSuperadmin = Boolean(sesion.superadmin) || roles.includes('superadmin');
+
+        // Auditoría: solo para administradores (los superadmins también).
+        const esAdmin = esSuperadmin || roles.includes('administrador') || roles.includes('admin');
+        if (!esAdmin) {
+            document.querySelectorAll('[data-solo-admin]').forEach((el) => el.remove());
+        }
 
         // Usuario sin roles reales asignados: ve el catálogo completo;
         // cada módulo está protegido y advertirá si no tiene permiso.

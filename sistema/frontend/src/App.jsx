@@ -34,6 +34,7 @@ import CajaPage from './pages/Caja/CajaPage';
 import PerfilPage from './pages/Perfil/PerfilPage';
 import ModuloEnConstruccionPage from './pages/Modulos/ModuloEnConstruccionPage';
 import ListadoDespachosPage from './pages/Despacho/ListadoDespachosPage';
+import HojaEntregaPage from './pages/Despacho/HojaEntregaPage';
 import RutasEntregasPage from './pages/Despacho/RutasEntregasPage';
 
 // basename = '/usuarios' -> las rutas internas quedan bajo /usuarios/*.
@@ -83,6 +84,10 @@ export default function App() {
           <Route
             path="/facturacion/facturas/:id/imprimir"
             element={<RequierePermiso permiso="consultarFacturas" redirigir><ImpresionFacturaVentaPage /></RequierePermiso>}
+          />
+          <Route
+            path="/despacho/:id/hoja-entrega"
+            element={<RequierePermiso permiso="consultarDespacho" redirigir><HojaEntregaPage /></RequierePermiso>}
           />
           <Route
             path="/reporte/imprimir"

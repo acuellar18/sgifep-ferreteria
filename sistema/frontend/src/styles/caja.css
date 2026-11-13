@@ -90,18 +90,18 @@
 }
 
 .caja-icono-ventas {
-  background: #ecfdf5;
-  color: #047857;
+  background: var(--color-ok-fondo);
+  color: var(--color-primario-oscuro);
 }
 
 .caja-icono-efectivo {
-  background: #fffbeb;
-  color: #b45309;
+  background: var(--color-aviso-fondo);
+  color: var(--color-aviso);
 }
 
 .caja-icono-reloj {
-  background: #f3f4f6;
-  color: #4b5563;
+  background: var(--color-fondo-suave);
+  color: var(--color-texto-suave);
 }
 
 .caja-estadistica > div {
@@ -215,7 +215,7 @@
   padding: 14px;
   border: 1px solid var(--color-borde);
   border-radius: 12px;
-  background: #fafaf9;
+  background: var(--color-fondo-suave);
 }
 
 .caja-resumen-item > div {
@@ -249,19 +249,19 @@
 }
 
 .caja-barra-efectivo {
-  background: #16a34a;
+  background: var(--color-primario);
 }
 
 .caja-barra-tarjeta {
-  background: #b45309;
+  background: var(--color-aviso);
 }
 
 .caja-barra-transferencia {
-  background: #57534e;
+  background: var(--color-texto-suave);
 }
 
 .caja-barra-total {
-  background: #6b7280;
+  background: var(--color-texto-suave);
 }
 
 .caja-tabla-wrapper {
@@ -287,7 +287,7 @@
 }
 
 .caja-diferencia-positiva {
-  color: #047857;
+  color: var(--color-primario-oscuro);
   font-weight: 700;
 }
 
@@ -334,7 +334,7 @@
   padding: 14px;
   border: 1px solid var(--color-borde);
   border-radius: 11px;
-  background: #fafaf9;
+  background: var(--color-fondo-suave);
 }
 
 .caja-cierre-resumen span {
@@ -350,8 +350,8 @@
 }
 
 .chip-neutro {
-  background: #f3f4f6;
-  color: #4b5563;
+  background: var(--color-fondo-suave);
+  color: var(--color-texto-suave);
   border-color: var(--color-borde);
 }
 
@@ -387,7 +387,7 @@
 
 .caja-denominaciones {
   margin: 14px 0;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-borde);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -398,13 +398,13 @@
   justify-content: space-between;
   gap: 10px;
   padding: 10px 12px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--color-fondo);
+  border-bottom: 1px solid var(--color-borde);
 }
 
 .caja-denominaciones-cabecera span {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-texto-suave);
 }
 
 .caja-denominaciones-grid {
@@ -424,7 +424,7 @@
 
 .caja-denominacion small {
   grid-column: 1 / -1;
-  color: #6b7280;
+  color: var(--color-texto-suave);
   text-align: right;
 }
 
@@ -435,7 +435,7 @@
 }
 
 .caja-cierre-metodos small {
-  color: #6b7280;
+  color: var(--color-texto-suave);
   font-size: 11px;
 }
 
@@ -452,7 +452,7 @@
   gap: 12px;
   flex-wrap: wrap;
   padding: 12px 16px;
-  border-bottom: 1px solid #eceef2;
+  border-bottom: 1px solid var(--color-borde);
 }
 
 .caja-mini-filtros .campo {
@@ -463,6 +463,74 @@
 .caja-mini-filtros .campo span {
   display: block;
   font-size: 11px;
-  color: #6b7280;
+  color: var(--color-texto-suave);
   margin-bottom: 4px;
+}
+
+/* Fila clicable del panel "Cajas abiertas ahora" (supervisión admin). */
+.caja-fila-clicable {
+  cursor: pointer;
+}
+
+.caja-fila-clicable:hover {
+  background: var(--color-primario-suave);
+}
+
+/* Modal de actividad del cajero. */
+.caja-actividad-resumen {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.caja-actividad-resumen > div {
+  padding: 10px 12px;
+  border: 1px solid var(--color-borde);
+  border-radius: 10px;
+  background: var(--color-fondo-suave);
+}
+
+.caja-actividad-resumen span {
+  display: block;
+  color: var(--color-texto-suave);
+  font-size: 11px;
+}
+
+.caja-actividad-resumen strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 14px;
+}
+
+.caja-actividad-tabla-wrapper {
+  max-height: 460px;
+  overflow-y: auto;
+}
+
+.caja-actividad .col-numero {
+  text-align: right;
+}
+
+.caja-movimiento-negativo {
+  color: var(--color-peligro);
+  font-weight: 700;
+}
+
+.caja-movimiento-positivo {
+  color: var(--color-primario-oscuro);
+  font-weight: 700;
+}
+
+.caja-actividad-cargando,
+.caja-actividad-vacia {
+  padding: 30px;
+  text-align: center;
+  color: var(--color-texto-suave);
+}
+
+@media (max-width: 700px) {
+  .caja-actividad-resumen {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
