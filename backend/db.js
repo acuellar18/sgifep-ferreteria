@@ -33,7 +33,19 @@ class Database {
     // La opción timezone indica a mysql2 en qué zona están guardados los
     // DATETIME del servidor, para convertirlos correctamente a fechas JS
     // (y serializar parámetros Date en la misma zona).
-    return mysql.createPool({ ...this._base, timezone: zona });
+    const pool = mysql.createPool({ ...this._base, timezone: zona });
+
+    // La zona de la sesión MySQL debe coincidir con la del driver. Si el
+    // servidor está en UTC y aquí se usa -06:00, los TIMESTAMP se leen con
+    // 6 horas de diferencia (el ticket mostraba hora UTC). Forzar la sesión
+    // deja ambos lados alineados sin depender de la configuración global.
+    if (/^[+-]\d{2}:\d{2}$/.test(zona)) {
+      pool.on('connection', (conexion) => {
+        conexion.query(`SET time_zone = '${zona}'`, () => {});
+      });
+    }
+
+    return pool;
   }
 
   // Detecta el desfase real del servidor MySQL respecto a UTC comparando

@@ -10,7 +10,7 @@ import PosCuentasPorCobrar from './PosCuentasPorCobrar';
 import { useNotificacion } from '../../components/Toast';
 import { permisosFacturacion } from '../../utils/permisosFacturacion';
 import { impresoraSoportada, imprimirTicketTermico } from '../../utils/escpos';
-import { formatearMoneda, formatearNumero } from '../../utils/formatos';
+import { formatearFecha, formatearMoneda, formatearNumero } from '../../utils/formatos';
 
 const IVA_FACTOR = 0.12;
 const CLIENTE_FINAL = { id: null, nit: 'CF', nombre: 'Consumidor Final', direccion: '' };
@@ -106,6 +106,7 @@ export default function CobrosPage() {
 
   // Entrega a domicilio
   const [domicilio, setDomicilio] = useState(false);
+  const [modalEntrega, setModalEntrega] = useState(false);
   const [direccionEntrega, setDireccionEntrega] = useState('');
   const [telefonoEntrega, setTelefonoEntrega] = useState('');
   const [fechaProgramada, setFechaProgramada] = useState(fechaLocal());
@@ -379,7 +380,7 @@ export default function CobrosPage() {
         const limite = linea.tipo === 'servicio' ? Infinity : linea.stock;
         const cantidad = Math.min(Math.round(numero), limite);
         if (numero > limite) {
-          notificar.error(`Solo hay ${formatearNumero(linea.stock, 3)} disponibles de "${linea.nombre}"`);
+          notificar.error(`Solo hay ${formatearNumero(linea.stock, 0)} disponibles de "${linea.nombre}"`);
         }
         return { ...linea, cantidad };
       })
@@ -392,7 +393,9 @@ export default function CobrosPage() {
       prev.map((linea) => {
         if (linea.producto_id !== productoId) return linea;
         const bruto = redondear2(linea.cantidad * linea.precio_venta);
-        return { ...linea, descuento: redondear2(Math.max(0, Math.min(numero || 0, bruto))) };
+        // El descuento se maneja en quetzales enteros (sin centavos).
+        const descuento = Math.max(0, Math.min(Math.round(numero || 0), bruto));
+        return { ...linea, descuento: redondear2(descuento) };
       })
     );
   }
@@ -408,10 +411,22 @@ export default function CobrosPage() {
   }
 
   function cambiarDomicilio(activo) {
-    setDomicilio(activo);
-    if (activo) {
-      setDireccionEntrega(cliente.direccion || '');
-      setTelefonoEntrega(cliente.telefono || '');
+    if (!activo) {
+      setDomicilio(false);
+      setModalEntrega(false);
+      return;
+    }
+    setDireccionEntrega((previo) => previo || cliente.direccion || '');
+    setTelefonoEntrega((previo) => previo || cliente.telefono || '');
+    setDomicilio(true);
+    setModalEntrega(true);
+  }
+
+  function cerrarModalEntrega() {
+    setModalEntrega(false);
+    // Si falta información obligatoria, no dejamos la entrega activada.
+    if (!direccionEntrega.trim() || !telefonoEntrega.trim()) {
+      setDomicilio(false);
     }
   }
 
@@ -691,7 +706,7 @@ export default function CobrosPage() {
               <div className="pos-panel-cabecera">
                 <div>
                   <h3>Carrito</h3>
-                  <p>{totales.articulos > 0 ? `${formatearNumero(totales.articulos, 3)} artículo(s)` : 'Sin artículos'}</p>
+                  <p>{totales.articulos > 0 ? `${formatearNumero(totales.articulos, 0)} artículo(s)` : 'Sin artículos'}</p>
                 </div>
                 {carrito.length > 0 && (
                   <button type="button" className="btn btn-secundario btn-mini" onClick={vaciarCarrito}>
@@ -743,7 +758,7 @@ export default function CobrosPage() {
                               aria-label={`Cantidad de ${linea.nombre}`}
                             />
                             {linea.tipo !== 'servicio' && (
-                              <small className="pos-stock">Stock: {formatearNumero(linea.stock, 3)}</small>
+                              <small className="pos-stock">Stock: {formatearNumero(linea.stock, 0)}</small>
                             )}
                           </td>
                           <td>{formatearMoneda(linea.precio_venta)}</td>
@@ -752,7 +767,7 @@ export default function CobrosPage() {
                               type="number"
                               className="control pos-input-descuento"
                               min="0"
-                              step="0.01"
+                              step="1"
                               value={linea.descuento}
                               onChange={(e) => cambiarDescuento(linea.producto_id, e.target.value)}
                               aria-label={`Descuento de ${linea.nombre}`}
@@ -863,56 +878,26 @@ export default function CobrosPage() {
 
               {domicilio && (
                 <>
-                  <label className="campo">
-                    <span>Dirección de entrega *</span>
-                    <input
-                      type="text"
-                      className="control"
-                      maxLength={500}
-                      value={direccionEntrega}
-                      onChange={(e) => setDireccionEntrega(e.target.value)}
-                      placeholder="Dirección de entrega"
-                    />
-                  </label>
-                  <label className="campo">
-                    <span>Teléfono de contacto *</span>
-                    <input
-                      type="text"
-                      className="control"
-                      maxLength={50}
-                      value={telefonoEntrega}
-                      onChange={(e) => setTelefonoEntrega(e.target.value)}
-                      placeholder="Teléfono"
-                    />
-                  </label>
-                  <label className="campo">
-                    <span>Fecha programada</span>
-                    <input
-                      type="date"
-                      className="control"
-                      value={fechaProgramada}
-                      onChange={(e) => setFechaProgramada(e.target.value)}
-                    />
-                  </label>
-                  <label className="campo">
-                    <span>Costo de envío</span>
-                    <input
-                      type="number"
-                      className="control"
-                      min="0"
-                      step="0.01"
-                      value={costoEnvio}
-                      onChange={(e) => setCostoEnvio(e.target.value)}
-                    />
-                  </label>
-                  <label className="pos-switch">
-                    <input
-                      type="checkbox"
-                      checked={contraEntrega}
-                      onChange={(e) => setContraEntrega(e.target.checked)}
-                    />
-                    <span>Cobro contra entrega (se cobra al entregar)</span>
-                  </label>
+                  <div className="pos-entrega-resumen">
+                    <div>
+                      <strong>{direccionEntrega || 'Sin dirección'}</strong>
+                      <span>{telefonoEntrega || 'Sin teléfono'}</span>
+                      <span>Programada: {formatearFecha(fechaProgramada)}</span>
+                      {Number(costoEnvio || 0) > 0 && (
+                        <span>Envío: {formatearMoneda(costoEnvio)}</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-secundario btn-mini"
+                      onClick={() => setModalEntrega(true)}
+                    >
+                      Editar
+                    </button>
+                  </div>
+                  {contraEntrega && (
+                    <p className="pos-entrega-nota">Cobro contra entrega activado.</p>
+                  )}
                 </>
               )}
             </div>
@@ -921,7 +906,7 @@ export default function CobrosPage() {
               <h3>Resumen de cobro</h3>
               <div className="pos-total-linea">
                 <span>Artículos</span>
-                <strong>{formatearNumero(totales.articulos, 3)}</strong>
+                <strong>{formatearNumero(totales.articulos, 0)}</strong>
               </div>
               <div className="pos-total-linea">
                 <span>Subtotal</span>
@@ -985,6 +970,85 @@ export default function CobrosPage() {
       </Modal>
 
       <Modal
+        abierto={modalEntrega}
+        titulo="Entrega a domicilio"
+        onCerrar={cerrarModalEntrega}
+        ancho="520px"
+      >
+        <form
+          className="formulario"
+          onSubmit={(evento) => {
+            evento.preventDefault();
+            setDomicilio(true);
+            setModalEntrega(false);
+          }}
+        >
+          <label className="campo">
+            <span>Dirección de entrega *</span>
+            <input
+              type="text"
+              className="control"
+              maxLength={500}
+              value={direccionEntrega}
+              onChange={(e) => setDireccionEntrega(e.target.value)}
+              placeholder="Dirección de entrega"
+              required
+            />
+          </label>
+          <label className="campo">
+            <span>Teléfono de contacto *</span>
+            <input
+              type="text"
+              className="control"
+              maxLength={50}
+              value={telefonoEntrega}
+              onChange={(e) => setTelefonoEntrega(e.target.value)}
+              placeholder="Teléfono"
+              required
+            />
+          </label>
+          <div className="pos-entrega-form-grid">
+            <label className="campo">
+              <span>Fecha programada</span>
+              <input
+                type="date"
+                className="control"
+                value={fechaProgramada}
+                onChange={(e) => setFechaProgramada(e.target.value)}
+              />
+            </label>
+            <label className="campo">
+              <span>Costo de envío</span>
+              <input
+                type="number"
+                className="control"
+                min="0"
+                step="0.01"
+                value={costoEnvio}
+                onChange={(e) => setCostoEnvio(e.target.value)}
+              />
+            </label>
+          </div>
+          <label className="pos-switch">
+            <input
+              type="checkbox"
+              checked={contraEntrega}
+              onChange={(e) => setContraEntrega(e.target.checked)}
+            />
+            <span>Cobro contra entrega (se cobra al entregar)</span>
+          </label>
+          <div className="modal-acciones">
+            <button type="button" className="btn btn-secundario" onClick={cerrarModalEntrega}>
+              Cancelar
+            </button>
+            <button type="submit" className="btn btn-primario">
+              Guardar entrega
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
         abierto={modalPago}
         titulo="Cobrar venta"
         onCerrar={() => !enviando && setModalPago(false)}
@@ -994,7 +1058,7 @@ export default function CobrosPage() {
           <div className="pos-pago-total">
             <span>Total a cobrar</span>
             <strong>{formatearMoneda(totales.total)}</strong>
-            <small>{formatearNumero(totales.articulos, 3)} artículo(s)</small>
+            <small>{formatearNumero(totales.articulos, 0)} artículo(s)</small>
           </div>
 
           {errorVenta && <div className="alerta alerta-error">{errorVenta}</div>}

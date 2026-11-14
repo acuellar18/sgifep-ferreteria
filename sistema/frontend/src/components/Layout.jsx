@@ -69,7 +69,13 @@ export default function Layout() {
   const modulosVisibles = MODULOS_SISTEMA.filter((modulo) => {
     if (modulo.soloAdmin && !esAdmin) return false;
     if (sinRoles) return true;
-    return !modulo.permiso || permisos[modulo.permiso];
+    if (modulo.permiso && !permisos[modulo.permiso]) return false;
+    // Módulos sin permiso propio (p. ej. Reportes) solo aparecen si el rol
+    // puede abrir al menos una de sus subpáginas.
+    if (modulo.subitems && modulo.subitems.length) {
+      return subitemsVisibles(modulo).length > 0;
+    }
+    return true;
   });
 
   function subitemsVisibles(modulo) {

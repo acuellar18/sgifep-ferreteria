@@ -120,7 +120,7 @@ export default function ProductoFacturaAutocompletar({
                 <span>
                   {producto.tipo === 'servicio'
                     ? 'Servicio'
-                    : `Stock: ${formatearNumero(producto.stock_actual, 3)} ${producto.unidad_medida}`}
+                    : `Stock: ${formatearNumero(producto.stock_actual, 0)} ${producto.unidad_medida}`}
                 </span>
               </div>
             </li>

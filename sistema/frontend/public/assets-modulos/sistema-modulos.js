@@ -17,6 +17,83 @@
     ? new URL('../img/logo.png', RUTA_SCRIPT).href
     : '../img/logo.png';
 
+  // Permisos por módulo y subpágina. Deben reflejar src/utils/permisos*.js
+  // (la autoridad real sigue siendo el backend). Se usan tanto aquí como en
+  // modulos.html para que el menú muestre exactamente lo que cada rol puede abrir.
+  var PERMISOS = {
+    caja: ['administrador', 'admin', 'caja', 'ventas'],
+    pos: ['administrador', 'admin', 'ventas', 'caja'],
+    usuarios: ['administrador', 'admin'],
+    compras: ['administrador', 'admin', 'compras', 'bodega', 'caja'],
+    crearCompra: ['administrador', 'admin', 'compras'],
+    inventario: ['administrador', 'admin', 'compras', 'bodega', 'caja', 'ventas', 'reparto'],
+    inventarioGestion: ['administrador', 'admin', 'compras', 'bodega'],
+    facturacion: ['administrador', 'admin', 'ventas', 'caja'],
+    despacho: ['administrador', 'admin', 'compras', 'bodega', 'caja', 'ventas', 'reparto'],
+    reporteGeneral: ['administrador', 'admin'],
+    reporteFacturacion: ['administrador', 'admin', 'ventas', 'caja'],
+    reporteCompras: ['administrador', 'admin', 'compras', 'bodega', 'caja'],
+    reporteInventario: ['administrador', 'admin', 'compras', 'bodega'],
+    auditoria: ['administrador', 'admin']
+  };
+
+  function rolesDe(sesion) {
+    if (sesion && Array.isArray(sesion.roles) && sesion.roles.length) return sesion.roles;
+    var rol = sesion && (sesion.rol || sesion.role);
+    return rol ? [rol] : [];
+  }
+
+  function esSuperadmin(sesion) {
+    return Boolean(sesion && sesion.superadmin) || rolesDe(sesion).indexOf('superadmin') !== -1;
+  }
+
+  function esAdministrador(sesion) {
+    if (esSuperadmin(sesion)) return true;
+    var roles = rolesDe(sesion);
+    return roles.indexOf('administrador') !== -1 || roles.indexOf('admin') !== -1;
+  }
+
+  function tienePermiso(sesion, nombre) {
+    if (esSuperadmin(sesion)) return true;
+    var roles = rolesDe(sesion);
+    // Sin roles reales asignados: ve el catálogo completo; cada módulo está
+    // protegido y advertirá al abrirlo (igual que el layout React).
+    if (!roles.length) return true;
+    var permitidos = PERMISOS[nombre] || [];
+    for (var i = 0; i < permitidos.length; i++) {
+      if (roles.indexOf(permitidos[i]) !== -1) return true;
+    }
+    return false;
+  }
+
+  function subpaginasVisibles(modulo, sesion) {
+    var visibles = [];
+    (modulo.subpaginas || []).forEach(function (sub) {
+      if (sub.soloAdmin && !esAdministrador(sesion)) return;
+      if (sub.permiso && !tienePermiso(sesion, sub.permiso)) return;
+      visibles.push(sub);
+    });
+    return visibles;
+  }
+
+  function moduloVisible(modulo, sesion) {
+    if (esSuperadmin(sesion)) return true;
+    if (modulo.soloAdmin && !esAdministrador(sesion)) return false;
+    var roles = rolesDe(sesion);
+    if (roles.length && modulo.permiso && !tienePermiso(sesion, modulo.permiso)) return false;
+    if (modulo.subpaginas) return subpaginasVisibles(modulo, sesion).length > 0;
+    return true;
+  }
+
+  // Expuesto para modulos.html (panel de acceso).
+  window.SGIFEPPermisos = {
+    rolesDe: rolesDe,
+    esAdministrador: esAdministrador,
+    tienePermiso: tienePermiso,
+    subpaginasVisibles: subpaginasVisibles,
+    moduloVisible: moduloVisible
+  };
+
   var TRAZOS = {
     caja:
       '<rect x="3" y="4" width="18" height="16" rx="2" />' +
@@ -83,34 +160,39 @@
       id: 'caja',
       icono: 'caja',
       titulo: 'Caja',
+      permiso: 'caja',
       enlace: 'caja'
     },
     {
       id: 'pos',
       icono: 'pos',
       titulo: 'POS / Venta',
+      permiso: 'pos',
       enlace: 'pos'
     },
     {
       id: 'usuarios',
       icono: 'usuarios',
       titulo: 'Usuarios',
+      permiso: 'usuarios',
       subpaginas: [
-        { id: 'listado', etiqueta: 'Listado de Usuarios', ruta: '' },
-        { id: 'reporte', etiqueta: 'Reporte de Usuarios', ruta: 'reporte' },
-        { id: 'roles', etiqueta: 'Gestión de Roles', ruta: 'roles' },
-        { id: 'departamentos', etiqueta: 'Gestión de Departamentos', ruta: 'departamentos' }
+        { id: 'listado', etiqueta: 'Listado de Usuarios', ruta: '', permiso: 'usuarios' },
+        { id: 'reporte', etiqueta: 'Reporte de Usuarios', ruta: 'reporte', permiso: 'usuarios' },
+        { id: 'roles', etiqueta: 'Gestión de Roles', ruta: 'roles', permiso: 'usuarios' },
+        { id: 'departamentos', etiqueta: 'Gestión de Departamentos', ruta: 'departamentos', permiso: 'usuarios' }
       ]
     },
     {
       id: 'compras',
       icono: 'compras',
       titulo: 'Compras',
+      permiso: 'compras',
       subpaginas: [
         {
           id: 'proveedores',
           etiqueta: 'Proveedores',
           ruta: 'compras/proveedores',
+          permiso: 'compras',
           titulo: 'Proveedores',
           descripcion: 'Paso 1: catálogo de proveedores y saldos pendientes.',
           columnas: ['Nombre', 'Teléfono', 'NIT', 'Contacto', 'Saldo pendiente', 'Estado']
@@ -119,6 +201,7 @@
           id: 'nueva',
           etiqueta: 'Registrar compra',
           ruta: 'compras/facturas/nueva',
+          permiso: 'crearCompra',
           titulo: 'Registrar compra',
           descripcion: 'Paso 2: productos, cantidades y costos de la compra.',
           columnas: ['Producto', 'Cantidad', 'Costo unitario', 'Subtotal']
@@ -127,6 +210,7 @@
           id: 'facturas',
           etiqueta: 'Facturas y pagos',
           ruta: 'compras/facturas',
+          permiso: 'compras',
           titulo: 'Facturas y pagos',
           descripcion: 'Paso 3: facturas registradas y saldos pendientes con proveedores.',
           columnas: ['N.° interno', 'Fecha', 'Proveedor', 'N.° factura', 'Balance', 'Estado']
@@ -137,11 +221,13 @@
       id: 'inventario',
       icono: 'inventario',
       titulo: 'Inventario',
+      permiso: 'inventario',
       subpaginas: [
         {
           id: 'productos',
           etiqueta: 'Productos',
           ruta: 'inventario/productos',
+          permiso: 'inventario',
           titulo: 'Productos',
           descripcion: 'Productos existentes y su saldo en bodega.',
           columnas: ['Código', 'Producto', 'Categoría', 'Existencia', 'Estado']
@@ -150,6 +236,7 @@
           id: 'categorias',
           etiqueta: 'Categorías',
           ruta: 'inventario/categorias',
+          permiso: 'inventarioGestion',
           titulo: 'Categorías',
           descripcion: 'Categorías con las que se agrupan los productos.',
           columnas: ['Código', 'Categoría', 'Productos', 'Estado']
@@ -158,6 +245,7 @@
           id: 'movimientos',
           etiqueta: 'Movimientos de Inventario',
           ruta: 'inventario/movimientos',
+          permiso: 'inventarioGestion',
           titulo: 'Movimientos de Inventario',
           descripcion: 'Entradas, salidas y ajustes de productos del inventario.',
           columnas: ['Fecha', 'Producto', 'Tipo de movimiento', 'Cantidad', 'Usuario']
@@ -168,11 +256,13 @@
       id: 'facturacion',
       icono: 'facturacion',
       titulo: 'Facturación',
+      permiso: 'facturacion',
       subpaginas: [
         {
             id: 'listado',
             etiqueta: 'Listado de Facturas',
             ruta: 'facturacion/facturas',
+          permiso: 'facturacion',
           titulo: 'Listado de Facturas',
           descripcion: 'Facturas emitidas a los clientes de la ferretería.',
           columnas: ['Número', 'Cliente', 'Fecha de emisión', 'Vence', 'Estado']
@@ -182,6 +272,7 @@
           id: 'clientes',
           etiqueta: 'Clientes',
           ruta: 'facturacion/clientes',
+          permiso: 'facturacion',
           titulo: 'Clientes',
           descripcion: 'Catálogo de clientes a los que se factura.',
           columnas: ['Código', 'Razón social', 'Contacto', 'Teléfono', 'Estado']
@@ -192,11 +283,13 @@
       id: 'despacho',
       icono: 'despacho',
       titulo: 'Despacho',
+      permiso: 'despacho',
       subpaginas: [
         {
           id: 'listado',
           etiqueta: 'Listado de Despachos',
           ruta: 'despacho',
+          permiso: 'despacho',
           titulo: 'Listado de Despachos',
           descripcion: 'Despachos de productos entregados a los clientes.',
           columnas: ['Código', 'Cliente', 'Fecha', 'Vendedor', 'Estado']
@@ -205,6 +298,7 @@
           id: 'rutas-entregas',
           etiqueta: 'Rutas y Entregas',
           ruta: 'despacho/rutas-entregas',
+          permiso: 'despacho',
           titulo: 'Rutas y Entregas',
           descripcion: 'Rutas de reparto y control de entregas programadas.',
           columnas: ['Ruta', 'Responsable', 'Entregas', 'Fecha', 'Estado']
@@ -220,6 +314,7 @@
           id: 'general',
           etiqueta: 'Reporte General',
           ruta: 'reportes',
+          permiso: 'reporteGeneral',
           titulo: 'Reporte General',
           descripcion: 'Resumen general de la operación de la ferretería.',
           vista: 'reporte',
@@ -229,6 +324,7 @@
           id: 'ventas',
           etiqueta: 'Reporte de Ventas',
           ruta: 'reportes/ventas',
+          permiso: 'reporteFacturacion',
           titulo: 'Reporte de Ventas',
           descripcion: 'Ventas por período, vendedor y línea de productos.',
           vista: 'reporte',
@@ -239,6 +335,7 @@
           soloAdmin: true,
           etiqueta: 'Auditoría',
           ruta: 'seguridad/auditoria',
+          permiso: 'auditoria',
           titulo: 'Auditoría',
           descripcion: 'Registro de acciones sensibles del sistema.',
           vista: 'reporte',
@@ -248,6 +345,7 @@
           id: 'compras',
           etiqueta: 'Reporte de Compras',
           ruta: 'reportes/compras',
+          permiso: 'reporteCompras',
           titulo: 'Reporte de Compras',
           descripcion: 'Compras por período, proveedor y línea de productos.',
           vista: 'reporte',
@@ -257,6 +355,7 @@
           id: 'inventario',
           etiqueta: 'Reporte de Inventario',
           ruta: 'reportes/inventario',
+          permiso: 'reporteInventario',
           titulo: 'Reporte de Inventario',
           descripcion: 'Inventario valorizado y productos de baja rotación.',
           vista: 'reporte',
@@ -490,19 +589,19 @@
     return;
   }
 
-  // Auditoría: solo para administradores (los superadmins también).
-  var rolesSesion = sesion.roles && sesion.roles.length ? sesion.roles : [sesion.rol || 'usuario'];
-  var esAdmin = Boolean(sesion.superadmin) || rolesSesion.indexOf('administrador') !== -1 || rolesSesion.indexOf('admin') !== -1;
-  if (!esAdmin) {
-    MODULOS.forEach(function (m) {
-      if (m.subpaginas) {
-        m.subpaginas = m.subpaginas.filter(function (sub) { return !sub.soloAdmin; });
-      }
-    });
-  }
+  // El menú debe mostrar exactamente lo que el rol puede abrir (misma regla
+  // que el layout React). Así no reaparecen módulos sin permiso al navegar.
+  MODULOS = MODULOS.filter(function (modulo) {
+    if (!moduloVisible(modulo, sesion)) return false;
+    if (modulo.subpaginas) modulo.subpaginas = subpaginasVisibles(modulo, sesion);
+    return true;
+  });
 
   var modulo = buscarModulo(moduloActivo);
-  if (!modulo) return;
+  if (!modulo) {
+    window.location.replace(RUTA_MODULOS);
+    return;
+  }
 
   var subpagina = buscarSubpagina(modulo, document.body.getAttribute('data-pagina'));
   document.title = 'SGIFEP - ' + modulo.titulo + ' | ' + (subpagina.titulo || subpagina.etiqueta);

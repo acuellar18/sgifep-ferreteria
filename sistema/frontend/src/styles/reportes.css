@@ -97,6 +97,12 @@
   gap: 14px;
 }
 
+/* Filtros del Reporte General: dos fechas, atajos y botón Aplicar. */
+.reporte-filtros-grid--general {
+  grid-template-columns: minmax(140px, 1fr) minmax(140px, 1fr) minmax(320px, 2.2fr) minmax(120px, 0.8fr);
+  align-items: end;
+}
+
 .reporte-campo {
   display: flex;
   flex-direction: column;

@@ -430,7 +430,7 @@ export default function NuevaFacturaPage() {
                             <span>
                               {linea.tipo === 'servicio'
                                 ? 'Servicio'
-                                : `Stock: ${formatearNumero(linea.stock, 3)} ${linea.unidad_medida}`}
+                                : `Stock: ${formatearNumero(linea.stock, 0)} ${linea.unidad_medida}`}
                             </span>
                             {excedeStock && <strong>Stock insuficiente</strong>}
                           </div>

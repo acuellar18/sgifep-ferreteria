@@ -23,12 +23,25 @@ function validarRolesEntrada(roles) {
   return ids;
 }
 
+// Correo de contacto: opcional. Devuelve undefined si no se envió (para no
+// borrar el correo existente al editar) o null si se envió vacío.
+function normalizarEmail(valor) {
+  if (valor === undefined) return undefined;
+  const email = typeof valor === 'string' ? valor.trim().toLowerCase() : '';
+  if (!email) return null;
+  if (email.length > 160 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+    throw new HttpError(400, 'El correo no es válido');
+  }
+  return email;
+}
+
 // Validación común para crear y actualizar.
 function baseValidacion(datos = {}) {
   const nombre = typeof datos.nombre === 'string' ? datos.nombre.trim() : '';
   const apellido = typeof datos.apellido === 'string' ? datos.apellido.trim() : '';
   const codigo = typeof datos.codigo === 'string' ? datos.codigo.trim() : '';
   const username = typeof datos.username === 'string' ? datos.username.trim() : '';
+  const email = normalizarEmail(datos.email);
 
   if (!nombre) throw new HttpError(400, 'El nombre es requerido');
   if (!username) throw new HttpError(400, 'El nombre de usuario es requerido');
@@ -47,6 +60,7 @@ function baseValidacion(datos = {}) {
     apellido: apellido || null,
     codigo,
     username,
+    email,
     departamento_id,
     roles: validarRolesEntrada(datos.roles),
     activo: datos.activo === undefined ? true : Boolean(datos.activo)
@@ -110,6 +124,7 @@ function serializar(fila) {
     nombre: fila.nombre,
     apellido: fila.apellido,
     username: fila.username,
+    email: fila.email || null,
     correo: fila.correo || null,
     tiene_foto: Boolean(fila.foto),
     departamento_id: fila.departamento_id,

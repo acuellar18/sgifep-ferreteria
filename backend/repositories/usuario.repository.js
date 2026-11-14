@@ -86,7 +86,7 @@ class UsuarioRepository {
 
     // JOINs + GROUP_CONCAT: incluye nombre de departamento y lista de roles.
     const sql = `
-      SELECT u.id, u.codigo, u.nombre, u.apellido, u.username, u.rol,
+      SELECT u.id, u.codigo, u.nombre, u.apellido, u.username, u.email, u.rol,
              u.departamento_id, u.activo, u.creado_en, u.actualizado_en,
              d.nombre AS departamento_nombre,
              COALESCE(GROUP_CONCAT(DISTINCT CONCAT(r.id, '::', r.nombre) ORDER BY r.id SEPARATOR '|'), '') AS roles
@@ -214,17 +214,20 @@ class UsuarioRepository {
     return { totales: { total, activos, inactivos }, porDepartamento, porRol, usuarios };
   }
 
-  // Datos mínimos para avisar por correo al activar la cuenta.
+  // Datos mínimos para avisar por correo al activar la cuenta. Usa `email`
+  // (registro público) o, si no existe, el `correo` del perfil.
   async obtenerDatosActivacion(id) {
     const [rows] = await pool.query(
-      'SELECT id, username, nombre, email FROM usuarios WHERE id = ? LIMIT 1',
+      `SELECT id, username, nombre, activo,
+              COALESCE(NULLIF(email, ''), NULLIF(correo, '')) AS email
+       FROM usuarios WHERE id = ? LIMIT 1`,
       [id]
     );
     return rows[0] || null;
   }
 
   async buscarPorId(id) {    const sql = `
-      SELECT u.id, u.codigo, u.nombre, u.apellido, u.username, u.correo,
+      SELECT u.id, u.codigo, u.nombre, u.apellido, u.username, u.email, u.correo,
              u.rol, u.departamento_id, u.activo, u.creado_en, u.actualizado_en,
              u.foto, u.foto_mime,
              d.nombre AS departamento_nombre,
@@ -297,15 +300,23 @@ class UsuarioRepository {
   }
 
   async actualizar(conn, id, datos) {
-    const { nombre, apellido, codigo, username, password_hash, rol, departamento_id, activo } = datos;
+    const { nombre, apellido, codigo, username, password_hash, rol, departamento_id, activo, email } = datos;
     const destino = conn || pool;
+    const campos = [
+      'nombre = ?', 'apellido = ?', 'codigo = ?', 'username = ?', 'password_hash = ?',
+      'rol = ?', 'departamento_id = ?', 'activo = ?'
+    ];
+    const params = [nombre, apellido, codigo, username, password_hash, rol, departamento_id, activo];
+    // email === undefined significa "no tocar"; null/vacío limpia el campo.
+    if (email !== undefined) {
+      campos.push('email = ?');
+      params.push(email || null);
+    }
+    campos.push('actualizado_en = CURRENT_TIMESTAMP');
+    params.push(id);
     const [result] = await destino.query(
-      `UPDATE usuarios
-       SET nombre = ?, apellido = ?, codigo = ?, username = ?, password_hash = ?,
-           rol = ?, departamento_id = ?, activo = ?,
-           actualizado_en = CURRENT_TIMESTAMP
-       WHERE id = ?`,
-      [nombre, apellido, codigo, username, password_hash, rol, departamento_id, activo, id]
+      `UPDATE usuarios SET ${campos.join(', ')} WHERE id = ?`,
+      params
     );
     return result.affectedRows;
   }

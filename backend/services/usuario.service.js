@@ -49,6 +49,9 @@ class UsuarioService {
     if (await usuarioRepository.buscarPorCodigo(dto.codigo)) {
       throw new HttpError(409, 'Ya existe un usuario con ese código');
     }
+    if (dto.email && (await usuarioRepository.buscarPorEmail(dto.email))) {
+      throw new HttpError(409, 'Ya existe un usuario con ese correo');
+    }
     await this.validarReferencias(dto.departamento_id, dto.roles);
 
     const password_hash = await bcrypt.hash(dto.password, 10);
@@ -71,6 +74,14 @@ class UsuarioService {
         );
       }
       await connection.commit();
+      // Cuenta creada ya activa: se avisa al correo (si se indicó).
+      if (dto.activo && dto.email) {
+        void this.notificarActivacion({
+          username: dto.username,
+          nombre: dto.nombre,
+          email: dto.email
+        });
+      }
       return nuevoId;
     } catch (err) {
       await connection.rollback();
@@ -94,6 +105,9 @@ class UsuarioService {
     }
     if (await usuarioRepository.buscarPorCodigo(dto.codigo, id)) {
       throw new HttpError(409, 'Ya existe un usuario con ese código');
+    }
+    if (dto.email && (await usuarioRepository.buscarPorEmail(dto.email, id))) {
+      throw new HttpError(409, 'Ya existe un usuario con ese correo');
     }
     await this.validarReferencias(dto.departamento_id, dto.roles);
 
@@ -139,6 +153,12 @@ class UsuarioService {
     } finally {
       connection.release();
     }
+
+    // Si la edición pasó la cuenta de inactiva a activa, se envía el aviso.
+    if (!existe.activo && dto.activo) {
+      const destino = await usuarioRepository.obtenerDatosActivacion(id);
+      if (destino && destino.email) void this.notificarActivacion(destino);
+    }
   }
 
   async cambiarEstado(id, activo) {
@@ -153,7 +173,7 @@ class UsuarioService {
     const affected = await usuarioRepository.cambiarEstado(id, valor);
     if (affected === 0) throw new HttpError(404, 'Usuario no encontrado');
 
-    if (valor === 1 && usuario && usuario.email && usuario.email.includes('@')) {
+    if (valor === 1 && usuario && Number(usuario.activo) === 0 && usuario.email && usuario.email.includes('@')) {
       // Envío en segundo plano: si se esperara la respuesta del SMTP
       // (1-3 s contra Gmail) el botón "Activar" se sentiría lento.
       // notificarActivacion ya captura sus propios errores.
@@ -169,7 +189,10 @@ class UsuarioService {
       const nodemailer = require('nodemailer');
       const user = process.env.SMTP_USER;
       const pass = process.env.SMTP_PASS;
-      if (!user || !pass) return;
+      if (!user || !pass) {
+        console.warn('[usuarios] SMTP no configurado (SMTP_USER/SMTP_PASS): no se envió el correo de activación');
+        return;
+      }
 
       const port = Number(process.env.SMTP_PORT) || 465;
       const transporter = nodemailer.createTransport({
@@ -221,8 +244,6 @@ class UsuarioService {
                        <p style="margin:0 0 20px;">
                          <a href="${link}" style="display:inline-block; padding:12px 22px; background-color:#16a34a; color:#ffffff; text-decoration:none; font-weight:bold; border-radius:8px;">Iniciar sesión</a>
                        </p>
-                       <p style="margin:0 0 10px;">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
-                       <p style="margin:0; word-break:break-all; font-size:12px; color:#71717a;">${link}</p>
                      </td>
                    </tr>
                    <tr>
@@ -240,6 +261,7 @@ class UsuarioService {
           }
         ]
       });
+      console.log('[usuarios] correo de activación enviado a', usuario.email);
     } catch (err) {
       // No interrumpe la activación: el estado ya cambió en la BD.
       console.error('[usuarios] error enviando correo de activación:', err.message || err);

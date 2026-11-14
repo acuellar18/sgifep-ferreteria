@@ -230,110 +230,7 @@
             <div class="drawer-cabecera">
                 <span class="drawer-logo">SGIFEP</span>
             </div>
-            <nav class="drawer-nav" aria-label="Menú de módulos">
-                <a href="/modulos.html" class="drawer-item modulo-activo">
-                    <span>Módulos Principales</span>
-                </a>
-
-                <a href="/usuarios/caja" class="drawer-item">
-                    <span class="drawer-item-texto">
-                        <svg class="drawer-item-icono" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-caja" /></svg>
-                        <span>Caja</span>
-                    </span>
-                </a>
-
-                <a href="/usuarios/pos" class="drawer-item">
-                    <span class="drawer-item-texto">
-                        <svg class="drawer-item-icono" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-pos" /></svg>
-                        <span>POS / Venta</span>
-                    </span>
-                </a>
-
-                <button type="button" class="drawer-item" data-menu-toggle="usuarios" aria-expanded="false" aria-controls="subitems-usuarios">
-                    <span class="drawer-item-texto">
-                        <svg class="drawer-item-icono" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-usuarios" /></svg>
-                        <span>Usuarios</span>
-                    </span>
-                    <span class="drawer-flecha">▸</span>
-                </button>
-                <div class="drawer-subitems" id="subitems-usuarios" hidden>
-                    <a class="drawer-subitem" href="/usuarios/">Listado de Usuarios</a>
-                    <a class="drawer-subitem" href="/usuarios/reporte">Reporte de Usuarios</a>
-                    <a class="drawer-subitem" href="/usuarios/roles">Gestión de Roles</a>
-                    <a class="drawer-subitem" href="/usuarios/departamentos">Gestión de Departamentos</a>
-                </div>
-
-                <button type="button" class="drawer-item" data-menu-toggle="compras" aria-expanded="false" aria-controls="subitems-compras">
-                    <span class="drawer-item-texto">
-                        <svg class="drawer-item-icono" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-compras" /></svg>
-                        <span>Compras</span>
-                    </span>
-                    <span class="drawer-flecha">▸</span>
-                </button>
-                <div class="drawer-subitems" id="subitems-compras" hidden>
-                    <a class="drawer-subitem" href="/usuarios/compras/proveedores">Proveedores</a>
-                    <a class="drawer-subitem" href="/usuarios/compras/facturas/nueva">Registrar compra</a>
-                    <a class="drawer-subitem" href="/usuarios/compras/facturas">Facturas y pagos</a>
-                </div>
-
-                <button type="button" class="drawer-item" data-menu-toggle="inventario" aria-expanded="false" aria-controls="subitems-inventario">
-                    <span class="drawer-item-texto">
-                        <svg class="drawer-item-icono" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-inventario" /></svg>
-                        <span>Inventario</span>
-                    </span>
-                    <span class="drawer-flecha">▸</span>
-                </button>
-                <div class="drawer-subitems" id="subitems-inventario" hidden>
-                    <a class="drawer-subitem" href="/usuarios/inventario/productos">Productos</a>
-                    <a class="drawer-subitem" href="/usuarios/inventario/categorias">Categorías</a>
-                    <a class="drawer-subitem" href="/usuarios/inventario/movimientos">Movimientos de Inventario</a>
-                </div>
-
-                <button type="button" class="drawer-item" data-menu-toggle="facturacion" aria-expanded="false" aria-controls="subitems-facturacion">
-                    <span class="drawer-item-texto">
-                        <svg class="drawer-item-icono" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-facturacion" /></svg>
-                        <span>Facturación</span>
-                    </span>
-                    <span class="drawer-flecha">▸</span>
-                </button>
-                <div class="drawer-subitems" id="subitems-facturacion" hidden>
-                    <a class="drawer-subitem" href="/usuarios/facturacion/facturas">Listado de Facturas</a>
-                    <a class="drawer-subitem" href="/usuarios/facturacion/clientes">Clientes</a>
-                </div>
-
-                <button type="button" class="drawer-item" data-menu-toggle="despacho" aria-expanded="false" aria-controls="subitems-despacho">
-                    <span class="drawer-item-texto">
-                        <svg class="drawer-item-icono" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-despacho" /></svg>
-                        <span>Despacho</span>
-                    </span>
-                    <span class="drawer-flecha">▸</span>
-                </button>
-                <div class="drawer-subitems" id="subitems-despacho" hidden>
-                    <a class="drawer-subitem" href="/usuarios/despacho">Listado de Despachos</a>
-                </div>
-
-                <button type="button" class="drawer-item" data-menu-toggle="reportes" aria-expanded="false" aria-controls="subitems-reportes">
-                    <span class="drawer-item-texto">
-                        <svg class="drawer-item-icono" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-reportes" /></svg>
-                        <span>Reportes</span>
-                    </span>
-                    <span class="drawer-flecha">▸</span>
-                </button>
-                <div class="drawer-subitems" id="subitems-reportes" hidden>
-                    <a class="drawer-subitem" href="/usuarios/reportes">Reporte General</a>
-                    <a class="drawer-subitem" href="/usuarios/reportes/ventas">Reporte de Ventas</a>
-                    <a class="drawer-subitem" href="/usuarios/seguridad/auditoria" data-solo-admin>Auditoría</a>
-                    <a class="drawer-subitem" href="/usuarios/reportes/compras">Reporte de Compras</a>
-                    <a class="drawer-subitem" href="/usuarios/reportes/inventario">Reporte de Inventario</a>
-                </div>
-
-                <a href="/usuarios/perfil" class="drawer-item">
-                    <span class="drawer-item-texto">
-                        <svg class="drawer-item-icono" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-perfil" /></svg>
-                        <span>Mi perfil</span>
-                    </span>
-                </a>
-            </nav>
+            <nav class="drawer-nav" id="navModulos" aria-label="Menú de módulos"></nav>
         </aside>
 
         <div class="contenido">
@@ -345,9 +242,12 @@
     </div>
 </div>
 
+<script src="assets-modulos/sistema-modulos.js"></script>
 <script>
     const BASE_USUARIOS = '/usuarios/';
     const RUTA_LOGIN = '/login.html';
+    const RUTA_MODULOS = '/modulos.html';
+    const SGIFEPPermisos = window.SGIFEPPermisos;
 
     const ICONOS = {
         caja: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-caja" /></svg>',
@@ -359,6 +259,190 @@
         reportes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-reportes" /></svg>',
         usuarios: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-usuarios" /></svg>'
     };
+
+    // Catálogo del menú lateral y del panel de acceso. Las rutas son relativas
+    // a /usuarios/; la visibilidad la resuelve SGIFEPPermisos, la misma regla
+    // que usan las páginas estáticas y el layout React.
+    const MENU = [
+        {
+            id: 'caja',
+            icono: 'caja',
+            titulo: 'Caja',
+            ruta: 'caja',
+            permiso: 'caja'
+        },
+        {
+            id: 'pos',
+            icono: 'pos',
+            titulo: 'POS / Venta',
+            ruta: 'pos',
+            permiso: 'pos'
+        },
+        {
+            id: 'usuarios',
+            icono: 'usuarios',
+            titulo: 'Usuarios',
+            permiso: 'usuarios',
+            subpaginas: [
+                { id: 'listado', etiqueta: 'Listado de Usuarios', ruta: '', permiso: 'usuarios' },
+                { id: 'reporte', etiqueta: 'Reporte de Usuarios', ruta: 'reporte', permiso: 'usuarios' },
+                { id: 'roles', etiqueta: 'Gestión de Roles', ruta: 'roles', permiso: 'usuarios' },
+                { id: 'departamentos', etiqueta: 'Gestión de Departamentos', ruta: 'departamentos', permiso: 'usuarios' }
+            ]
+        },
+        {
+            id: 'compras',
+            icono: 'compras',
+            titulo: 'Compras',
+            permiso: 'compras',
+            subpaginas: [
+                { id: 'proveedores', etiqueta: 'Proveedores', ruta: 'compras/proveedores', permiso: 'compras' },
+                { id: 'nueva', etiqueta: 'Registrar compra', ruta: 'compras/facturas/nueva', permiso: 'crearCompra' },
+                { id: 'facturas', etiqueta: 'Facturas y pagos', ruta: 'compras/facturas', permiso: 'compras' }
+            ]
+        },
+        {
+            id: 'inventario',
+            icono: 'inventario',
+            titulo: 'Inventario',
+            permiso: 'inventario',
+            subpaginas: [
+                { id: 'productos', etiqueta: 'Productos', ruta: 'inventario/productos', permiso: 'inventario' },
+                { id: 'categorias', etiqueta: 'Categorías', ruta: 'inventario/categorias', permiso: 'inventarioGestion' },
+                { id: 'movimientos', etiqueta: 'Movimientos de Inventario', ruta: 'inventario/movimientos', permiso: 'inventarioGestion' }
+            ]
+        },
+        {
+            id: 'facturacion',
+            icono: 'facturacion',
+            titulo: 'Facturación',
+            permiso: 'facturacion',
+            subpaginas: [
+                { id: 'listado', etiqueta: 'Listado de Facturas', ruta: 'facturacion/facturas', permiso: 'facturacion' },
+                { id: 'clientes', etiqueta: 'Clientes', ruta: 'facturacion/clientes', permiso: 'facturacion' }
+            ]
+        },
+        {
+            id: 'despacho',
+            icono: 'despacho',
+            titulo: 'Despacho',
+            permiso: 'despacho',
+            subpaginas: [
+                { id: 'listado', etiqueta: 'Listado de Despachos', ruta: 'despacho', permiso: 'despacho' }
+            ]
+        },
+        {
+            id: 'reportes',
+            icono: 'reportes',
+            titulo: 'Reportes',
+            subpaginas: [
+                { id: 'general', etiqueta: 'Reporte General', ruta: 'reportes', permiso: 'reporteGeneral' },
+                { id: 'ventas', etiqueta: 'Reporte de Ventas', ruta: 'reportes/ventas', permiso: 'reporteFacturacion' },
+                { id: 'auditoria', etiqueta: 'Auditoría', ruta: 'seguridad/auditoria', permiso: 'auditoria', soloAdmin: true },
+                { id: 'compras', etiqueta: 'Reporte de Compras', ruta: 'reportes/compras', permiso: 'reporteCompras' },
+                { id: 'inventario', etiqueta: 'Reporte de Inventario', ruta: 'reportes/inventario', permiso: 'reporteInventario' }
+            ]
+        },
+        {
+            id: 'perfil',
+            icono: 'perfil',
+            titulo: 'Mi perfil',
+            ruta: 'perfil'
+        }
+    ];
+
+    const TARJETAS = [
+        { id: 'compras', nombre: 'Compras y Abastecimiento', desc: 'Registre proveedores, compras, facturas y pagos.' },
+        { id: 'inventario', nombre: 'Control de Inventario', desc: 'Administre su inventario de productos.' },
+        { id: 'facturacion', nombre: 'Facturación y Cobro', desc: 'Facture y registre sus cobros.' },
+        { id: 'caja', nombre: 'Caja y Turnos', desc: 'Abra y cierre la caja, controle el efectivo del turno.' },
+        { id: 'pos', nombre: 'POS / Venta', desc: 'Punto de venta, historial y cuentas por cobrar.' },
+        { id: 'despacho', nombre: 'Despacho de Productos', desc: 'Despache productos a sus clientes.' },
+        { id: 'reportes', nombre: 'Reportes', desc: 'Consulte reportes y estadísticas.' },
+        { id: 'usuarios', nombre: 'Usuarios', desc: 'Gestione los usuarios.' }
+    ];
+
+    function escapar(texto) {
+        return String(texto)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function iconoDrawer(id) {
+        return '<svg class="drawer-item-icono" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ico-' + id + '" /></svg>';
+    }
+
+    function urlModulo(modulo, sesion) {
+        if (modulo.ruta) return BASE_USUARIOS + modulo.ruta;
+        const subpagina = SGIFEPPermisos.subpaginasVisibles(modulo, sesion)[0];
+        return subpagina ? BASE_USUARIOS + subpagina.ruta : null;
+    }
+
+    function construirDrawer(sesion) {
+        const nav = document.getElementById('navModulos');
+        if (!nav || !SGIFEPPermisos) return;
+
+        let html = '<a href="' + RUTA_MODULOS + '" class="drawer-item modulo-activo">' +
+            '<span>Módulos Principales</span></a>';
+
+        MENU.forEach((modulo) => {
+            if (!SGIFEPPermisos.moduloVisible(modulo, sesion)) return;
+
+            if (modulo.subpaginas) {
+                html += '<button type="button" class="drawer-item" data-menu-toggle="' + modulo.id + '"' +
+                    ' aria-expanded="false" aria-controls="subitems-' + modulo.id + '">' +
+                    '<span class="drawer-item-texto">' +
+                        iconoDrawer(modulo.icono) +
+                        '<span>' + escapar(modulo.titulo) + '</span>' +
+                    '</span>' +
+                    '<span class="drawer-flecha">▸</span>' +
+                '</button>';
+                html += '<div class="drawer-subitems" id="subitems-' + modulo.id + '" hidden>';
+                SGIFEPPermisos.subpaginasVisibles(modulo, sesion).forEach((sub) => {
+                    html += '<a class="drawer-subitem" href="' + BASE_USUARIOS + sub.ruta + '">' +
+                        escapar(sub.etiqueta) + '</a>';
+                });
+                html += '</div>';
+                return;
+            }
+
+            html += '<a href="' + BASE_USUARIOS + modulo.ruta + '" class="drawer-item">' +
+                '<span class="drawer-item-texto">' +
+                    iconoDrawer(modulo.icono) +
+                    '<span>' + escapar(modulo.titulo) + '</span>' +
+                '</span>' +
+            '</a>';
+        });
+
+        nav.innerHTML = html;
+        activarAcordeon();
+    }
+
+    function activarAcordeon() {
+        document.querySelectorAll('[data-menu-toggle]').forEach((boton) => {
+            boton.addEventListener('click', () => {
+                const id = boton.getAttribute('data-menu-toggle');
+                const bloque = document.getElementById(`subitems-${id}`);
+                const estabaOculto = bloque.hidden;
+
+                document.querySelectorAll('.drawer-subitems').forEach((otro) => {
+                    otro.hidden = true;
+                });
+                document.querySelectorAll('[data-menu-toggle]').forEach((otro) => {
+                    otro.setAttribute('aria-expanded', 'false');
+                    otro.querySelector('.drawer-flecha')?.classList.remove('abierto');
+                });
+
+                if (estabaOculto) {
+                    bloque.hidden = false;
+                    boton.setAttribute('aria-expanded', 'true');
+                    boton.querySelector('.drawer-flecha')?.classList.add('abierto');
+                }
+            });
+        });
+    }
 
     const menuToggle = document.getElementById('btnMenuToggle');
     const sidebarLayout = document.getElementById('sidebarLayout');
@@ -396,28 +480,6 @@
         }
     });
 
-    document.querySelectorAll('[data-menu-toggle]').forEach((boton) => {
-        boton.addEventListener('click', () => {
-            const id = boton.getAttribute('data-menu-toggle');
-            const bloque = document.getElementById(`subitems-${id}`);
-            const estabaOculto = bloque.hidden;
-
-            document.querySelectorAll('.drawer-subitems').forEach((otro) => {
-                otro.hidden = true;
-            });
-            document.querySelectorAll('[data-menu-toggle]').forEach((otro) => {
-                otro.setAttribute('aria-expanded', 'false');
-                otro.querySelector('.drawer-flecha')?.classList.remove('abierto');
-            });
-
-            if (estabaOculto) {
-                bloque.hidden = false;
-                boton.setAttribute('aria-expanded', 'true');
-                boton.querySelector('.drawer-flecha')?.classList.add('abierto');
-            }
-        });
-    });
-
     const sesion = JSON.parse(localStorage.getItem('session') || 'null');
 
     if (!sesion || !sesion.token) {
@@ -425,18 +487,8 @@
     } else {
         const nombreMostrar = sesion.nombre || sesion.username || 'Usuario';
         const roles = sesion.roles?.length ? sesion.roles : [sesion.rol || 'usuario'];
-        const esSuperadmin = Boolean(sesion.superadmin) || roles.includes('superadmin');
 
-        // Auditoría: solo para administradores (los superadmins también).
-        const esAdmin = esSuperadmin || roles.includes('administrador') || roles.includes('admin');
-        if (!esAdmin) {
-            document.querySelectorAll('[data-solo-admin]').forEach((el) => el.remove());
-        }
-
-        // Usuario sin roles reales asignados: ve el catálogo completo;
-        // cada módulo está protegido y advertirá si no tiene permiso.
-        const rolesConocidos = ['administrador', 'admin', 'compras', 'bodega', 'caja', 'ventas', 'reparto', 'superadmin'];
-        const sinRoles = !esSuperadmin && !roles.some((rol) => rolesConocidos.includes(rol));
+        construirDrawer(sesion);
 
         document.getElementById('userInfo').textContent = nombreMostrar;
         document.getElementById('userRol').textContent = roles.join(', ');
@@ -457,77 +509,21 @@
             })
             .catch(() => {});
 
-        const modulos = [
-            {
-                nombre: 'Compras y Abastecimiento',
-                icono: 'compras',
-                desc: 'Registre proveedores, compras, facturas y pagos.',
-                roles: ['administrador', 'admin', 'compras'],
-                url: `${BASE_USUARIOS}compras/facturas`
-            },
-            {
-                nombre: 'Control de Inventario',
-                icono: 'inventario',
-                desc: 'Administre su inventario de productos.',
-                roles: ['administrador', 'admin', 'compras', 'bodega', 'caja', 'ventas', 'reparto'],
-                url: `${BASE_USUARIOS}inventario/productos`
-            },
-            {
-                nombre: 'Facturación y Cobro',
-                icono: 'facturacion',
-                desc: 'Facture y registre sus cobros.',
-                roles: ['administrador', 'admin', 'ventas', 'caja'],
-                url: `${BASE_USUARIOS}facturacion/facturas`
-            },
-            {
-                nombre: 'Caja y Turnos',
-                icono: 'caja',
-                desc: 'Abra y cierre la caja, controle el efectivo del turno.',
-                roles: ['administrador', 'admin', 'ventas', 'caja'],
-                url: `${BASE_USUARIOS}caja`
-            },
-            {
-                nombre: 'POS / Venta',
-                icono: 'pos',
-                desc: 'Punto de venta, historial y cuentas por cobrar.',
-                roles: ['administrador', 'admin', 'ventas', 'caja'],
-                url: `${BASE_USUARIOS}pos`
-            },
-            {
-                nombre: 'Despacho de Productos',
-                icono: 'despacho',
-                desc: 'Despache productos a sus clientes.',
-                roles: ['administrador', 'admin', 'reparto'],
-                url: `${BASE_USUARIOS}despacho`
-            },
-            {
-                nombre: 'Reportes',
-                icono: 'reportes',
-                desc: 'Consulte reportes y estadísticas.',
-                roles: ['administrador', 'admin', 'caja'],
-                url: `${BASE_USUARIOS}reportes`
-            },
-            {
-                nombre: 'Usuarios',
-                icono: 'usuarios',
-                desc: 'Gestione los usuarios.',
-                roles: ['administrador', 'admin', 'superadmin'],
-                url: BASE_USUARIOS
-            }
-        ];
-
         const container = document.getElementById('modulosContainer');
 
-        modulos.forEach((modulo) => {
-            const tieneAcceso = sinRoles || esSuperadmin || modulo.roles.some((rol) => roles.includes(rol));
-            if (!tieneAcceso) return;
+        TARJETAS.forEach((tarjeta) => {
+            const modulo = MENU.find((item) => item.id === tarjeta.id);
+            if (!modulo || !SGIFEPPermisos.moduloVisible(modulo, sesion)) return;
+
+            const url = urlModulo(modulo, sesion);
+            if (!url) return;
 
             container.insertAdjacentHTML('beforeend', `
-                <a class="card-modulo" href="${modulo.url}">
+                <a class="card-modulo" href="${url}">
                     <div class="icon-circle">${ICONOS[modulo.icono] || ''}</div>
                     <div>
-                        <h4>${modulo.nombre}</h4>
-                        <p>${modulo.desc}</p>
+                        <h4>${tarjeta.nombre}</h4>
+                        <p>${tarjeta.desc}</p>
                         <span class="acceder">Ingresar al módulo →</span>
                     </div>
                 </a>

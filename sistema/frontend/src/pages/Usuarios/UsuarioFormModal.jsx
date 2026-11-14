@@ -7,6 +7,7 @@ const FORM_VACIO = {
   apellido: '',
   codigo: '',
   username: '',
+  email: '',
   password: '',
   departamento_id: '',
   roles: [],
@@ -54,6 +55,7 @@ export default function UsuarioFormModal({ abierto, usuario, onCerrar, onGuardad
         apellido: usuario.apellido || '',
         codigo: usuario.codigo || '',
         username: usuario.username || '',
+        email: usuario.email || '',
         password: '',
         departamento_id: usuario.departamento_id || '',
         roles: usuario.roles?.map((r) => r.id) || [],
@@ -87,6 +89,7 @@ export default function UsuarioFormModal({ abierto, usuario, onCerrar, onGuardad
       apellido: form.apellido.trim() || null,
       codigo: form.codigo.trim(),
       username: form.username.trim(),
+      email: form.email.trim(),
       departamento_id: form.departamento_id || null,
       roles: form.roles,
       activo: form.activo
@@ -157,6 +160,16 @@ export default function UsuarioFormModal({ abierto, usuario, onCerrar, onGuardad
               autoComplete="username"
               value={form.username}
               onChange={(e) => actualizarCampo('username', e.target.value)}
+            />
+          </label>
+          <label className="campo">
+            <span>Correo electrónico</span>
+            <input
+              type="email"
+              className="control"
+              placeholder="Para avisos de activación"
+              value={form.email}
+              onChange={(e) => actualizarCampo('email', e.target.value)}
             />
           </label>
           <label className="campo">

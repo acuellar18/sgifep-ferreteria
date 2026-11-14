@@ -72,7 +72,7 @@ function formatearFechaHora(fecha) {
   if (!fecha) return '—';
   const d = new Date(fecha);
   if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleString('es-GT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString('es-GT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Guatemala' });
 }
 
 const ETIQUETAS_METODO = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia', credito: 'Crédito', contado: 'Contado' };
@@ -388,7 +388,7 @@ export default function ReporteGeneralPage() {
     doc.setTextColor(107, 114, 128);
     doc.text(`Registros: ${kpis.length} indicadores`, 14, y);
     const ahora = new Date();
-    const fechaGen = ahora.toLocaleDateString('es-GT') + ', ' + ahora.toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' });
+    const fechaGen = ahora.toLocaleDateString('es-GT', { timeZone: 'America/Guatemala' }) + ', ' + ahora.toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Guatemala' });
     doc.text(`Generado el ${fechaGen}`, AP - 14, y, { align: 'right' });
 
     return doc;
@@ -436,7 +436,7 @@ async function imprimir() {
 
       {/* Filtros */}
       <div className="reporte-filtros" style={{ padding: '14px 18px' }}>
-        <div className="reporte-filtros-grid" style={{ gridTemplateColumns: 'repeat(6, minmax(120px, 1fr))' }}>
+        <div className="reporte-filtros-grid reporte-filtros-grid--general">
           <label className="reporte-campo">
             <span>Desde</span>
             <input type="date" className="control" value={desde} onChange={e => { setDesde(e.target.value); setAtajoActivo(''); }} />
@@ -465,7 +465,7 @@ async function imprimir() {
       {error && <div className="alerta alerta-error">{error}</div>}
 
       <p className="reporte-print-meta">
-        Ferretería El Puente · Reporte General · {textoPeriodo()} · Generado: {new Date().toLocaleString('es-GT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+        Ferretería El Puente · Reporte General · {textoPeriodo()} · Generado: {new Date().toLocaleString('es-GT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Guatemala' })}
       </p>
 
       {/* KPIs */}
